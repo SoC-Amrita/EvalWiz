@@ -1,6 +1,6 @@
 import { auth } from "@/auth"
 import { APP_INFO } from "@/lib/app-info"
-import { buildScopedSectionWhere, getActiveWorkspaceState } from "@/lib/course-workspace"
+import { buildScopedSectionWhere, buildScopedStudentWhere, getActiveWorkspaceState } from "@/lib/course-workspace"
 import prisma from "@/lib/db"
 import {
   buildWeightedStudentTotals,
@@ -52,7 +52,8 @@ export default async function ReportsPage() {
 
   const { activeWorkspace, activeRoleView } = await getActiveWorkspaceState(user)
   const sectionFilter = await buildScopedSectionWhere(user, activeWorkspace, activeRoleView)
-  const [assessments, sections, mentorAssignments, classAssignments] = await Promise.all([
+  const studentFilter = await buildScopedStudentWhere(user, activeWorkspace, activeRoleView)
+  const [assessments, sections, electiveEnrollments, mentorAssignments, classAssignments] = await Promise.all([
     prisma.assessment.findMany({
       where: { isActive: true, offeringId: activeWorkspace.offeringId },
       orderBy: { displayOrder: "asc" },
@@ -70,6 +71,25 @@ export default async function ReportsPage() {
       },
       orderBy: { name: "asc" }
     }),
+    activeWorkspace.isElective
+      ? prisma.courseOfferingEnrollment.findMany({
+          where: {
+            offeringId: activeWorkspace.offeringId,
+            student: studentFilter,
+          },
+          include: {
+            section: true,
+            student: {
+              include: {
+                marks: {
+                  include: { assessment: true },
+                },
+              },
+            },
+          },
+          orderBy: { student: { rollNo: "asc" } },
+        })
+      : Promise.resolve([]),
     prisma.courseOfferingMentor.findMany({
       where: { offeringId: activeWorkspace.offeringId },
       orderBy: { user: { name: "asc" } },
@@ -146,27 +166,55 @@ export default async function ReportsPage() {
     }
   }
 
-  const reportData: SectionReportData[] = sections.map((section) =>
-    buildReportRow({
-      sectionId: section.id,
-      sectionName: section.name,
-      facultyName: facultyBySectionId.get(section.id) ?? "Unassigned",
-      studentMarks: section.students.map((student) =>
-        student.marks
-          .filter((mark) => activeAssessmentIds.has(mark.assessmentId))
-          .map((mark) => ({
-            marks: mark.marks,
-            assessment: {
-              code: mark.assessment.code,
-              name: mark.assessment.name,
-              category: mark.assessment.category,
-              weightage: mark.assessment.weightage,
-              maxMarks: mark.assessment.maxMarks,
-            },
-          }))
-      ),
-    })
-  )
+  const reportData: SectionReportData[] = activeWorkspace.isElective
+    ? [...new Map(
+        electiveEnrollments.map((enrollment) => {
+          const groupedMarks = electiveEnrollments
+            .filter((candidate) => candidate.sectionId === enrollment.sectionId)
+            .map((candidate) =>
+              candidate.student.marks
+                .filter((mark) => activeAssessmentIds.has(mark.assessmentId))
+                .map((mark) => ({
+                  marks: mark.marks,
+                  assessment: {
+                    code: mark.assessment.code,
+                    name: mark.assessment.name,
+                    category: mark.assessment.category,
+                    weightage: mark.assessment.weightage,
+                    maxMarks: mark.assessment.maxMarks,
+                  },
+                }))
+            )
+
+          return [enrollment.sectionId, buildReportRow({
+            sectionId: enrollment.sectionId,
+            sectionName: enrollment.section.name,
+            facultyName: facultyBySectionId.get(enrollment.sectionId) ?? mentorNameList[0] ?? "Mentor-owned",
+            studentMarks: groupedMarks,
+          })]
+        })
+      ).values()]
+    : sections.map((section) =>
+        buildReportRow({
+          sectionId: section.id,
+          sectionName: section.name,
+          facultyName: facultyBySectionId.get(section.id) ?? "Unassigned",
+          studentMarks: section.students.map((student) =>
+            student.marks
+              .filter((mark) => activeAssessmentIds.has(mark.assessmentId))
+              .map((mark) => ({
+                marks: mark.marks,
+                assessment: {
+                  code: mark.assessment.code,
+                  name: mark.assessment.name,
+                  category: mark.assessment.category,
+                  weightage: mark.assessment.weightage,
+                  maxMarks: mark.assessment.maxMarks,
+                },
+              }))
+          ),
+        })
+      )
 
   const isCourseView = activeRoleView !== "faculty" && sections.length > 1
   let courseAggregate: SectionReportData | null = null

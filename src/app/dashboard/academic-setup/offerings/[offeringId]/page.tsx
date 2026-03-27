@@ -28,6 +28,11 @@ export default async function EditOfferingPage({
           select: {
             sectionId: true,
             facultyId: true,
+            section: {
+              select: {
+                name: true,
+              },
+            },
           },
         },
         mentorAssignments: {

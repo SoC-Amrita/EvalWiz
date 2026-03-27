@@ -14,6 +14,9 @@ export async function getAcademicSetupData() {
       ],
     }),
     prisma.section.findMany({
+      where: {
+        isElectiveClass: false,
+      },
       include: {
         _count: {
           select: {

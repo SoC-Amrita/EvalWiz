@@ -792,13 +792,15 @@ export function AcademicSetupClient({
 
                 <div className="mt-4 grid gap-4 md:grid-cols-2">
                   <div className="rounded-lg bg-slate-50 p-4 dark:bg-slate-900/60">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Classes</div>
+                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      {offering.isElective ? "Elective Class" : "Classes"}
+                    </div>
                     <div className="mt-2 space-y-2 text-sm">
                       {offering.classAssignments.map((assignment) => (
                         <div key={assignment.id} className="flex items-center justify-between gap-3">
                           <span>{assignment.section.name}</span>
                           <span className="text-slate-500">
-                            {assignment.faculty?.user.name ?? "Unassigned"}
+                            {assignment.faculty?.user.name ?? (offering.isElective ? "Mentor-owned" : "Unassigned")}
                           </span>
                         </div>
                       ))}

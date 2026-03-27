@@ -44,6 +44,7 @@ model Subject {
 model Section {
   id                String    @id @default(cuid())
   name              String    @unique // Admin-defined section/group label; not restricted to A-Z.
+  isElectiveClass   Boolean   @default(false)
   facultyId         String?
   faculty           Faculty?  @relation(fields: [facultyId], references: [id], onDelete: SetNull)
   students          Student[]
@@ -66,6 +67,7 @@ model Section {
   courseType        String? // legacy backfill / compatibility only
   isActive          Boolean  @default(true)
   offeringAssignments CourseOfferingClass[]
+  offeringEnrollments CourseOfferingEnrollment[]
 
   // TODO: Once all reads are migrated, remove the legacy course metadata fields
   // above and treat Section exclusively as a reusable class roster snapshot.
@@ -78,6 +80,7 @@ model Student {
   sectionId String
   section   Section   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
   marks     Mark[]
+  offeringEnrollments CourseOfferingEnrollment[]
 
   // TODO: Add a canonical cross-offering student identity layer so mixed elective
   // enrollments and regular class enrollments can be analyzed together later.
@@ -134,6 +137,7 @@ model CourseOffering {
   isActive          Boolean   @default(true)
   assessments       Assessment[]
   classAssignments  CourseOfferingClass[]
+  enrollments       CourseOfferingEnrollment[]
   mentorAssignments CourseOfferingMentor[]
   createdAt         DateTime  @default(now())
 }
@@ -158,4 +162,16 @@ model CourseOfferingMentor {
   user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([offeringId, userId])
+}
+
+model CourseOfferingEnrollment {
+  id         String         @id @default(cuid())
+  offeringId String
+  studentId  String
+  sectionId  String
+  offering   CourseOffering @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+  student    Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  section    Section        @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@unique([offeringId, studentId])
 }

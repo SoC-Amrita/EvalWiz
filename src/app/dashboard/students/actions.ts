@@ -34,8 +34,6 @@ async function resolveSectionIdForStudent(
   options: {
     allowRollFallback: boolean
     createMissingHomeClass: boolean
-    activeOfferingId?: string
-    isElectiveOffering?: boolean
   },
   sections: Array<{
     id: string
@@ -53,58 +51,12 @@ async function resolveSectionIdForStudent(
   if (providedSectionName) {
     const namedSection = sections.find((section) => normalizeSectionName(section.name) === providedSectionName)
     if (namedSection) {
-      if (options.isElectiveOffering && options.activeOfferingId) {
-        await prisma.courseOfferingClass.upsert({
-          where: {
-            offeringId_sectionId: {
-              offeringId: options.activeOfferingId,
-              sectionId: namedSection.id,
-            },
-          },
-          update: {},
-          create: {
-            offeringId: options.activeOfferingId,
-            sectionId: namedSection.id,
-          },
-        })
-      }
       return namedSection.id
-    }
-
-    if (options.isElectiveOffering && options.activeOfferingId) {
-      const createdSection = await prisma.section.create({
-        data: {
-          name: row.sectionName!.trim(),
-          isActive: true,
-        },
-        select: { id: true, name: true },
-      })
-
-      await prisma.courseOfferingClass.create({
-        data: {
-          offeringId: options.activeOfferingId,
-          sectionId: createdSection.id,
-        },
-      })
-
-      sections.push({
-        id: createdSection.id,
-        name: createdSection.name,
-        rollPrefix: null,
-        schoolCode: null,
-        levelCode: null,
-        programDurationYears: null,
-        programCode: null,
-        admissionYear: null,
-        sectionCode: null,
-      })
-
-      return createdSection.id
     }
   }
 
   if (!options.allowRollFallback) {
-    throw new Error("Elective offerings require sectionName in the CSV because section derivation from roll number is disabled")
+    throw new Error("Section information is required for this upload")
   }
 
   const parsedRollNo = parseStudentRollNumber(row.rollNo)
@@ -141,6 +93,7 @@ async function resolveSectionIdForStudent(
           sectionCode: parsedRollNo.sectionCode,
           batchYear: parsedRollNo.admissionYear,
         }),
+        isElectiveClass: false,
         program: programLabel,
         rollPrefix: parsedRollNo.rollPrefix,
         schoolCode: parsedRollNo.schoolCode,
@@ -182,6 +135,16 @@ export async function uploadStudents(students: StudentUploadRow[]) {
   const { user, activeWorkspace } = await requireAuthenticatedWorkspaceState()
   if (!user.isAdmin) throw new Error("Unauthorized")
   const isElectiveContext = Boolean(activeWorkspace.offeringId && activeWorkspace.isElective)
+  const electiveSectionId = isElectiveContext
+    ? await prisma.courseOfferingClass.findFirst({
+        where: { offeringId: activeWorkspace.offeringId },
+        select: { sectionId: true },
+      }).then((assignment) => assignment?.sectionId ?? null)
+    : null
+
+  if (isElectiveContext && !electiveSectionId) {
+    throw new Error("Elective offering class is missing. Re-save the offering in Academic Setup first")
+  }
 
   let successCount = 0
   let errorCount = 0
@@ -206,19 +169,36 @@ export async function uploadStudents(students: StudentUploadRow[]) {
       const sectionId = await resolveSectionIdForStudent(
         student,
         {
-          allowRollFallback: !isElectiveContext,
-          createMissingHomeClass: !isElectiveContext,
-          activeOfferingId: isElectiveContext ? activeWorkspace.offeringId : undefined,
-          isElectiveOffering: isElectiveContext,
+          allowRollFallback: true,
+          createMissingHomeClass: true,
         },
         sections
       )
 
-      await prisma.student.upsert({
+      const savedStudent = await prisma.student.upsert({
         where: { rollNo: normalizedRollNo },
         update: { name: normalizeText(student.name), sectionId },
         create: { rollNo: normalizedRollNo, name: normalizeText(student.name), sectionId }
       })
+
+      if (isElectiveContext && electiveSectionId) {
+        await prisma.courseOfferingEnrollment.upsert({
+          where: {
+            offeringId_studentId: {
+              offeringId: activeWorkspace.offeringId,
+              studentId: savedStudent.id,
+            },
+          },
+          update: {
+            sectionId: electiveSectionId,
+          },
+          create: {
+            offeringId: activeWorkspace.offeringId,
+            studentId: savedStudent.id,
+            sectionId: electiveSectionId,
+          },
+        })
+      }
       successCount++
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unexpected upload failure"
@@ -230,6 +210,10 @@ export async function uploadStudents(students: StudentUploadRow[]) {
   revalidatePath("/dashboard/students")
   revalidatePath("/dashboard/sections")
   revalidatePath("/dashboard")
+  revalidatePath("/dashboard/academic-setup")
+  revalidatePath("/dashboard/marks")
+  revalidatePath("/dashboard/reports")
+  revalidatePath("/dashboard/advanced-analytics")
   return { success: true, successCount, errorCount, errors }
 }
 

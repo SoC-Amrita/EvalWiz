@@ -11,11 +11,23 @@ export async function saveStudentMark(studentId: string, assessmentId: string, m
   const marks = parseFloat(marksStr)
   if (isNaN(marks)) throw new Error("Invalid mark")
 
-  const student = await prisma.student.findUnique({
-    where: { id: studentId },
-    select: { sectionId: true },
-  })
-  if (!student || !allowedSectionIds.has(student.sectionId)) {
+  const hasAccess = activeWorkspace.isElective
+    ? await prisma.courseOfferingEnrollment.findFirst({
+        where: {
+          offeringId: activeWorkspace.offeringId,
+          studentId,
+          sectionId: { in: [...allowedSectionIds] },
+        },
+        select: { id: true },
+      })
+    : await prisma.student.findFirst({
+        where: {
+          id: studentId,
+          sectionId: { in: [...allowedSectionIds] },
+        },
+        select: { id: true },
+      })
+  if (!hasAccess) {
     throw new Error("Unauthorized to edit out-of-scope student")
   }
 
@@ -76,7 +88,17 @@ export async function bulkUploadMarks(
   })
   if (!assessment) throw new Error("Assessment not found")
 
-  const students = await prisma.student.findMany({ where: { sectionId } })
+  const students = activeWorkspace.isElective
+    ? await prisma.courseOfferingEnrollment.findMany({
+        where: {
+          offeringId: activeWorkspace.offeringId,
+          sectionId,
+        },
+        include: {
+          student: true,
+        },
+      }).then((enrollments) => enrollments.map((enrollment) => enrollment.student))
+    : await prisma.student.findMany({ where: { sectionId } })
   const studentMap = new Map(students.map(s => [s.rollNo, s.id]))
 
   let successCount = 0

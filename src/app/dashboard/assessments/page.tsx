@@ -1,6 +1,7 @@
 import { auth } from "@/auth"
 import prisma from "@/lib/db"
 import { getActiveWorkspaceState } from "@/lib/course-workspace"
+import { formatWorkspaceFullLabel } from "@/lib/workspace-labels"
 import { redirect } from "next/navigation"
 import { AssessmentClient } from "./client"
 
@@ -29,7 +30,7 @@ export default async function AssessmentsPage() {
           Assessment Components
         </h1>
         <p className="text-slate-500">
-          Manage the assessment structure for {activeWorkspace.subjectCode} in the active workspace.
+          {formatWorkspaceFullLabel(activeWorkspace)}
         </p>
       </div>
 

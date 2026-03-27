@@ -1,6 +1,7 @@
 import { auth } from "@/auth"
 import prisma from "@/lib/db"
-import { buildScopedSectionWhere, buildScopedStudentWhere, getActiveWorkspaceState } from "@/lib/course-workspace"
+import { buildScopedStudentWhere, getActiveWorkspaceState } from "@/lib/course-workspace"
+import { formatWorkspaceFullLabel } from "@/lib/workspace-labels"
 import { redirect } from "next/navigation"
 import { AnalyticsClient } from "./client"
 
@@ -10,7 +11,6 @@ export default async function AnalyticsPage() {
   if (!user) redirect("/login")
 
   const { activeWorkspace, activeRoleView } = await getActiveWorkspaceState(user)
-  const sectionWhere = await buildScopedSectionWhere(user, activeWorkspace, activeRoleView)
   const studentWhere = await buildScopedStudentWhere(user, activeWorkspace, activeRoleView)
 
   const assessments = await prisma.assessment.findMany({
@@ -68,7 +68,7 @@ export default async function AnalyticsPage() {
           Course Analytics
         </h1>
         <p className="text-slate-500">
-          Component-wise performance breakdown for {activeWorkspace.subjectCode} in the active workspace.
+          {formatWorkspaceFullLabel(activeWorkspace)}
         </p>
       </div>
 

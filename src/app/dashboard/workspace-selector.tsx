@@ -8,6 +8,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
+import { formatWorkspaceCycleLabel, formatWorkspaceProgramSummary } from "@/lib/workspace-labels"
 import { activateWorkspace } from "./workspace-actions"
 import type { CourseWorkspace, WorkspaceRoleView } from "@/lib/course-workspace"
 
@@ -35,22 +36,6 @@ function roleLabel(roleView: WorkspaceRoleView) {
     case "faculty":
       return "Faculty"
   }
-}
-
-function formatWorkspaceCycle(workspace: CourseWorkspace) {
-  const parts = [workspace.academicYear, workspace.term].filter(Boolean)
-  return parts.join(" · ")
-}
-
-function formatWorkspaceContext(workspace: CourseWorkspace) {
-  const parts = [
-    workspace.program,
-    workspace.semester ? `${workspace.semester} Semester` : "",
-    workspace.year ? `Year ${workspace.year}` : "",
-    workspace.batchLabel,
-  ].filter(Boolean)
-
-  return parts.join(" · ")
 }
 
 export function WorkspaceSelector({
@@ -109,7 +94,7 @@ export function WorkspaceSelector({
                   </h3>
                   {isSelectableWorkspace ? (
                     <p className="text-sm text-slate-500">
-                      {formatWorkspaceCycle(workspace)}
+                      {formatWorkspaceCycleLabel(workspace)}
                     </p>
                   ) : (
                     <p className="text-sm text-slate-500">
@@ -132,7 +117,7 @@ export function WorkspaceSelector({
               {isSelectableWorkspace ? (
                 <>
                   <div className="text-sm text-slate-600 dark:text-slate-400">
-                    <div>{formatWorkspaceContext(workspace)}</div>
+                    <div>{formatWorkspaceProgramSummary(workspace)}</div>
                     <div className="mt-1">
                       {workspace.isElective
                         ? `Class: ${workspace.sectionNames[0] ?? "Elective class pending"}`

@@ -38,7 +38,7 @@ export default async function StudentsPage() {
         </h1>
         <p className="text-slate-500">
           {isElectiveUploadContext
-            ? `Upload, edit, and delete global student records while mapping this elective offering manually to the chosen class or section container.`
+            ? `Upload, edit, and delete global student records while placing this elective roster into its single dedicated class.`
             : `Upload, edit, and delete global student records. Regular roll numbers auto-map students into their lifetime home classes, and manual override happens inside each student record when an admin changes class assignment.`}
         </p>
       </div>

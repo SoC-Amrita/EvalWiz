@@ -289,7 +289,7 @@ export function StudentsClient({
     const blob = new Blob(
       [
         isElectiveOffering
-          ? "rollNo,name,sectionName\nCB.SC.U4CSE23301,John Doe,Elective Pool 1"
+          ? "rollNo,name\nCB.SC.U4CSE23301,John Doe"
           : "rollNo,name\nCB.SC.U4CSE23301,John Doe",
       ],
       { type: "text/csv;charset=utf-8;" }
@@ -464,7 +464,7 @@ export function StudentsClient({
                   <DialogTitle>Import Students</DialogTitle>
                   <DialogDescription>
                     {isElectiveOffering
-                      ? "Upload a CSV file with rollNo, name, and sectionName. Elective offerings always use manual class mapping."
+                      ? "Upload a CSV file with rollNo and name. The roster will be placed into the single elective class for this offering."
                       : canManageAllSections
                         ? "Upload global student records with rollNo and name only. Regular class assignment is derived from the roll number."
                         : "Upload a CSV file for your assigned sections only, using rollNo and name. Regular class assignment is derived from the roll number."}
@@ -484,7 +484,7 @@ export function StudentsClient({
                   </label>
                   {isElectiveOffering ? (
                     <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
-                      Elective offering mode: sectionName is required in the CSV, because students may come from multiple schools, departments, and regular sections.
+                      Elective offering mode: all uploaded students will go into the one elective class created for this offering. No section column is needed in the CSV.
                     </div>
                   ) : null}
 
@@ -511,11 +511,11 @@ export function StudentsClient({
                           <TableBody>
                             {parsedData.slice(0, 10).map((r, i) => (
                               <TableRow key={i}>
-                                <TableCell className="py-1">{r.rollNo}</TableCell>
-                                <TableCell className="py-1">{r.name}</TableCell>
-                                <TableCell className="py-1">{isElectiveOffering ? r.sectionName || "Required for electives" : "Auto from roll number"}</TableCell>
-                              </TableRow>
-                            ))}
+                              <TableCell className="py-1">{r.rollNo}</TableCell>
+                              <TableCell className="py-1">{r.name}</TableCell>
+                              <TableCell className="py-1">{isElectiveOffering ? "Single elective class" : "Auto from roll number"}</TableCell>
+                            </TableRow>
+                          ))}
                             {parsedData.length > 10 && (
                               <TableRow>
                                 <TableCell colSpan={3} className="py-2 text-center text-slate-400">+ {parsedData.length - 10} more rows</TableCell>

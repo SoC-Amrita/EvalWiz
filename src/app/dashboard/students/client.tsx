@@ -22,12 +22,17 @@ import { getErrorMessage } from "@/lib/client-errors"
 import { getProgramNameFromCode, getSchoolNameFromCode, parseStudentRollNumber } from "@/lib/roll-number"
 
 type Section = { id: string; name: string }
+type StudentSection = Section & {
+  semester?: string | null
+  programCode?: string | null
+  sectionCode?: string | null
+}
 
 type Student = {
   id: string
   rollNo: string
   name: string
-  section: Section
+  section: StudentSection
 }
 
 type CsvRow = { rollNo: string; name: string; sectionName?: string }
@@ -44,6 +49,19 @@ type StudentFilterMeta = {
 
 function normalizeSearchValue(value: string) {
   return value.toLowerCase().replace(/\s+/g, "")
+}
+
+function formatCompactSectionLabel(student: Student) {
+  const parsedRoll = parseStudentRollNumber(student.rollNo)
+  const semester = student.section.semester?.trim() || null
+  const programCode = student.section.programCode?.trim().toUpperCase() || parsedRoll?.programCode || null
+  const sectionCode = student.section.sectionCode?.trim().toUpperCase() || parsedRoll?.sectionCode || null
+
+  if (semester && programCode && sectionCode) {
+    return `${semester} ${programCode} ${sectionCode}`
+  }
+
+  return student.section.name
 }
 
 // ─── Main component ──────────────────────────────────────────────────────────
@@ -551,7 +569,7 @@ export function StudentsClient({
                     <TableCell className="font-medium text-slate-700 dark:text-slate-300">{s.name}</TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                        Section {s.section.name}
+                        {formatCompactSectionLabel(s)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right pr-4">

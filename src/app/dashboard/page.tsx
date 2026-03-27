@@ -1,7 +1,7 @@
 import { auth } from "@/auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import prisma from "@/lib/db"
-import { buildScopedSectionWhere, getActiveWorkspaceState, getRoleViewLabel, hasRealWorkspace } from "@/lib/course-workspace"
+import { buildScopedSectionWhere, buildScopedStudentWhere, getActiveWorkspaceState, getRoleViewLabel, hasRealWorkspace } from "@/lib/course-workspace"
 import { BarChart3, BookOpen, Clock, Users } from "lucide-react"
 import { AdminModePrompt } from "./admin-mode-prompt"
 import { AdminModeSwitchButton } from "./admin-mode-switch-button"
@@ -141,10 +141,11 @@ export default async function DashboardOverview() {
   }
 
   const sectionWhere = await buildScopedSectionWhere(user, activeWorkspace, activeRoleView)
+  const studentWhere = await buildScopedStudentWhere(user, activeWorkspace, activeRoleView)
 
   const [totalStudents, totalSections, totalAssessments, allMarks, assessments, recentLogs] = await Promise.all([
     prisma.student.count({
-      where: { section: sectionWhere },
+      where: studentWhere,
     }),
     prisma.section.count({
       where: sectionWhere,
@@ -155,7 +156,7 @@ export default async function DashboardOverview() {
     prisma.mark.aggregate({
       _avg: { marks: true },
       where: {
-        student: { section: sectionWhere },
+        student: studentWhere,
         assessment: { offeringId: activeWorkspace.offeringId },
       },
     }),
@@ -163,7 +164,7 @@ export default async function DashboardOverview() {
       where: { isActive: true, offeringId: activeWorkspace.offeringId },
       include: {
         marks: {
-          where: { student: { section: sectionWhere } },
+          where: { student: studentWhere },
         },
       },
       orderBy: { displayOrder: "asc" },

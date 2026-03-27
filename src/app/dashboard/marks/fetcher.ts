@@ -30,15 +30,32 @@ export async function fetchSectionData(sectionId: string, assessmentId: string) 
     throw new Error("Assessment not found")
   }
 
-  const students = await prisma.student.findMany({
-    where: { sectionId },
-    include: {
-      marks: {
-        where: { assessmentId }
-      }
-    },
-    orderBy: { rollNo: "asc" }
-  })
+  const students = activeWorkspace.isElective
+    ? await prisma.courseOfferingEnrollment.findMany({
+        where: {
+          offeringId: activeWorkspace.offeringId,
+          sectionId,
+        },
+        include: {
+          student: {
+            include: {
+              marks: {
+                where: { assessmentId },
+              },
+            },
+          },
+        },
+        orderBy: { student: { rollNo: "asc" } },
+      }).then((enrollments) => enrollments.map((enrollment) => enrollment.student))
+    : await prisma.student.findMany({
+        where: { sectionId },
+        include: {
+          marks: {
+            where: { assessmentId }
+          }
+        },
+        orderBy: { rollNo: "asc" }
+      })
 
   return students.map(s => ({
     id: s.id,
@@ -151,6 +168,29 @@ export async function fetchSectionExportData(
     throw new Error("Section not found")
   }
 
+  const enrolledStudents = activeWorkspace.isElective
+    ? await prisma.courseOfferingEnrollment.findMany({
+        where: {
+          offeringId: activeWorkspace.offeringId,
+          sectionId,
+        },
+        include: {
+          student: {
+            include: {
+              marks: {
+                where: { assessmentId: { in: selectedAssessmentIds } },
+                select: {
+                  assessmentId: true,
+                  marks: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { student: { rollNo: "asc" } },
+      }).then((enrollments) => enrollments.map((enrollment) => enrollment.student))
+    : section.students
+
   const mentorAssignments = await prisma.courseOfferingMentor.findMany({
     where: { offeringId: activeWorkspace.offeringId },
     orderBy: { user: { name: "asc" } },
@@ -191,7 +231,7 @@ export async function fetchSectionExportData(
       facultyName: courseFaculty,
     },
     assessments,
-    students: section.students.map((student) => ({
+    students: enrolledStudents.map((student) => ({
       id: student.id,
       rollNo: student.rollNo,
       name: student.name,

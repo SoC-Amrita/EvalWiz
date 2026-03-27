@@ -40,6 +40,8 @@ type OfferingInput = {
   mentorIds: string[]
 }
 
+type TransactionClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0]
+
 function readRequiredText(value: string, label: string) {
   const trimmed = value.trim()
   if (!trimmed) {
@@ -84,6 +86,10 @@ async function requireAdmin() {
 
 function normalizeOfferingInput(data: OfferingInput): OfferingInput {
   const isElective = data.isElective
+  const mentorIds = normalizeIds(data.mentorIds)
+  if (isElective && mentorIds.length !== 1) {
+    throw new Error("Elective offerings must have exactly one mentor, and that mentor becomes the default faculty")
+  }
   return {
     subjectId: readRequiredText(data.subjectId, "Subject"),
     term: readRequiredText(data.term, "Term"),
@@ -95,7 +101,7 @@ function normalizeOfferingInput(data: OfferingInput): OfferingInput {
     isElective,
     isActive: data.isActive,
     classAssignments: normalizeClassAssignments(data.classAssignments, { allowEmpty: isElective }),
-    mentorIds: normalizeIds(data.mentorIds),
+    mentorIds,
   }
 }
 
@@ -123,6 +129,7 @@ function normalizeClassInput(data: ClassInput, options?: { requireBatchYear?: bo
 type SectionMatchRecord = {
   id: string
   name: string
+  isElectiveClass?: boolean
   program: string | null
   rollPrefix: string | null
   schoolCode: string | null
@@ -329,6 +336,97 @@ async function syncOfferingRelations(
   }
 }
 
+function buildElectiveClassName(subjectCode: string, academicYear: string, term: string) {
+  return `${subjectCode} Elective Class (${academicYear} · ${term})`
+}
+
+async function resolveElectiveFacultyId(tx: TransactionClient, mentorUserId: string) {
+  const faculty = await tx.faculty.findUnique({
+    where: { userId: mentorUserId },
+    select: { id: true },
+  })
+
+  if (!faculty) {
+    throw new Error("The selected elective mentor must also have a faculty profile")
+  }
+
+  return faculty.id
+}
+
+async function ensureElectiveSection(
+  tx: TransactionClient,
+  input: OfferingInput,
+  subject: { code: string; program: string },
+  existingSectionId?: string | null
+) {
+  const sectionName = buildElectiveClassName(subject.code, input.academicYear, input.term)
+  const sectionData = {
+    name: sectionName,
+    isElectiveClass: true,
+    isActive: input.isActive,
+    program: subject.program,
+    term: input.term,
+    academicYear: input.academicYear,
+    semester: input.semester,
+    year: input.year,
+    evaluationPattern: input.evaluationPattern,
+    courseType: input.courseType,
+  }
+
+  if (existingSectionId) {
+    const updated = await tx.section.update({
+      where: { id: existingSectionId },
+      data: sectionData,
+      select: { id: true },
+    })
+    return updated.id
+  }
+
+  const created = await tx.section.create({
+    data: sectionData,
+    select: { id: true },
+  })
+
+  return created.id
+}
+
+async function syncCourseOffering(
+  tx: TransactionClient,
+  offeringId: string,
+  input: OfferingInput,
+  options: {
+    existingElectiveSectionId?: string | null
+  } = {}
+) {
+  if (!input.isElective) {
+    await syncOfferingRelations(tx, offeringId, input)
+    return
+  }
+
+  const subject = await tx.subject.findUnique({
+    where: { id: input.subjectId },
+    select: { code: true, program: true },
+  })
+
+  if (!subject) {
+    throw new Error("Subject not found")
+  }
+
+  const mentorUserId = input.mentorIds[0]
+  const facultyId = await resolveElectiveFacultyId(tx, mentorUserId)
+  const sectionId = await ensureElectiveSection(tx, input, subject, options.existingElectiveSectionId)
+
+  await syncOfferingRelations(tx, offeringId, {
+    ...input,
+    classAssignments: [
+      {
+        sectionId,
+        facultyId,
+      },
+    ],
+  })
+}
+
 export async function createSubject(data: {
   code: string
   title: string
@@ -398,9 +496,13 @@ export async function createClass(data: ClassInput) {
     throw new Error("Academic program label must include a recognizable roll program code such as CSE or ECE")
   }
   const existingSections = await prisma.section.findMany({
+    where: {
+      isElectiveClass: false,
+    },
     select: {
       id: true,
       name: true,
+      isElectiveClass: true,
       program: true,
       rollPrefix: true,
       schoolCode: true,
@@ -452,7 +554,10 @@ export async function createClass(data: ClassInput) {
     })
   } else {
     const createdSection = await prisma.section.create({
-      data: dataForSection,
+      data: {
+        ...dataForSection,
+        isElectiveClass: false,
+      },
     })
     sectionId = createdSection.id
   }
@@ -489,6 +594,7 @@ export async function updateClass(sectionId: string, data: ClassInput) {
       admissionYear: true,
       expectedGraduationYear: true,
       sectionCode: true,
+      isElectiveClass: true,
       students: {
         select: {
           rollNo: true,
@@ -501,6 +607,9 @@ export async function updateClass(sectionId: string, data: ClassInput) {
 
   if (!existingSection) {
     throw new Error("Class not found")
+  }
+  if (existingSection.isElectiveClass) {
+    throw new Error("Elective classes are managed through their course offering and cannot be edited from the reusable class catalog")
   }
 
   const sampleParsedRoll = getSampleParsedRoll(existingSection)
@@ -557,6 +666,7 @@ export async function deleteClass(sectionId: string) {
   const section = await prisma.section.findUnique({
     where: { id: sectionId },
     select: {
+      isElectiveClass: true,
       _count: {
         select: {
           students: true,
@@ -568,6 +678,9 @@ export async function deleteClass(sectionId: string) {
 
   if (!section) {
     throw new Error("Class not found")
+  }
+  if (section.isElectiveClass) {
+    throw new Error("Elective classes are managed automatically by their offering and cannot be deleted from the reusable class catalog")
   }
   if (section._count.students > 0) {
     throw new Error("Remove the enrolled students before deleting this class")
@@ -606,7 +719,7 @@ export async function createCourseOffering(data: OfferingInput) {
       },
     })
 
-    await syncOfferingRelations(tx, offering.id, normalizedInput)
+    await syncCourseOffering(tx, offering.id, normalizedInput)
   })
 
   revalidateAcademicPaths()
@@ -621,6 +734,13 @@ export async function updateCourseOffering(offeringId: string, data: OfferingInp
   await ensureUniqueOffering(normalizedInput, offeringId)
 
   await prisma.$transaction(async (tx) => {
+    const existingElectiveSectionId = normalizedInput.isElective
+      ? await tx.courseOfferingClass.findFirst({
+          where: { offeringId },
+          select: { sectionId: true },
+        }).then((assignment) => assignment?.sectionId ?? null)
+      : null
+
     await tx.courseOffering.update({
       where: { id: offeringId },
       data: {
@@ -636,7 +756,9 @@ export async function updateCourseOffering(offeringId: string, data: OfferingInp
       },
     })
 
-    await syncOfferingRelations(tx, offeringId, normalizedInput)
+    await syncCourseOffering(tx, offeringId, normalizedInput, {
+      existingElectiveSectionId,
+    })
   })
 
   revalidateAcademicPaths()

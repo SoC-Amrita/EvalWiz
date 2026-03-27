@@ -13,7 +13,7 @@ export default async function SectionsPage() {
   }
 
   const { activeWorkspace, activeRoleView } = await getActiveWorkspaceState(user)
-  if (activeRoleView === "faculty") {
+  if (activeRoleView === "faculty" && !activeWorkspace.isElective) {
     redirect("/dashboard")
   }
 
@@ -42,6 +42,21 @@ export default async function SectionsPage() {
     orderBy: { section: { name: "asc" } }
   })
 
+  const electiveEnrollmentCounts = activeWorkspace.isElective
+    ? await prisma.courseOfferingEnrollment.findMany({
+        where: {
+          offeringId: activeWorkspace.offeringId,
+          sectionId: { in: sections.map((assignment) => assignment.section.id) },
+        },
+        select: { sectionId: true },
+      }).then((enrollments) =>
+        enrollments.reduce<Record<string, number>>((accumulator, enrollment) => {
+          accumulator[enrollment.sectionId] = (accumulator[enrollment.sectionId] ?? 0) + 1
+          return accumulator
+        }, {})
+      )
+    : {}
+
   const facultyMembers = await prisma.faculty.findMany({
     include: {
       user: true,
@@ -56,10 +71,12 @@ export default async function SectionsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-          Sections & Faculty
+          {activeWorkspace.isElective ? "Elective Class & Faculty" : "Sections & Faculty"}
         </h1>
         <p className="text-slate-500">
-          Review the reusable class roster attached to {activeWorkspace.subjectCode} and set faculty ownership for this offering.
+          {activeWorkspace.isElective
+            ? `Review the single elective class attached to ${activeWorkspace.subjectCode}. The mentor is also the default faculty for this offering.`
+            : `Review the reusable class roster attached to ${activeWorkspace.subjectCode} and set faculty ownership for this offering.`}
         </p>
       </div>
       <SectionsClient
@@ -67,11 +84,16 @@ export default async function SectionsPage() {
           id: assignment.section.id,
           name: assignment.section.name,
           facultyId: assignment.facultyId,
-          _count: assignment.section._count,
+          _count: {
+            students: activeWorkspace.isElective
+              ? (electiveEnrollmentCounts[assignment.section.id] ?? 0)
+              : assignment.section._count.students,
+          },
         }))}
         facultyMembers={facultyMembers}
         canManageUsers={isAdmin}
         workspaceLabel={`${activeWorkspace.subjectCode} · ${activeWorkspace.subjectTitle}`}
+        isElective={activeWorkspace.isElective}
       />
     </div>
   )

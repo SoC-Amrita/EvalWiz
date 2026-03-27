@@ -151,6 +151,35 @@ export function buildWorkspaceSectionWhere(workspace: CourseWorkspace) {
   }
 }
 
+export async function getAllowedStudentIdsForWorkspace(user: WorkspaceUser, workspace: CourseWorkspace, roleView: WorkspaceRoleView) {
+  if (!workspace.offeringId) {
+    return []
+  }
+
+  if (!workspace.isElective) {
+    const allowedSectionIds = await getAllowedSectionIdsForWorkspace(user, workspace, roleView)
+    const students = await prisma.student.findMany({
+      where: {
+        sectionId: { in: allowedSectionIds.length > 0 ? allowedSectionIds : ["__no_section__"] },
+      },
+      select: { id: true },
+    })
+
+    return students.map((student) => student.id)
+  }
+
+  const allowedSectionIds = await getAllowedSectionIdsForWorkspace(user, workspace, roleView)
+  const enrollments = await prisma.courseOfferingEnrollment.findMany({
+    where: {
+      offeringId: workspace.offeringId,
+      sectionId: { in: allowedSectionIds.length > 0 ? allowedSectionIds : ["__no_section__"] },
+    },
+    select: { studentId: true },
+  })
+
+  return enrollments.map((enrollment) => enrollment.studentId)
+}
+
 export async function getAllowedSectionIdsForWorkspace(user: WorkspaceUser, workspace: CourseWorkspace, roleView: WorkspaceRoleView) {
   if (!workspace.offeringId) {
     return []
@@ -175,6 +204,13 @@ export async function buildScopedSectionWhere(user: WorkspaceUser, workspace: Co
   const allowedSectionIds = await getAllowedSectionIdsForWorkspace(user, workspace, roleView)
   return {
     id: { in: allowedSectionIds.length > 0 ? allowedSectionIds : ["__no_section__"] },
+  }
+}
+
+export async function buildScopedStudentWhere(user: WorkspaceUser, workspace: CourseWorkspace, roleView: WorkspaceRoleView) {
+  const allowedStudentIds = await getAllowedStudentIdsForWorkspace(user, workspace, roleView)
+  return {
+    id: { in: allowedStudentIds.length > 0 ? allowedStudentIds : ["__no_student__"] },
   }
 }
 

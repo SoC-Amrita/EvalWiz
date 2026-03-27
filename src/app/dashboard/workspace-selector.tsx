@@ -134,7 +134,9 @@ export function WorkspaceSelector({
                   <div className="text-sm text-slate-600 dark:text-slate-400">
                     <div>{formatWorkspaceContext(workspace)}</div>
                     <div className="mt-1">
-                      Sections: {workspace.sectionCodes.length > 0 ? workspace.sectionCodes.join(", ") : "No sections yet"}
+                      {workspace.isElective
+                        ? `Class: ${workspace.sectionNames[0] ?? "Elective class pending"}`
+                        : `Sections: ${workspace.sectionCodes.length > 0 ? workspace.sectionCodes.join(", ") : "No sections yet"}`}
                     </div>
                     <div className="mt-1">
                       {workspace.courseType} · {workspace.evaluationPattern}

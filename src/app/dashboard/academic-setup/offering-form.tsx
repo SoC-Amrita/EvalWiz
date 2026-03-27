@@ -61,6 +61,9 @@ type OfferingRecord = {
   classAssignments: Array<{
     sectionId: string
     facultyId: string | null
+    section?: {
+      name: string
+    }
   }>
   mentorAssignments: Array<{
     userId: string
@@ -160,9 +163,13 @@ export function OfferingFormPage({
   const toggleMentor = (userId: string, checked: boolean) => {
     setState({
       ...state,
-      mentorIds: checked
-        ? [...state.mentorIds, userId]
-        : state.mentorIds.filter((id) => id !== userId),
+      mentorIds: state.isElective
+        ? checked
+          ? [userId]
+          : []
+        : checked
+          ? [...state.mentorIds, userId]
+          : state.mentorIds.filter((id) => id !== userId),
     })
   }
 
@@ -272,7 +279,7 @@ export function OfferingFormPage({
                   className="h-4 w-4 rounded border-slate-300"
                 />
                 <span>
-                  Mark this as an elective offering. Elective rosters are uploaded manually by CSV and should not rely on roll-number section derivation from reusable class metadata.
+                  Mark this as an elective offering. Electives use one dedicated class, do not use reusable sections, and treat the selected mentor as the default faculty.
                 </span>
               </label>
             </CardContent>
@@ -286,7 +293,7 @@ export function OfferingFormPage({
             <CardContent className="space-y-4">
               {state.isElective ? (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
-                  Elective offering mode is enabled. Use manual CSV roster uploads for these classes, because mixed enrollments may span schools, departments, and standard section structures even though the subject itself is still reusable across offerings.
+                  Elective offering mode is enabled. Choose exactly one mentor here; that faculty member will automatically become the teaching owner for the elective class as well.
                 </div>
               ) : null}
               <label className="flex items-center gap-3 rounded-lg border border-slate-200 px-4 py-3 text-sm dark:border-slate-800">
@@ -305,9 +312,10 @@ export function OfferingFormPage({
                   return (
                     <label key={mentor.id} className="flex items-center gap-3 rounded-lg border border-slate-200 px-4 py-3 text-sm dark:border-slate-800">
                       <input
-                        type="checkbox"
+                        type={state.isElective ? "radio" : "checkbox"}
                         checked={checked}
                         onChange={(event) => toggleMentor(mentor.id, event.target.checked)}
+                        name={state.isElective ? "elective-mentor" : undefined}
                         className="h-4 w-4 rounded border-slate-300"
                       />
                       <span>{mentor.name ?? mentor.email ?? "Mentor"}</span>
@@ -323,25 +331,21 @@ export function OfferingFormPage({
           <Card>
             <CardHeader>
               <CardTitle>Elective Roster Flow</CardTitle>
-              <CardDescription>Elective offerings do not need reusable class selection up front.</CardDescription>
+              <CardDescription>Elective offerings use one dedicated class that is created automatically for the offering.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
-                Create the offering first, then upload the roster CSV from the Students area using <span className="font-medium">rollNo, name, sectionName</span>. Each distinct
-                <span className="font-medium"> sectionName </span>
-                will become an elective group for this offering automatically.
+                Create the offering first, then ask the teaching owner to open the elective workspace and upload a roster CSV from <span className="font-medium">Sections & Faculty</span> using only <span className="font-medium">rollNo</span>. Students from any home class can join the elective, and missing registry entries will be flagged for admin follow-up instead of being created silently.
               </div>
-              {state.selectedSectionIds.length > 0 ? (
+              {offering?.classAssignments.length ? (
                 <div className="space-y-2">
-                  <Label className="text-xs uppercase tracking-wide text-slate-500">Currently Linked Groups</Label>
+                  <Label className="text-xs uppercase tracking-wide text-slate-500">Current Elective Class</Label>
                   <div className="flex flex-wrap gap-2">
-                    {classes
-                      .filter((section) => selectedSections.has(section.id))
-                      .map((section) => (
-                        <Badge key={section.id} variant="outline">
-                          {section.name}
-                        </Badge>
-                      ))}
+                    {offering.classAssignments.map((assignment) => (
+                      <Badge key={assignment.sectionId} variant="outline">
+                        {assignment.section?.name ?? "Elective class"}
+                      </Badge>
+                    ))}
                   </div>
                 </div>
               ) : null}

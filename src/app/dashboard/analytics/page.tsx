@@ -1,6 +1,6 @@
 import { auth } from "@/auth"
 import prisma from "@/lib/db"
-import { buildScopedSectionWhere, getActiveWorkspaceState } from "@/lib/course-workspace"
+import { buildScopedSectionWhere, buildScopedStudentWhere, getActiveWorkspaceState } from "@/lib/course-workspace"
 import { redirect } from "next/navigation"
 import { AnalyticsClient } from "./client"
 
@@ -11,6 +11,7 @@ export default async function AnalyticsPage() {
 
   const { activeWorkspace, activeRoleView } = await getActiveWorkspaceState(user)
   const sectionWhere = await buildScopedSectionWhere(user, activeWorkspace, activeRoleView)
+  const studentWhere = await buildScopedStudentWhere(user, activeWorkspace, activeRoleView)
 
   const assessments = await prisma.assessment.findMany({
     where: { isActive: true, offeringId: activeWorkspace.offeringId },
@@ -31,13 +32,13 @@ export default async function AnalyticsPage() {
         _count: { marks: true },
         where: {
           assessmentId: a.id,
-          student: { section: sectionWhere }
+          student: studentWhere,
         }
       })
       
       const countMissing = await prisma.student.count({
         where: {
-          section: sectionWhere,
+          ...studentWhere,
           marks: { none: { assessmentId: a.id } }
         }
       })

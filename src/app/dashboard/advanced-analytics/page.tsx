@@ -1,5 +1,5 @@
 import { auth } from "@/auth"
-import { buildScopedSectionWhere, getActiveWorkspaceState } from "@/lib/course-workspace"
+import { buildScopedStudentWhere, getActiveWorkspaceState } from "@/lib/course-workspace"
 import prisma from "@/lib/db"
 import { redirect } from "next/navigation"
 import { AdvancedAnalyticsClient } from "./client"
@@ -50,37 +50,79 @@ export default async function AdvancedAnalyticsPage() {
   if (!user) redirect("/login")
 
   const { activeWorkspace, activeRoleView } = await getActiveWorkspaceState(user)
-  const sectionWhere = await buildScopedSectionWhere(user, activeWorkspace, activeRoleView)
+  const studentWhere = await buildScopedStudentWhere(user, activeWorkspace, activeRoleView)
 
   // Load raw marks with all context in one query
-  const marks = await prisma.mark.findMany({
-    where: {
-      student: { section: sectionWhere },
-      assessment: { offeringId: activeWorkspace.offeringId },
-    },
-    include: {
-      student: { include: { section: true } },
-      assessment: true,
-    },
-    orderBy: [
-      { student: { section: { name: "asc" } } },
-      { assessment: { displayOrder: "asc" } }
-    ]
-  })
-
-  const rawMarks: RawMark[] = marks.map(m => ({
-    studentId: m.studentId,
-    rollNo: m.student.rollNo,
-    sectionId: m.student.section.id,
-    sectionName: m.student.section.name,
-    assessmentId: m.assessmentId,
-    assessmentCode: m.assessment.code,
-    assessmentName: m.assessment.name,
-    assessmentCategory: m.assessment.category,
-    assessmentMax: m.assessment.maxMarks,
-    assessmentWeightage: m.assessment.weightage,
-    marks: m.marks,
-  }))
+  const rawMarks: RawMark[] = activeWorkspace.isElective
+    ? await prisma.courseOfferingEnrollment.findMany({
+        where: {
+          offeringId: activeWorkspace.offeringId,
+          student: studentWhere,
+        },
+        include: {
+          section: true,
+          student: {
+            include: {
+              marks: {
+                where: {
+                  assessment: { offeringId: activeWorkspace.offeringId },
+                },
+                include: {
+                  assessment: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: [
+          { section: { name: "asc" } },
+          { student: { rollNo: "asc" } },
+        ],
+      }).then((enrollments) =>
+        enrollments.flatMap((enrollment) =>
+          enrollment.student.marks.map((mark) => ({
+            studentId: enrollment.studentId,
+            rollNo: enrollment.student.rollNo,
+            sectionId: enrollment.sectionId,
+            sectionName: enrollment.section.name,
+            assessmentId: mark.assessmentId,
+            assessmentCode: mark.assessment.code,
+            assessmentName: mark.assessment.name,
+            assessmentCategory: mark.assessment.category,
+            assessmentMax: mark.assessment.maxMarks,
+            assessmentWeightage: mark.assessment.weightage,
+            marks: mark.marks,
+          }))
+        )
+      )
+    : await prisma.mark.findMany({
+        where: {
+          student: studentWhere,
+          assessment: { offeringId: activeWorkspace.offeringId },
+        },
+        include: {
+          student: { include: { section: true } },
+          assessment: true,
+        },
+        orderBy: [
+          { student: { section: { name: "asc" } } },
+          { assessment: { displayOrder: "asc" } },
+        ],
+      }).then((marks) =>
+        marks.map((mark) => ({
+          studentId: mark.studentId,
+          rollNo: mark.student.rollNo,
+          sectionId: mark.student.section.id,
+          sectionName: mark.student.section.name,
+          assessmentId: mark.assessmentId,
+          assessmentCode: mark.assessment.code,
+          assessmentName: mark.assessment.name,
+          assessmentCategory: mark.assessment.category,
+          assessmentMax: mark.assessment.maxMarks,
+          assessmentWeightage: mark.assessment.weightage,
+          marks: mark.marks,
+        }))
+      )
 
   // Unique assessments and sections (sorted)
   const assessmentMap = new Map<string, AssessmentMeta>()

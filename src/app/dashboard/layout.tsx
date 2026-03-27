@@ -29,7 +29,8 @@ export default async function DashboardLayout({
   }
 
   const { activeWorkspace, activeRoleView, isAdminConsole } = await getActiveWorkspaceState(user)
-  const canManage = activeRoleView !== "faculty"
+  const canManageAssessments = activeRoleView !== "faculty"
+  const canAccessSections = activeRoleView !== "faculty" || activeWorkspace.isElective
   const isAdmin = isAdminConsole
   const hasWorkspace = hasRealWorkspace(activeWorkspace)
   const sidebarSubtitle = isAdmin
@@ -102,13 +103,13 @@ export default async function DashboardLayout({
               <div className="mb-2 mt-6 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Simulation</div>
               <NavLink href="/dashboard/what-if" icon={GraduationCap} label="What-If Scenarios" />
 
-              {canManage && (
+              {canManageAssessments || canAccessSections ? (
                 <>
                   <div className="mb-2 mt-6 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Admin</div>
-                  <NavLink href="/dashboard/assessments" icon={Settings} label="Assessments" />
-                  <NavLink href="/dashboard/sections" icon={Users} label="Sections & Faculty" />
+                  {canManageAssessments ? <NavLink href="/dashboard/assessments" icon={Settings} label="Assessments" /> : null}
+                  {canAccessSections ? <NavLink href="/dashboard/sections" icon={Users} label="Sections & Faculty" /> : null}
                 </>
-              )}
+              ) : null}
             </>
           )}
         </nav>

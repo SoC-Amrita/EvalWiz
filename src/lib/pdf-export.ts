@@ -31,6 +31,8 @@ export const captureElementAsImage = async (
   const hadAurora = html.classList.contains("aurora")
   const hadDark = html.classList.contains("dark")
   const hadNeon = html.classList.contains("neon")
+  const hadObsidian = html.classList.contains("obsidian")
+  const hadEmber = html.classList.contains("ember")
   const previousFont = html.dataset.font
   const hadSansFont = html.classList.contains("font-style-sans")
   const hadSerifFont = html.classList.contains("font-style-serif")
@@ -45,7 +47,9 @@ export const captureElementAsImage = async (
         "forest",
         "aurora",
         "dark",
-        "neon"
+        "neon",
+        "obsidian",
+        "ember"
       )
       html.classList.add("classic")
       html.style.colorScheme = "light"
@@ -89,7 +93,9 @@ export const captureElementAsImage = async (
         "forest",
         "aurora",
         "dark",
-        "neon"
+        "neon",
+        "obsidian",
+        "ember"
       )
       if (hadLight) html.classList.add("light")
       if (hadClassic) html.classList.add("classic")
@@ -98,6 +104,8 @@ export const captureElementAsImage = async (
       if (hadAurora) html.classList.add("aurora")
       if (hadDark) html.classList.add("dark")
       if (hadNeon) html.classList.add("neon")
+      if (hadObsidian) html.classList.add("obsidian")
+      if (hadEmber) html.classList.add("ember")
       html.style.colorScheme = previousColorScheme
     }
 

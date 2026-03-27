@@ -18,7 +18,7 @@
   font-display: swap;
 }
 
-@custom-variant dark (&:is(.dark *, .neon *));
+@custom-variant dark (&:is(.dark *, .neon *, .obsidian *, .ember *));
 
 @theme inline {
   --color-background: var(--background);
@@ -710,6 +710,186 @@
   --app-accent-soft: rgba(129, 140, 248, 0.14);
 }
 
+.obsidian {
+  color-scheme: dark;
+  --theme-accent-50: #dcfce7;
+  --theme-accent-100: #bbf7d0;
+  --theme-accent-200: #86efac;
+  --theme-accent-300: #4ade80;
+  --theme-accent-400: #22c55e;
+  --theme-accent-500: #16a34a;
+  --theme-accent-600: #15803d;
+  --theme-accent-700: #166534;
+  --theme-accent-800: #14532d;
+  --theme-accent-900: #0f3a20;
+  --theme-accent-950: #07140c;
+  --background: #040605;
+  --foreground: #e5f7ec;
+  --card: #0b100d;
+  --card-foreground: #e5f7ec;
+  --popover: #0b100d;
+  --popover-foreground: #e5f7ec;
+  --primary: #22c55e;
+  --primary-foreground: #06110a;
+  --secondary: #101612;
+  --secondary-foreground: #dcfce7;
+  --muted: #111713;
+  --muted-foreground: #9bc4aa;
+  --accent: #17201a;
+  --accent-foreground: #e5f7ec;
+  --destructive: #f87171;
+  --border: #1d2a22;
+  --input: #1d2a22;
+  --ring: #22c55e;
+  --chart-1: #22c55e;
+  --chart-2: #4ade80;
+  --chart-3: #86efac;
+  --chart-4: #10b981;
+  --chart-5: #15803d;
+  --chart-6: #84cc16;
+  --chart-7: #f59e0b;
+  --chart-8: #f8fafc;
+  --metric-quiz: var(--chart-1);
+  --metric-review: var(--chart-2);
+  --metric-ca: var(--chart-3);
+  --metric-mid: var(--chart-6);
+  --metric-ca-mid: var(--chart-6);
+  --metric-end: var(--chart-5);
+  --metric-overall: var(--chart-8);
+  --chart-grid: rgba(34, 197, 94, 0.12);
+  --chart-axis: #9bc4aa;
+  --chart-tooltip-bg: rgba(4, 6, 5, 0.96);
+  --chart-tooltip-border: #1d2a22;
+  --chart-tooltip-foreground: #e5f7ec;
+  --chart-tooltip-muted: #cfe9d8;
+  --chart-cursor: rgba(34, 197, 94, 0.12);
+  --heat-empty: rgba(17, 23, 19, 0.76);
+  --heat-low: #4ade80;
+  --heat-mid: #22c55e;
+  --heat-high: #15803d;
+  --heat-hot: #86efac;
+  --correlation-strong-pos: #86efac;
+  --correlation-pos: #4ade80;
+  --correlation-soft-pos: #22c55e;
+  --correlation-faint-pos: #1d2a22;
+  --correlation-neutral: #111713;
+  --correlation-faint-neg: #3a2717;
+  --correlation-soft-neg: #f59e0b;
+  --correlation-neg: #fb7185;
+  --correlation-strong-neg: #f87171;
+  --sidebar: #090d0a;
+  --sidebar-foreground: #dcfce7;
+  --sidebar-primary: #22c55e;
+  --sidebar-primary-foreground: #06110a;
+  --sidebar-accent: #17201a;
+  --sidebar-accent-foreground: #e5f7ec;
+  --sidebar-border: #1d2a22;
+  --sidebar-ring: #22c55e;
+  --app-shell: #040605;
+  --app-shell-strong: #060907;
+  --app-shell-glow-a: rgba(34, 197, 94, 0.16);
+  --app-shell-glow-b: rgba(132, 204, 22, 0.08);
+  --app-grid-line: rgba(34, 197, 94, 0.06);
+  --app-panel: rgba(11, 16, 13, 0.88);
+  --app-panel-strong: rgba(11, 16, 13, 0.96);
+  --app-panel-border: rgba(34, 197, 94, 0.14);
+  --app-muted-surface: rgba(17, 23, 19, 0.82);
+  --app-hero-text: #e5f7ec;
+  --app-hero-subtext: #cfe9d8;
+  --app-kicker: #22c55e;
+  --app-accent-soft: rgba(34, 197, 94, 0.1);
+}
+
+.ember {
+  color-scheme: dark;
+  --theme-accent-50: #ffedd5;
+  --theme-accent-100: #fed7aa;
+  --theme-accent-200: #fdba74;
+  --theme-accent-300: #fb923c;
+  --theme-accent-400: #f97316;
+  --theme-accent-500: #ea580c;
+  --theme-accent-600: #c2410c;
+  --theme-accent-700: #9a3412;
+  --theme-accent-800: #7c2d12;
+  --theme-accent-900: #431407;
+  --theme-accent-950: #1a0905;
+  --background: #120806;
+  --foreground: #f8ebe5;
+  --card: #1a0f0b;
+  --card-foreground: #f8ebe5;
+  --popover: #1a0f0b;
+  --popover-foreground: #f8ebe5;
+  --primary: #f97316;
+  --primary-foreground: #1a0905;
+  --secondary: #24130d;
+  --secondary-foreground: #ffedd5;
+  --muted: #2a140f;
+  --muted-foreground: #d0b1a6;
+  --accent: #301710;
+  --accent-foreground: #f8ebe5;
+  --destructive: #ef4444;
+  --border: #4a2315;
+  --input: #4a2315;
+  --ring: #fb923c;
+  --chart-1: #f97316;
+  --chart-2: #fb923c;
+  --chart-3: #f59e0b;
+  --chart-4: #facc15;
+  --chart-5: #fdba74;
+  --chart-6: #ef4444;
+  --chart-7: #fb7185;
+  --chart-8: #fff7ed;
+  --metric-quiz: var(--chart-1);
+  --metric-review: var(--chart-2);
+  --metric-ca: var(--chart-3);
+  --metric-mid: var(--chart-4);
+  --metric-ca-mid: var(--chart-5);
+  --metric-end: var(--chart-6);
+  --metric-overall: var(--chart-8);
+  --chart-grid: rgba(251, 146, 60, 0.16);
+  --chart-axis: #d0b1a6;
+  --chart-tooltip-bg: rgba(18, 8, 6, 0.96);
+  --chart-tooltip-border: #4a2315;
+  --chart-tooltip-foreground: #f8ebe5;
+  --chart-tooltip-muted: #f5d7c8;
+  --chart-cursor: rgba(249, 115, 22, 0.14);
+  --heat-empty: rgba(38, 18, 12, 0.8);
+  --heat-low: #fb923c;
+  --heat-mid: #f97316;
+  --heat-high: #ea580c;
+  --heat-hot: #fdba74;
+  --correlation-strong-pos: #fdba74;
+  --correlation-pos: #f97316;
+  --correlation-soft-pos: #fb923c;
+  --correlation-faint-pos: #4a2315;
+  --correlation-neutral: #2a140f;
+  --correlation-faint-neg: #3a2b11;
+  --correlation-soft-neg: #facc15;
+  --correlation-neg: #f59e0b;
+  --correlation-strong-neg: #ef4444;
+  --sidebar: #160c09;
+  --sidebar-foreground: #ffedd5;
+  --sidebar-primary: #f97316;
+  --sidebar-primary-foreground: #1a0905;
+  --sidebar-accent: #301710;
+  --sidebar-accent-foreground: #f8ebe5;
+  --sidebar-border: #4a2315;
+  --sidebar-ring: #fb923c;
+  --app-shell: #120806;
+  --app-shell-strong: #1a0905;
+  --app-shell-glow-a: rgba(249, 115, 22, 0.2);
+  --app-shell-glow-b: rgba(245, 158, 11, 0.12);
+  --app-grid-line: rgba(249, 115, 22, 0.08);
+  --app-panel: rgba(26, 15, 11, 0.88);
+  --app-panel-strong: rgba(26, 15, 11, 0.96);
+  --app-panel-border: rgba(249, 115, 22, 0.16);
+  --app-muted-surface: rgba(42, 20, 15, 0.82);
+  --app-hero-text: #f8ebe5;
+  --app-hero-subtext: #f5d7c8;
+  --app-kicker: #fb923c;
+  --app-accent-soft: rgba(249, 115, 22, 0.14);
+}
+
 html.font-style-sans {
   --font-sans: var(--font-ui-sans);
 }
@@ -735,6 +915,11 @@ html.font-style-serif {
   }
   html {
     @apply font-sans;
+  }
+  html.theme-switching *,
+  html.theme-switching *::before,
+  html.theme-switching *::after {
+    transition: none !important;
   }
   ::selection {
     background: color-mix(in srgb, var(--primary) 28%, transparent);
@@ -928,85 +1113,85 @@ html.font-style-serif {
     color: var(--theme-accent-400) !important;
   }
 
-  .dark .dark\:bg-indigo-900\/10 {
+  :is(.dark, .neon, .obsidian, .ember) .dark\:bg-indigo-900\/10 {
     background-color: color-mix(in srgb, var(--theme-accent-900) 18%, transparent) !important;
   }
 
-  .dark .dark\:bg-indigo-900\/20 {
+  :is(.dark, .neon, .obsidian, .ember) .dark\:bg-indigo-900\/20 {
     background-color: color-mix(in srgb, var(--theme-accent-900) 24%, transparent) !important;
   }
 
-  .dark .dark\:bg-indigo-900\/40 {
+  :is(.dark, .neon, .obsidian, .ember) .dark\:bg-indigo-900\/40 {
     background-color: color-mix(in srgb, var(--theme-accent-900) 40%, transparent) !important;
   }
 
-  .dark .dark\:bg-indigo-950\/40,
-  .dark .dark\:bg-indigo-950\/50 {
+  :is(.dark, .neon, .obsidian, .ember) .dark\:bg-indigo-950\/40,
+  :is(.dark, .neon, .obsidian, .ember) .dark\:bg-indigo-950\/50 {
     background-color: color-mix(in srgb, var(--theme-accent-950) 48%, transparent) !important;
   }
 
-  .dark .dark\:from-indigo-950 {
+  :is(.dark, .neon, .obsidian, .ember) .dark\:from-indigo-950 {
     --tw-gradient-from: var(--theme-accent-950) var(--tw-gradient-from-position) !important;
     --tw-gradient-to: color-mix(in srgb, var(--theme-accent-950) 0%, transparent) var(--tw-gradient-to-position) !important;
     --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
   }
 
-  .dark .dark\:border-indigo-900 {
+  :is(.dark, .neon, .obsidian, .ember) .dark\:border-indigo-900 {
     border-color: color-mix(in srgb, var(--theme-accent-900) 72%, transparent) !important;
   }
 
-  .dark .dark\:ring-indigo-900\/40 {
+  :is(.dark, .neon, .obsidian, .ember) .dark\:ring-indigo-900\/40 {
     --tw-ring-color: rgba(109, 16, 45, 0.4) !important;
   }
 
-  .dark .dark\:text-indigo-200 {
+  :is(.dark, .neon, .obsidian, .ember) .dark\:text-indigo-200 {
     color: #f3dbe4 !important;
   }
 
-  .dark .dark\:text-indigo-300 {
+  :is(.dark, .neon, .obsidian, .ember) .dark\:text-indigo-300 {
     color: #e8b4c7 !important;
   }
 
-  .dark .dark\:text-indigo-400 {
+  :is(.dark, .neon, .obsidian, .ember) .dark\:text-indigo-400 {
     color: var(--theme-accent-400) !important;
   }
 
-  .dark .dark\:text-indigo-100 {
+  :is(.dark, .neon, .obsidian, .ember) .dark\:text-indigo-100 {
     color: color-mix(in srgb, white 88%, var(--theme-accent-50)) !important;
   }
 
-  .dark .dark\:bg-indigo-900 {
+  :is(.dark, .neon, .obsidian, .ember) .dark\:bg-indigo-900 {
     background-color: var(--theme-accent-900) !important;
   }
 
-  .dark .dark\:hover\:bg-indigo-900\/60:hover {
+  :is(.dark, .neon, .obsidian, .ember) .dark\:hover\:bg-indigo-900\/60:hover {
     background-color: color-mix(in srgb, var(--theme-accent-900) 60%, transparent) !important;
   }
 
-  .dark .dark\:bg-slate-800,
-  .dark .dark\:bg-slate-900,
-  .dark .dark\:bg-slate-900\/30,
-  .dark .dark\:bg-slate-900\/40,
-  .dark .dark\:bg-slate-900\/50,
-  .dark .dark\:bg-slate-950\/40,
-  .dark .dark\:bg-slate-950\/50 {
+  :is(.dark, .neon, .obsidian, .ember) .dark\:bg-slate-800,
+  :is(.dark, .neon, .obsidian, .ember) .dark\:bg-slate-900,
+  :is(.dark, .neon, .obsidian, .ember) .dark\:bg-slate-900\/30,
+  :is(.dark, .neon, .obsidian, .ember) .dark\:bg-slate-900\/40,
+  :is(.dark, .neon, .obsidian, .ember) .dark\:bg-slate-900\/50,
+  :is(.dark, .neon, .obsidian, .ember) .dark\:bg-slate-950\/40,
+  :is(.dark, .neon, .obsidian, .ember) .dark\:bg-slate-950\/50 {
     background-color: var(--card) !important;
   }
 
-  .dark .dark\:border-slate-700,
-  .dark .dark\:border-slate-800 {
+  :is(.dark, .neon, .obsidian, .ember) .dark\:border-slate-700,
+  :is(.dark, .neon, .obsidian, .ember) .dark\:border-slate-800 {
     border-color: var(--border) !important;
   }
 
-  .dark .dark\:text-slate-100,
-  .dark .dark\:text-slate-200,
-  .dark .dark\:text-slate-300,
-  .dark .dark\:text-slate-400 {
+  :is(.dark, .neon, .obsidian, .ember) .dark\:text-slate-100,
+  :is(.dark, .neon, .obsidian, .ember) .dark\:text-slate-200,
+  :is(.dark, .neon, .obsidian, .ember) .dark\:text-slate-300,
+  :is(.dark, .neon, .obsidian, .ember) .dark\:text-slate-400 {
     color: var(--muted-foreground) !important;
   }
 
-  .dark .dark\:hover\:bg-slate-800:hover,
-  .dark .dark\:hover\:bg-slate-900:hover {
+  :is(.dark, .neon, .obsidian, .ember) .dark\:hover\:bg-slate-800:hover,
+  :is(.dark, .neon, .obsidian, .ember) .dark\:hover\:bg-slate-900:hover {
     background-color: var(--accent) !important;
   }
 

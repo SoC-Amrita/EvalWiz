@@ -30,7 +30,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
 import { MoreHorizontal, Plus, Power, Trash2 } from "lucide-react"
 import { createAssessment, toggleAssessmentStatus, deleteAssessment } from "./actions"
 import { toast } from "sonner"
@@ -40,6 +40,17 @@ import { classifyAssessment } from "@/lib/assessment-structure"
 export function AssessmentClient({ data }: { data: Assessment[] }) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState("CA_QUIZ")
+
+  const categoryOptions = [
+    { value: "CA_QUIZ", label: "CA / Quiz" },
+    { value: "CA_REVIEW", label: "CA / Review" },
+    { value: "MID_TERM", label: "Mid Term" },
+    { value: "END_SEMESTER", label: "End Semester" },
+  ] as const
+
+  const getCategoryLabel = (value: string) =>
+    categoryOptions.find((option) => option.value === value)?.label ?? "Select type"
 
   const getStructuredCategoryLabel = (assessment: Assessment) => {
     const classification = classifyAssessment(assessment)
@@ -59,7 +70,7 @@ export function AssessmentClient({ data }: { data: Assessment[] }) {
       await createAssessment({
         name: formData.get("name") as string,
         code: formData.get("code") as string,
-        category: formData.get("category") as string,
+        category: selectedCategory,
         maxMarks: Number(formData.get("maxMarks")),
         weightage: Number(formData.get("weightage")),
         displayOrder: Number(formData.get("displayOrder")),
@@ -68,6 +79,7 @@ export function AssessmentClient({ data }: { data: Assessment[] }) {
       })
       toast.success("Assessment component created successfully")
       setOpen(false)
+      setSelectedCategory("CA_QUIZ")
     } catch {
       toast.error("Failed to create assessment component. Code might be duplicate.")
     } finally {
@@ -125,15 +137,16 @@ export function AssessmentClient({ data }: { data: Assessment[] }) {
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="category" className="text-right">Category</Label>
                   <div className="col-span-3">
-                    <Select name="category" defaultValue="CA_QUIZ">
+                    <Select value={selectedCategory} onValueChange={(value) => setSelectedCategory(value ?? "CA_QUIZ")}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select type" />
+                        {getCategoryLabel(selectedCategory)}
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="CA_QUIZ">CA / Quiz</SelectItem>
-                        <SelectItem value="CA_REVIEW">CA / Review</SelectItem>
-                        <SelectItem value="MID_TERM">Mid Term</SelectItem>
-                        <SelectItem value="END_SEMESTER">End Semester</SelectItem>
+                        {categoryOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>

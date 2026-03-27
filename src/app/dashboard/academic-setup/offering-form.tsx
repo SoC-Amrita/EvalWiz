@@ -142,6 +142,19 @@ export function OfferingFormPage({
     offering ? offeringToState(offering) : emptyOfferingState(subjects)
   )
   const selectedSections = new Set(state.selectedSectionIds)
+  const selectedSubject = subjects.find((subject) => subject.id === state.subjectId)
+  const selectedSubjectLabel = selectedSubject
+    ? `${selectedSubject.code} · ${selectedSubject.title}`
+    : "Select a subject"
+
+  const getFacultyLabel = (facultyId: string) => {
+    if (!facultyId || facultyId === "unassigned") {
+      return "Unassigned"
+    }
+
+    const faculty = facultyMembers.find((member) => member.id === facultyId)
+    return faculty?.user.name ?? faculty?.user.email ?? "Assigned faculty"
+  }
 
   const toggleSection = (sectionId: string, checked: boolean) => {
     const nextSelected = checked
@@ -236,7 +249,7 @@ export function OfferingFormPage({
                   onValueChange={(value) => setState({ ...state, subjectId: value ?? "" })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a subject" />
+                    {state.subjectId ? selectedSubjectLabel : <SelectValue placeholder="Select a subject" />}
                   </SelectTrigger>
                   <SelectContent>
                     {subjects.map((subject) => (
@@ -399,7 +412,7 @@ export function OfferingFormPage({
                           }
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select faculty" />
+                            {getFacultyLabel(state.facultyBySectionId[section.id] ?? "unassigned")}
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="unassigned">Unassigned</SelectItem>

@@ -743,48 +743,6 @@ html.font-style-serif {
 
 @layer components {
   .login-amrita {
-    --theme-accent-50: var(--brand-50);
-    --theme-accent-100: var(--brand-100);
-    --theme-accent-200: var(--brand-200);
-    --theme-accent-300: var(--brand-300);
-    --theme-accent-400: var(--brand-400);
-    --theme-accent-500: var(--brand-500);
-    --theme-accent-600: var(--brand-600);
-    --theme-accent-700: var(--brand-700);
-    --theme-accent-800: var(--brand-800);
-    --theme-accent-900: var(--brand-900);
-    --theme-accent-950: var(--brand-950);
-    color-scheme: light;
-    --background: #ffffff;
-    --foreground: #0f172a;
-    --card: #ffffff;
-    --card-foreground: #0f172a;
-    --popover: #ffffff;
-    --popover-foreground: #0f172a;
-    --primary: var(--brand-600);
-    --primary-foreground: #ffffff;
-    --secondary: #f7eef2;
-    --secondary-foreground: #1e293b;
-    --muted: #fbf4f6;
-    --muted-foreground: #64748b;
-    --accent: #f5e7ed;
-    --accent-foreground: #1e293b;
-    --border: #e7d2db;
-    --input: #e7d2db;
-    --ring: #d9a1b8;
-    --app-shell: #fbf1f5;
-    --app-shell-strong: #ffffff;
-    --app-shell-glow-a: rgba(176, 26, 72, 0.18);
-    --app-shell-glow-b: rgba(143, 21, 59, 0.12);
-    --app-grid-line: rgba(176, 26, 72, 0.08);
-    --app-panel: rgba(255, 255, 255, 0.8);
-    --app-panel-strong: #ffffff;
-    --app-panel-border: rgba(176, 26, 72, 0.16);
-    --app-muted-surface: rgba(251, 244, 246, 0.92);
-    --app-hero-text: #0f172a;
-    --app-hero-subtext: #475569;
-    --app-kicker: var(--brand-700);
-    --app-accent-soft: #f9e7ed;
     font-family: var(--font-ui-serif);
   }
 

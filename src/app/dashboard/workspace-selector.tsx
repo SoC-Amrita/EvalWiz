@@ -37,6 +37,11 @@ function roleLabel(roleView: WorkspaceRoleView) {
   }
 }
 
+function formatWorkspaceCycle(workspace: CourseWorkspace) {
+  const parts = [workspace.academicYear, workspace.term].filter(Boolean)
+  return parts.join(" · ")
+}
+
 export function WorkspaceSelector({
   workspaces,
   activeCourseKey,
@@ -93,7 +98,7 @@ export function WorkspaceSelector({
                   </h3>
                   {isSelectableWorkspace ? (
                     <p className="text-sm text-slate-500">
-                      {workspace.program} · {workspace.term} · {workspace.academicYear}
+                      {formatWorkspaceCycle(workspace)}
                     </p>
                   ) : (
                     <p className="text-sm text-slate-500">

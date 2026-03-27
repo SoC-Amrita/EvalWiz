@@ -1,0 +1,161 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  title     String   @default("Dr.")
+  firstName String   @default("")
+  lastName  String   @default("")
+  name      String
+  password  String   // Hashed
+  role      String   @default("FACULTY") // Base account access only; mentoring is assigned per course offering.
+  isAdmin   Boolean  @default(false)
+  faculty   Faculty?
+  mentorAssignments CourseOfferingMentor[]
+  createdAt DateTime @default(now())
+}
+
+model Faculty {
+  id        String    @id @default(cuid())
+  userId    String    @unique
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  sections  Section[]
+  offeringAssignments CourseOfferingClass[]
+}
+
+model Subject {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  title       String
+  program     String
+  isActive    Boolean  @default(true)
+  offerings   CourseOffering[]
+  createdAt   DateTime @default(now())
+}
+
+model Section {
+  id                String    @id @default(cuid())
+  name              String    @unique // Admin-defined section/group label; not restricted to A-Z.
+  facultyId         String?
+  faculty           Faculty?  @relation(fields: [facultyId], references: [id], onDelete: SetNull)
+  students          Student[]
+  rollPrefix        String?
+  schoolCode        String?
+  levelCode         String?
+  programDurationYears Int?
+  programCode       String?
+  admissionYear     String?
+  expectedGraduationYear String?
+  sectionCode       String?
+  subjectCode       String? // legacy backfill / compatibility only
+  subjectTitle      String? // legacy backfill / compatibility only
+  program           String?
+  term              String? // legacy backfill / compatibility only
+  academicYear      String? // legacy backfill / compatibility only
+  semester          String?
+  year              String?
+  evaluationPattern String? // legacy backfill / compatibility only
+  courseType        String? // legacy backfill / compatibility only
+  isActive          Boolean  @default(true)
+  offeringAssignments CourseOfferingClass[]
+
+  // TODO: Once all reads are migrated, remove the legacy course metadata fields
+  // above and treat Section exclusively as a reusable class roster snapshot.
+}
+
+model Student {
+  id        String    @id @default(cuid())
+  rollNo    String    @unique
+  name      String
+  sectionId String
+  section   Section   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  marks     Mark[]
+
+  // TODO: Add a canonical cross-offering student identity layer so mixed elective
+  // enrollments and regular class enrollments can be analyzed together later.
+}
+
+model Assessment {
+  id           String   @id @default(cuid())
+  offeringId    String?
+  offering      CourseOffering? @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+  name         String
+  code         String
+  description  String?
+  maxMarks     Float
+  weightage    Float    @default(0)
+  category     String   // e.g., "CA_QUIZ", "CA_REVIEW", "MID_TERM", "END_SEMESTER"
+  isActive     Boolean  @default(true)
+  includeInAgg Boolean  @default(true)
+  displayOrder Int      @default(0)
+  marks        Mark[]
+
+  @@unique([offeringId, code])
+}
+
+model Mark {
+  id           String     @id @default(cuid())
+  studentId    String
+  assessmentId String
+  marks        Float
+  student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, assessmentId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  userId    String
+  details   String   // JSON string
+  createdAt DateTime @default(now())
+}
+
+model CourseOffering {
+  id                String    @id @default(cuid())
+  subjectId         String
+  subject           Subject   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  term              String
+  academicYear      String
+  semester          String
+  year              String
+  evaluationPattern String
+  courseType        String
+  isElective        Boolean   @default(false)
+  isActive          Boolean   @default(true)
+  assessments       Assessment[]
+  classAssignments  CourseOfferingClass[]
+  mentorAssignments CourseOfferingMentor[]
+  createdAt         DateTime  @default(now())
+}
+
+model CourseOfferingClass {
+  id         String         @id @default(cuid())
+  offeringId String
+  sectionId  String
+  facultyId  String?
+  offering   CourseOffering @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+  section    Section        @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  faculty    Faculty?       @relation(fields: [facultyId], references: [id], onDelete: SetNull)
+
+  @@unique([offeringId, sectionId])
+}
+
+model CourseOfferingMentor {
+  id         String         @id @default(cuid())
+  offeringId String
+  userId     String
+  offering   CourseOffering @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([offeringId, userId])
+}

@@ -42,6 +42,17 @@ function formatWorkspaceCycle(workspace: CourseWorkspace) {
   return parts.join(" · ")
 }
 
+function formatWorkspaceContext(workspace: CourseWorkspace) {
+  const parts = [
+    workspace.program,
+    workspace.semester ? `${workspace.semester} Semester` : "",
+    workspace.year ? `Year ${workspace.year}` : "",
+    workspace.batchLabel,
+  ].filter(Boolean)
+
+  return parts.join(" · ")
+}
+
 export function WorkspaceSelector({
   workspaces,
   activeCourseKey,
@@ -121,9 +132,9 @@ export function WorkspaceSelector({
               {isSelectableWorkspace ? (
                 <>
                   <div className="text-sm text-slate-600 dark:text-slate-400">
-                    <div>{workspace.semester} Semester · Year {workspace.year}</div>
+                    <div>{formatWorkspaceContext(workspace)}</div>
                     <div className="mt-1">
-                      Sections: {workspace.sectionNames.length > 0 ? workspace.sectionNames.join(", ") : "No sections yet"}
+                      Sections: {workspace.sectionCodes.length > 0 ? workspace.sectionCodes.join(", ") : "No sections yet"}
                     </div>
                     <div className="mt-1">
                       {workspace.courseType} · {workspace.evaluationPattern}

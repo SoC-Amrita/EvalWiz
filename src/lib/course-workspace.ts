@@ -1,6 +1,7 @@
 import { cookies } from "next/headers"
 
 import prisma from "@/lib/db"
+import { inferSectionCodeFromLabel } from "@/lib/roll-number"
 import { isAdminRole } from "@/lib/user-roles"
 
 export type WorkspaceRoleView = "administrator" | "mentor" | "faculty"
@@ -28,6 +29,8 @@ export type CourseWorkspace = {
   isActive: boolean
   sectionIds: string[]
   sectionNames: string[]
+  sectionCodes: string[]
+  batchLabel: string
   availableRoleViews: WorkspaceRoleView[]
 }
 
@@ -44,6 +47,12 @@ function addRoleView(workspace: CourseWorkspace, roleView: WorkspaceRoleView) {
 
 function buildWorkspaceKey(offeringId: string) {
   return offeringId
+}
+
+function buildBatchLabel(batchYears: string[]) {
+  if (batchYears.length === 0) return ""
+  if (batchYears.length === 1) return `${batchYears[0]} Batch`
+  return `${batchYears.join(" / ")} Batches`
 }
 
 function createWorkspaceFromOffering(offering: {
@@ -66,9 +75,22 @@ function createWorkspaceFromOffering(offering: {
     section: {
       id: string
       name: string
+      admissionYear: string | null
+      sectionCode: string | null
     }
   }>
 }): CourseWorkspace {
+  const sectionCodes = [...new Set(
+    offering.classAssignments
+      .map((assignment) => assignment.section.sectionCode ?? inferSectionCodeFromLabel(assignment.section.name))
+      .filter((value): value is string => Boolean(value))
+  )].sort((left, right) => left.localeCompare(right))
+  const batchYears = [...new Set(
+    offering.classAssignments
+      .map((assignment) => assignment.section.admissionYear?.trim() ?? "")
+      .filter(Boolean)
+  )].sort((left, right) => right.localeCompare(left))
+
   return {
     key: buildWorkspaceKey(offering.id),
     offeringId: offering.id,
@@ -86,6 +108,8 @@ function createWorkspaceFromOffering(offering: {
     isActive: offering.isActive,
     sectionIds: offering.classAssignments.map((assignment) => assignment.section.id),
     sectionNames: offering.classAssignments.map((assignment) => assignment.section.name),
+    sectionCodes,
+    batchLabel: buildBatchLabel(batchYears),
     availableRoleViews: [],
   }
 }
@@ -115,6 +139,8 @@ function buildFallbackWorkspace(): CourseWorkspace {
     isActive: false,
     sectionIds: [],
     sectionNames: [],
+    sectionCodes: [],
+    batchLabel: "",
     availableRoleViews: [],
   }
 }

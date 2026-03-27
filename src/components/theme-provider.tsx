@@ -17,6 +17,7 @@ import {
   isPaletteTheme,
   PALETTE_STORAGE_KEY,
   PALETTE_THEMES,
+  THEME_SWITCHING_CLASS,
   type PaletteTheme,
 } from "@/lib/palette-theme"
 
@@ -29,9 +30,15 @@ const ThemeContext = createContext<ThemeContextValue | null>(null)
 
 export function applyThemeClass(theme: PaletteTheme) {
   const root = document.documentElement
+  root.classList.add(THEME_SWITCHING_CLASS)
   root.classList.remove(...PALETTE_THEMES)
   root.classList.add(theme)
   root.style.colorScheme = isDarkPaletteTheme(theme) ? "dark" : "light"
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      root.classList.remove(THEME_SWITCHING_CLASS)
+    })
+  })
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

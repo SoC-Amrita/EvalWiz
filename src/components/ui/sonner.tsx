@@ -3,10 +3,11 @@
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
 import { useAppTheme } from "@/components/theme-provider"
+import { isDarkPaletteTheme } from "@/lib/palette-theme"
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme } = useAppTheme()
-  const sonnerTheme = theme === "dark" || theme === "neon" ? "dark" : "light"
+  const sonnerTheme = isDarkPaletteTheme(theme) ? "dark" : "light"
 
   return (
     <Sonner

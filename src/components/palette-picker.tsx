@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { MoonStar, Palette, Sparkles, SunMedium, Waves, Trees } from "lucide-react"
+import { Flame, MoonStar, Palette, Sparkles, SunMedium, Waves, Trees } from "lucide-react"
 
 import { useAppTheme } from "@/components/theme-provider"
 import { Button } from "@/components/ui/button"
@@ -101,6 +101,28 @@ const PALETTES: Array<{
     text: "#f8fafc",
     mutedText: "#94a3b8",
     accent: "#818cf8",
+  },
+  {
+    value: "obsidian",
+    label: "Obsidian Grove",
+    icon: MoonStar,
+    previewStyle: "linear-gradient(135deg, #020403 0%, #0f1712 52%, #22c55e 100%)",
+    surface: "#050706",
+    border: "#1d2a22",
+    text: "#e5f7ec",
+    mutedText: "#9bc4aa",
+    accent: "#22c55e",
+  },
+  {
+    value: "ember",
+    label: "Ember Noir",
+    icon: Flame,
+    previewStyle: "linear-gradient(135deg, #140a08 0%, #3f1d13 52%, #f97316 100%)",
+    surface: "#120a08",
+    border: "#4a2315",
+    text: "#f8ebe5",
+    mutedText: "#d0b1a6",
+    accent: "#f97316",
   },
 ]
 

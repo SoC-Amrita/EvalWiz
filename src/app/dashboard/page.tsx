@@ -15,6 +15,10 @@ type AuditLogDetails = {
   userName?: string
 }
 
+function formatWorkspaceCycle(term: string, academicYear: string) {
+  return [academicYear, term].filter(Boolean).join(" · ")
+}
+
 export default async function DashboardOverview() {
   const session = await auth()
   const user = session?.user
@@ -120,10 +124,10 @@ export default async function DashboardOverview() {
         {user.isAdmin ? <AdminModePrompt open={needsAdminModeChoice} /> : null}
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-            Workspace Landing
+            Welcome Back
           </h1>
           <p className="text-slate-500">
-            No active offering is available for this account yet. Once an offering is assigned or activated, it will appear here for explicit selection.
+            Your course spaces will appear here as soon as an active offering is assigned to you. When one becomes available, you can step into it deliberately and work in the right role view.
           </p>
         </div>
 
@@ -185,10 +189,10 @@ export default async function DashboardOverview() {
       {user.isAdmin ? <AdminModePrompt open={needsAdminModeChoice} /> : null}
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-          Workspace Landing
+          Welcome Back
         </h1>
         <p className="text-slate-500">
-          Pick the course and role view you want to work in, then continue with the filtered dashboard for that workspace.
+          Choose the course and role view you want to step into today. Once you select one, the dashboard will narrow itself to that workspace and keep the rest out of your way.
         </p>
       </div>
 
@@ -203,7 +207,7 @@ export default async function DashboardOverview() {
           {activeWorkspace.subjectCode} · {activeWorkspace.subjectTitle}
         </h2>
         <p className="text-slate-500">
-          {getRoleViewLabel(activeRoleView)} view for {activeWorkspace.program} · {activeWorkspace.term} · {activeWorkspace.academicYear}
+          {getRoleViewLabel(activeRoleView)} view for {formatWorkspaceCycle(activeWorkspace.term, activeWorkspace.academicYear)} · Semester {activeWorkspace.semester} · Year {activeWorkspace.year}
         </p>
       </div>
 

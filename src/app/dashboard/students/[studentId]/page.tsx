@@ -1,8 +1,12 @@
 import { auth } from "@/auth"
 import prisma from "@/lib/db"
+import { getActiveWorkspaceState } from "@/lib/course-workspace"
+import { requireAllowedSectionAccess, requireRealWorkspace } from "@/lib/workspace-guards"
+import { formatWorkspaceFullLabel } from "@/lib/workspace-labels"
 import { redirect } from "next/navigation"
 
 import { StudentRecordClient } from "../record-client"
+import { WorkspaceStudentRecordClient } from "../workspace-record-client"
 
 export default async function StudentRecordPage({
   params,
@@ -14,11 +18,96 @@ export default async function StudentRecordPage({
   if (!user) {
     redirect("/login")
   }
-  if (!user.isAdmin) {
-    redirect("/dashboard")
-  }
 
   const { studentId } = await params
+  const { activeRoleView } = await getActiveWorkspaceState(user)
+
+  if (!user.isAdmin || activeRoleView !== "administrator") {
+    const { activeWorkspace, activeRoleView: scopedRoleView, allowedSectionIds } = await requireAllowedSectionAccess()
+    requireRealWorkspace(activeWorkspace)
+
+    const allowedSectionIdList = [...allowedSectionIds]
+    const [student, assessments] = await Promise.all([
+      activeWorkspace.isElective
+        ? prisma.courseOfferingEnrollment.findFirst({
+            where: {
+              offeringId: activeWorkspace.offeringId,
+              studentId,
+              sectionId: { in: allowedSectionIdList.length > 0 ? allowedSectionIdList : ["__no_section__"] },
+            },
+            include: {
+              student: {
+                include: {
+                  section: true,
+                  marks: {
+                    where: {
+                      assessment: { offeringId: activeWorkspace.offeringId },
+                    },
+                    include: {
+                      assessment: true,
+                    },
+                  },
+                },
+              },
+            },
+          }).then((enrollment) => enrollment?.student ?? null)
+        : prisma.student.findFirst({
+            where: {
+              id: studentId,
+              sectionId: { in: allowedSectionIdList.length > 0 ? allowedSectionIdList : ["__no_section__"] },
+            },
+            include: {
+              section: true,
+              marks: {
+                where: {
+                  assessment: { offeringId: activeWorkspace.offeringId },
+                },
+                include: {
+                  assessment: true,
+                },
+              },
+            },
+          }),
+      prisma.assessment.findMany({
+        where: {
+          offeringId: activeWorkspace.offeringId,
+          isActive: true,
+        },
+        orderBy: { displayOrder: "asc" },
+      }),
+    ])
+
+    if (!student) {
+      redirect("/dashboard/students")
+    }
+
+    const markByAssessmentId = new Map(student.marks.map((mark) => [mark.assessmentId, mark]))
+
+    return (
+      <WorkspaceStudentRecordClient
+        student={{
+          id: student.id,
+          rollNo: student.rollNo,
+          name: student.name,
+          sectionName: student.section.name,
+        }}
+        roleView={scopedRoleView}
+        workspaceLabel={formatWorkspaceFullLabel(activeWorkspace)}
+        assessments={assessments.map((assessment) => {
+          const existingMark = markByAssessmentId.get(assessment.id)
+          return {
+            assessmentId: assessment.id,
+            assessmentName: assessment.name,
+            assessmentCode: assessment.code,
+            maxMarks: assessment.maxMarks,
+            weightage: assessment.weightage,
+            markId: existingMark?.id ?? null,
+            marks: existingMark?.marks ?? null,
+          }
+        })}
+      />
+    )
+  }
 
   const [student, sections] = await Promise.all([
     prisma.student.findUnique({

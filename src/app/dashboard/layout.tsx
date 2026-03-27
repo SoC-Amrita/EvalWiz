@@ -97,6 +97,7 @@ export default async function DashboardLayout({
           ) : (
             <>
               <NavLink href="/dashboard/analytics" icon={BarChart} label="Course Analytics" />
+              <NavLink href="/dashboard/students" icon={Users} label="Students" />
               <NavLink href="/dashboard/reports" icon={FileSpreadsheet} label="Section Reports" />
               <NavLink href="/dashboard/advanced-analytics" icon={BarChart} label="Advanced Analytics" />
               <NavLink href="/dashboard/marks" icon={Users} label="Marks Entry" />

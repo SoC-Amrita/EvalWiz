@@ -1,6 +1,7 @@
 import { auth } from "@/auth"
 import prisma from "@/lib/db"
 import { buildScopedSectionWhere, getActiveWorkspaceState } from "@/lib/course-workspace"
+import { formatWorkspaceFullLabel } from "@/lib/workspace-labels"
 import { redirect } from "next/navigation"
 import { WhatIfClient } from "./client"
 
@@ -29,7 +30,7 @@ export default async function WhatIfPage() {
           What-If Simulation Engine
         </h1>
         <p className="text-slate-500">
-          Simulate scaling, capping, and bonus marks for {activeWorkspace.subjectCode} without changing the stored records.
+          {formatWorkspaceFullLabel(activeWorkspace)}
         </p>
       </div>
 

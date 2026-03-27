@@ -348,7 +348,7 @@ export function OfferingFormPage({
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
-                Create the offering first, then ask the teaching owner to open the elective workspace and upload a roster CSV from <span className="font-medium">Sections & Faculty</span> using only <span className="font-medium">rollNo</span>. Students from any home class can join the elective, and missing registry entries will be flagged for admin follow-up instead of being created silently.
+                Create the offering first, then ask the teaching owner to open the elective workspace and upload a roster CSV from <span className="font-medium">Section Allocation</span> using only <span className="font-medium">rollNo</span>. Students from any home class can join the elective, and missing registry entries will be flagged for admin follow-up instead of being created silently.
               </div>
               {offering?.classAssignments.length ? (
                 <div className="space-y-2">

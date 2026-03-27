@@ -1,6 +1,7 @@
 import { auth } from "@/auth"
 import { buildScopedSectionWhere, getActiveWorkspaceState } from "@/lib/course-workspace"
 import prisma from "@/lib/db"
+import { formatCompactSectionName, formatWorkspaceFullLabel } from "@/lib/workspace-labels"
 import { redirect } from "next/navigation"
 import { SectionsClient } from "./client"
 import { canManageUsers } from "@/lib/user-roles"
@@ -73,18 +74,21 @@ export default async function SectionsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-          {activeWorkspace.isElective ? "Elective Class & Roster" : "Sections & Faculty"}
+          {activeWorkspace.isElective ? "Elective Class & Roster" : "Section Allocation"}
         </h1>
         <p className="text-slate-500">
           {activeWorkspace.isElective
-            ? `Review the single elective class attached to ${activeWorkspace.subjectCode} and manage its roster. The mentor is the default faculty for this offering.`
-            : `Review the reusable class roster attached to ${activeWorkspace.subjectCode} and set faculty ownership for this offering.`}
+            ? `Manage the single elective class and roster for ${formatWorkspaceFullLabel(activeWorkspace)}. The mentor remains the default faculty for this offering.`
+            : `Assign section coordinators for ${formatWorkspaceFullLabel(activeWorkspace)}.`}
         </p>
       </div>
       <SectionsClient
         sections={sections.map((assignment) => ({
           id: assignment.section.id,
           name: assignment.section.name,
+          compactName: activeWorkspace.isElective
+            ? assignment.section.name
+            : formatCompactSectionName(assignment.section.name, assignment.section.sectionCode),
           facultyId: assignment.facultyId,
           _count: {
             students: activeWorkspace.isElective
@@ -94,7 +98,7 @@ export default async function SectionsPage() {
         }))}
         facultyMembers={facultyMembers}
         canManageUsers={isAdmin}
-        workspaceLabel={`${activeWorkspace.subjectCode} · ${activeWorkspace.subjectTitle}`}
+        workspaceLabel={formatWorkspaceFullLabel(activeWorkspace)}
         isElective={activeWorkspace.isElective}
       />
     </div>

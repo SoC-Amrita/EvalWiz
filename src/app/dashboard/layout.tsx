@@ -4,6 +4,7 @@ import Link from "next/link"
 import type { ComponentType } from "react"
 import { APP_INFO } from "@/lib/app-info"
 import { getActiveWorkspaceState, getRoleViewLabel, hasRealWorkspace } from "@/lib/course-workspace"
+import { formatWorkspaceFullLabel, formatWorkspaceIdentity } from "@/lib/workspace-labels"
 import { AdminModeSwitchButton } from "./admin-mode-switch-button"
 import { changeOwnPassword, signOutToLogin } from "./account-actions"
 import { UserMenu } from "./user-menu"
@@ -36,12 +37,12 @@ export default async function DashboardLayout({
   const sidebarSubtitle = isAdmin
     ? "Administrator Console"
     : hasWorkspace
-      ? `${activeWorkspace.subjectCode} · ${activeWorkspace.subjectTitle}`
+      ? formatWorkspaceIdentity(activeWorkspace)
       : "Choose an active offering to unlock course tools"
   const headerLabel = isAdmin
     ? "Administrator View"
     : hasWorkspace
-      ? `${activeWorkspace.program} · ${activeWorkspace.term}`
+      ? formatWorkspaceFullLabel(activeWorkspace)
       : "No Workspace Selected"
 
   return (
@@ -107,7 +108,7 @@ export default async function DashboardLayout({
                 <>
                   <div className="mb-2 mt-6 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Admin</div>
                   {canManageAssessments ? <NavLink href="/dashboard/assessments" icon={Settings} label="Assessments" /> : null}
-                  {canAccessSections ? <NavLink href="/dashboard/sections" icon={Users} label="Sections & Faculty" /> : null}
+                  {canAccessSections ? <NavLink href="/dashboard/sections" icon={Users} label="Section Allocation" /> : null}
                 </>
               ) : null}
             </>
@@ -118,7 +119,7 @@ export default async function DashboardLayout({
       {/* Main Content */}
       <main className="relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden">
         <header className="relative z-30 flex h-16 items-center justify-between border-b border-border/80 bg-background/78 px-6 backdrop-blur-xl">
-          <div className="text-sm text-muted-foreground">
+          <div className="max-w-[70vw] truncate text-xs text-muted-foreground md:text-sm">
             {headerLabel}
           </div>
           <UserMenu

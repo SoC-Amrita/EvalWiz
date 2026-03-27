@@ -2,6 +2,7 @@ import { auth } from "@/auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import prisma from "@/lib/db"
 import { buildScopedSectionWhere, buildScopedStudentWhere, getActiveWorkspaceState, getRoleViewLabel, hasRealWorkspace } from "@/lib/course-workspace"
+import { formatWorkspaceCycleLabel, formatWorkspaceFullLabel } from "@/lib/workspace-labels"
 import { BarChart3, BookOpen, Clock, Users } from "lucide-react"
 import { AdminModePrompt } from "./admin-mode-prompt"
 import { AdminModeSwitchButton } from "./admin-mode-switch-button"
@@ -13,10 +14,6 @@ type AuditLogDetails = {
   assessmentCode?: string
   successCount?: number
   userName?: string
-}
-
-function formatWorkspaceCycle(term: string, academicYear: string) {
-  return [academicYear, term].filter(Boolean).join(" · ")
 }
 
 export default async function DashboardOverview() {
@@ -205,10 +202,10 @@ export default async function DashboardOverview() {
 
       <div>
         <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
-          {activeWorkspace.subjectCode} · {activeWorkspace.subjectTitle}
+          {formatWorkspaceFullLabel(activeWorkspace)}
         </h2>
         <p className="text-slate-500">
-          {getRoleViewLabel(activeRoleView)} view for {formatWorkspaceCycle(activeWorkspace.term, activeWorkspace.academicYear)} · Semester {activeWorkspace.semester} · Year {activeWorkspace.year}
+          {getRoleViewLabel(activeRoleView)} view for {formatWorkspaceCycleLabel(activeWorkspace)}
         </p>
       </div>
 
@@ -259,7 +256,7 @@ export default async function DashboardOverview() {
               {allMarks._avg.marks ? Number(allMarks._avg.marks).toFixed(2) : "--"}
             </div>
             <p className="text-xs text-slate-500">
-              Average mark inside this workspace
+              Average mark inside the selected course
             </p>
           </CardContent>
         </Card>
@@ -269,7 +266,7 @@ export default async function DashboardOverview() {
         <Card className="col-span-4">
           <CardHeader>
             <CardTitle>Performance Trends</CardTitle>
-            <CardDescription>Average performance across assessment components for the active workspace.</CardDescription>
+            <CardDescription>Average performance across assessment components for the selected course.</CardDescription>
           </CardHeader>
           <CardContent className="h-[300px] pt-4">
             <DashboardTrendsChart data={chartData} />

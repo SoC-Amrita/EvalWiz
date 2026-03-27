@@ -2,6 +2,7 @@ import { auth } from "@/auth"
 import { APP_INFO } from "@/lib/app-info"
 import { buildScopedSectionWhere, buildScopedStudentWhere, getActiveWorkspaceState } from "@/lib/course-workspace"
 import prisma from "@/lib/db"
+import { formatWorkspaceFullLabel } from "@/lib/workspace-labels"
 import {
   buildWeightedStudentTotals,
   computeMetricStats,
@@ -250,7 +251,7 @@ export default async function ReportsPage() {
           Consolidated Section Reports
         </h1>
         <p className="text-slate-500">
-          Structured statistical reporting for {activeWorkspace.subjectCode} across the active workspace.
+          {formatWorkspaceFullLabel(activeWorkspace)}
         </p>
       </div>
 

@@ -287,18 +287,25 @@ export function StudentsClient({
     <>
       {/* ── Toolbar ── */}
       <div className="flex flex-col gap-3">
-        {/* Search */}
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
-          <div className="relative flex-1 xl:max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+          <div className="mb-3">
+            <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">Global Search</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              Search the full student master list by roll number or name, then narrow further using filters if needed.
+            </div>
+          </div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
-              placeholder="Search name, roll no, program, batch, section…"
+              placeholder="Search by roll number or student name"
               value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="pl-9 text-sm"
+              onChange={(event) => setSearch(event.target.value)}
+              className="h-11 pl-9 text-sm"
             />
           </div>
+        </div>
 
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
             <select
               value={schoolFilter}
@@ -352,165 +359,165 @@ export function StudentsClient({
               ))}
             </select>
           </div>
-        </div>
 
-        <div className="flex items-center gap-2 sm:ml-auto">
-          <Badge variant="outline" className="px-3 py-1 font-mono text-xs text-indigo-700 bg-indigo-50 border-indigo-200 whitespace-nowrap">
-            {filtered.length} / {initialData.length}
-          </Badge>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setSearch("")
-              setSchoolFilter("ALL")
-              setProgramFilter("ALL")
-              setBatchFilter("ALL")
-              setSectionCodeFilter("ALL")
-            }}
-          >
-            Reset Filters
-          </Button>
-          <Button variant="outline" onClick={downloadTemplate}>
-            <Download className="w-4 h-4 mr-2 text-slate-500" />
-            Template
-          </Button>
-          <Dialog open={addStudentOpen} onOpenChange={setAddStudentOpen}>
-            <DialogTrigger render={
-              <Button variant="outline" className="whitespace-nowrap">
-                Add Student
-              </Button>
-            } />
-            <DialogContent className="sm:max-w-[560px]">
-              <DialogHeader>
-                <DialogTitle>Add Student</DialogTitle>
-                <DialogDescription>
-                  Admin manual override: create a student record directly and place the student into any existing class / section.
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleCreateStudent}>
-                <div className="grid gap-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="create-student-roll">Roll Number</Label>
-                    <Input id="create-student-roll" name="rollNo" placeholder="CB.SC.U4CSE23310" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="create-student-name">Name</Label>
-                    <Input id="create-student-name" name="name" placeholder="Student name" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="create-student-section">Class / Section</Label>
-                    <select
-                      id="create-student-section"
-                      name="sectionId"
-                      required
-                      defaultValue=""
-                      className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900"
-                    >
-                      <option value="" disabled>
-                        Select class / section
-                      </option>
-                      {sections.map((section) => (
-                        <option key={section.id} value={section.id}>
-                          {section.name}
+          <div className="flex flex-wrap items-center gap-2 xl:justify-end">
+            <Badge variant="outline" className="px-3 py-1 font-mono text-xs text-indigo-700 bg-indigo-50 border-indigo-200 whitespace-nowrap">
+              {filtered.length} / {initialData.length}
+            </Badge>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSearch("")
+                setSchoolFilter("ALL")
+                setProgramFilter("ALL")
+                setBatchFilter("ALL")
+                setSectionCodeFilter("ALL")
+              }}
+            >
+              Reset Filters
+            </Button>
+            <Button variant="outline" onClick={downloadTemplate}>
+              <Download className="w-4 h-4 mr-2 text-slate-500" />
+              Template
+            </Button>
+            <Dialog open={addStudentOpen} onOpenChange={setAddStudentOpen}>
+              <DialogTrigger render={
+                <Button variant="outline" className="whitespace-nowrap">
+                  Add Student
+                </Button>
+              } />
+              <DialogContent className="sm:max-w-[560px]">
+                <DialogHeader>
+                  <DialogTitle>Add Student</DialogTitle>
+                  <DialogDescription>
+                    Admin manual override: create a student record directly and place the student into any existing class / section.
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleCreateStudent}>
+                  <div className="grid gap-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="create-student-roll">Roll Number</Label>
+                      <Input id="create-student-roll" name="rollNo" placeholder="CB.SC.U4CSE23310" required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="create-student-name">Name</Label>
+                      <Input id="create-student-name" name="name" placeholder="Student name" required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="create-student-section">Class / Section</Label>
+                      <select
+                        id="create-student-section"
+                        name="sectionId"
+                        required
+                        defaultValue=""
+                        className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900"
+                      >
+                        <option value="" disabled>
+                          Select class / section
                         </option>
-                      ))}
-                    </select>
+                        {sections.map((section) => (
+                          <option key={section.id} value={section.id}>
+                            {section.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setAddStudentOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={loading} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                      {loading ? "Adding..." : "Add Student"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger render={
+                <Button className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20 whitespace-nowrap">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Import CSV
+                </Button>
+              } />
+              <DialogContent className="sm:max-w-[600px]">
+                <DialogHeader>
+                  <DialogTitle>Import Students</DialogTitle>
+                  <DialogDescription>
+                    {isElectiveOffering
+                      ? "Upload a CSV file with rollNo, name, and sectionName. Elective offerings always use manual class mapping."
+                      : canManageAllSections
+                        ? "Upload global student records with rollNo and name only. Regular class assignment is derived from the roll number."
+                        : "Upload a CSV file for your assigned sections only, using rollNo and name. Regular class assignment is derived from the roll number."}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                  <label
+                    htmlFor="dropzone-file"
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    className={`flex flex-col items-center justify-center w-full h-32 border-2 ${isDragging ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20" : "border-slate-300 bg-slate-50 dark:border-slate-800 dark:bg-slate-900"} border-dashed rounded-lg cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors`}
+                  >
+                    <Upload className={`w-8 h-8 mb-2 ${isDragging ? "text-indigo-500" : "text-slate-400"}`} />
+                    <p className="text-sm text-slate-500"><span className="font-medium text-indigo-600">Click to upload</span> or drag and drop</p>
+                    <input id="dropzone-file" type="file" accept=".csv" className="hidden" onChange={handleFileUpload} ref={fileInputRef} />
+                  </label>
+                  {isElectiveOffering ? (
+                    <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
+                      Elective offering mode: sectionName is required in the CSV, because students may come from multiple schools, departments, and regular sections.
+                    </div>
+                  ) : null}
+
+                  {errors.length > 0 && (
+                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                      <div className="flex items-center text-red-800 mb-1 font-medium text-sm"><AlertCircle className="w-4 h-4 mr-2" />Errors</div>
+                      <ul className="text-xs text-red-600 list-disc pl-5 max-h-24 overflow-y-auto">
+                        {errors.map((e, i) => <li key={i}>{e}</li>)}
+                      </ul>
+                    </div>
+                  )}
+                  {parsedData.length > 0 && (
+                    <div className="mt-4">
+                      <div className="flex items-center mb-2 font-medium text-sm text-emerald-700"><CheckCircle className="w-4 h-4 mr-2" />Valid Rows: {parsedData.length}</div>
+                      <ScrollArea className="h-32 border rounded-md">
+                        <Table className="text-xs">
+                          <TableHeader className="bg-slate-50">
+                            <TableRow>
+                              <TableHead className="h-8">Roll No</TableHead>
+                              <TableHead className="h-8">Name</TableHead>
+                              <TableHead className="h-8">Section Hint</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {parsedData.slice(0, 10).map((r, i) => (
+                              <TableRow key={i}>
+                                <TableCell className="py-1">{r.rollNo}</TableCell>
+                                <TableCell className="py-1">{r.name}</TableCell>
+                                <TableCell className="py-1">{isElectiveOffering ? r.sectionName || "Required for electives" : "Auto from roll number"}</TableCell>
+                              </TableRow>
+                            ))}
+                            {parsedData.length > 10 && (
+                              <TableRow>
+                                <TableCell colSpan={3} className="py-2 text-center text-slate-400">+ {parsedData.length - 10} more rows</TableCell>
+                              </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
+                      </ScrollArea>
+                    </div>
+                  )}
                 </div>
                 <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setAddStudentOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={loading} className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                    {loading ? "Adding..." : "Add Student"}
+                  <Button variant="outline" onClick={() => { setParsedData([]); setErrors([]); setOpen(false) }}>Cancel</Button>
+                  <Button onClick={submitData} disabled={loading || parsedData.length === 0} className="bg-indigo-600 hover:bg-indigo-700">
+                    {loading ? "Importing…" : "Confirm Import"}
                   </Button>
                 </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger render={
-              <Button className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20 whitespace-nowrap">
-                <Upload className="w-4 h-4 mr-2" />
-                Import CSV
-              </Button>
-            } />
-            <DialogContent className="sm:max-w-[600px]">
-              <DialogHeader>
-                <DialogTitle>Import Students</DialogTitle>
-                <DialogDescription>
-                  {isElectiveOffering
-                    ? "Upload a CSV file with rollNo, name, and sectionName. Elective offerings always use manual class mapping."
-                    : canManageAllSections
-                      ? "Upload global student records with rollNo and name only. Regular class assignment is derived from the roll number."
-                      : "Upload a CSV file for your assigned sections only, using rollNo and name. Regular class assignment is derived from the roll number."}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="py-4">
-                <label
-                  htmlFor="dropzone-file"
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  className={`flex flex-col items-center justify-center w-full h-32 border-2 ${isDragging ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20" : "border-slate-300 bg-slate-50 dark:border-slate-800 dark:bg-slate-900"} border-dashed rounded-lg cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors`}
-                >
-                  <Upload className={`w-8 h-8 mb-2 ${isDragging ? "text-indigo-500" : "text-slate-400"}`} />
-                  <p className="text-sm text-slate-500"><span className="font-medium text-indigo-600">Click to upload</span> or drag and drop</p>
-                  <input id="dropzone-file" type="file" accept=".csv" className="hidden" onChange={handleFileUpload} ref={fileInputRef} />
-                </label>
-                {isElectiveOffering ? (
-                  <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
-                    Elective offering mode: sectionName is required in the CSV, because students may come from multiple schools, departments, and regular sections.
-                  </div>
-                ) : null}
-
-                {errors.length > 0 && (
-                  <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                    <div className="flex items-center text-red-800 mb-1 font-medium text-sm"><AlertCircle className="w-4 h-4 mr-2" />Errors</div>
-                    <ul className="text-xs text-red-600 list-disc pl-5 max-h-24 overflow-y-auto">
-                      {errors.map((e, i) => <li key={i}>{e}</li>)}
-                    </ul>
-                  </div>
-                )}
-                {parsedData.length > 0 && (
-                  <div className="mt-4">
-                    <div className="flex items-center mb-2 font-medium text-sm text-emerald-700"><CheckCircle className="w-4 h-4 mr-2" />Valid Rows: {parsedData.length}</div>
-                    <ScrollArea className="h-32 border rounded-md">
-                      <Table className="text-xs">
-                        <TableHeader className="bg-slate-50">
-                          <TableRow>
-                            <TableHead className="h-8">Roll No</TableHead>
-                            <TableHead className="h-8">Name</TableHead>
-                            <TableHead className="h-8">Section Hint</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {parsedData.slice(0, 10).map((r, i) => (
-                            <TableRow key={i}>
-                              <TableCell className="py-1">{r.rollNo}</TableCell>
-                              <TableCell className="py-1">{r.name}</TableCell>
-                              <TableCell className="py-1">{isElectiveOffering ? r.sectionName || "Required for electives" : "Auto from roll number"}</TableCell>
-                            </TableRow>
-                          ))}
-                          {parsedData.length > 10 && (
-                            <TableRow>
-                              <TableCell colSpan={3} className="py-2 text-center text-slate-400">+ {parsedData.length - 10} more rows</TableCell>
-                            </TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
-                    </ScrollArea>
-                  </div>
-                )}
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => { setParsedData([]); setErrors([]); setOpen(false) }}>Cancel</Button>
-                <Button onClick={submitData} disabled={loading || parsedData.length === 0} className="bg-indigo-600 hover:bg-indigo-700">
-                  {loading ? "Importing…" : "Confirm Import"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </div>
 

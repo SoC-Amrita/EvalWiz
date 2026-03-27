@@ -57,25 +57,27 @@ export default async function SectionsPage() {
       )
     : {}
 
-  const facultyMembers = await prisma.faculty.findMany({
-    include: {
-      user: true,
-      _count: {
-        select: { offeringAssignments: true }
-      }
-    },
-    orderBy: { user: { name: "asc" } }
-  })
+  const facultyMembers = activeWorkspace.isElective
+    ? []
+    : await prisma.faculty.findMany({
+        include: {
+          user: true,
+          _count: {
+            select: { offeringAssignments: true }
+          }
+        },
+        orderBy: { user: { name: "asc" } }
+      })
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-          {activeWorkspace.isElective ? "Elective Class & Faculty" : "Sections & Faculty"}
+          {activeWorkspace.isElective ? "Elective Class & Roster" : "Sections & Faculty"}
         </h1>
         <p className="text-slate-500">
           {activeWorkspace.isElective
-            ? `Review the single elective class attached to ${activeWorkspace.subjectCode}. The mentor is also the default faculty for this offering.`
+            ? `Review the single elective class attached to ${activeWorkspace.subjectCode} and manage its roster. The mentor is the default faculty for this offering.`
             : `Review the reusable class roster attached to ${activeWorkspace.subjectCode} and set faculty ownership for this offering.`}
         </p>
       </div>

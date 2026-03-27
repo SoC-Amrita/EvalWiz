@@ -8,7 +8,6 @@ import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
 import {
   Table,
   TableBody,
@@ -31,6 +30,7 @@ import { fetchSectionData, fetchSectionExportData, type SectionExportData } from
 import { saveStudentMark, bulkUploadMarks } from "./actions"
 import { toast } from "sonner"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { formatCompactSectionName } from "@/lib/workspace-labels"
 
 type StudentRow = { id: string; rollNo: string; name: string; mark: number | null }
 type ParsedCsvRow = { rollNo?: string; marks?: string }
@@ -78,6 +78,10 @@ function getExportFileStem(data: SectionExportData, mode: "full" | "component") 
   return `${sectionName}_${scope}`
 }
 
+function formatAssessmentChipLabel(assessment: Assessment) {
+  return `${assessment.name} (${assessment.maxMarks})`
+}
+
 export function MarksClient({ 
   sections, 
   assessments 
@@ -99,6 +103,15 @@ export function MarksClient({
   const [exportingKey, setExportingKey] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const sectionOptions = sections.map((section) => ({
+    id: section.id,
+    label: formatCompactSectionName(section.name, section.sectionCode),
+    longLabel: section.name,
+  }))
+  const activeSectionDetails = sections.find((section) => section.id === activeSection)
+  const activeSectionLabel = activeSectionDetails
+    ? formatCompactSectionName(activeSectionDetails.name, activeSectionDetails.sectionCode)
+    : ""
   const activeAssessmentDetails = assessments.find(a => a.id === activeAssessment)
 
   useEffect(() => {
@@ -631,105 +644,150 @@ export function MarksClient({
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Select Section</label>
-          <Select value={activeSection} onValueChange={(val) => setActiveSection(val || "")}>
-            <SelectTrigger className="bg-white dark:bg-slate-900">
-              {activeSection ? sections.find(s => s.id === activeSection)?.name || "" : <span className="text-slate-500">Choose section...</span>}
-            </SelectTrigger>
-            <SelectContent>
-              {sections.map(s => (
-                <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Select Assessment</label>
-          <Select value={activeAssessment} onValueChange={(val) => setActiveAssessment(val || "")}>
-            <SelectTrigger className="bg-white dark:bg-slate-900">
-              {activeAssessment ? `${assessments.find(a => a.id === activeAssessment)?.name} (${assessments.find(a => a.id === activeAssessment)?.maxMarks} marks)` : <span className="text-slate-500">Choose component...</span>}
-            </SelectTrigger>
-            <SelectContent>
-              {assessments.map(a => (
-                <SelectItem key={a.id} value={a.id}>{`${a.name} (${a.maxMarks} marks)`}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="flex items-end pb-0 md:pb-0.5">
-          <Dialog open={openCsv} onOpenChange={setOpenCsv}>
-            <DialogTrigger render={
-              <Button 
-                variant="outline" 
-                disabled={!canEdit}
-                className="w-full bg-white dark:bg-slate-900"
-              />
-            }>
-              <Upload className="w-4 h-4 mr-2" />
-              Bulk CSV Upload
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px]">
-              <DialogHeader>
-                <DialogTitle>Import Component Marks</DialogTitle>
-                <DialogDescription>
-                  Upload marks for <span className="font-bold text-indigo-600 dark:text-indigo-400">{activeAssessmentDetails?.name}</span> mapping to <span className="font-bold text-indigo-600 dark:text-indigo-400">Section {sections.find(s => s.id === activeSection)?.name}</span>.
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="py-6">
-                <Button variant="outline" size="sm" className="mb-4" onClick={downloadTemplate}>
-                  <Download className="w-4 h-4 mr-2" />
-                  Download Template
-                </Button>
+      <div className="mb-6 space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+          <div className="space-y-2">
+            <div className="text-sm font-medium text-slate-700 dark:text-slate-300">Section</div>
+            <div className="flex flex-wrap gap-2">
+              {sectionOptions.map((section) => {
+                const isActive = section.id === activeSection
+                return (
+                  <button
+                    key={section.id}
+                    type="button"
+                    onClick={() => setActiveSection(section.id)}
+                    className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+                      isActive
+                        ? "border-indigo-600 bg-indigo-600 text-white shadow-sm shadow-indigo-600/20"
+                        : "border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-200 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/40 dark:hover:text-indigo-300"
+                    }`}
+                    title={section.longLabel}
+                  >
+                    {section.label}
+                  </button>
+                )
+              })}
+            </div>
+            {!activeSection ? (
+              <p className="text-xs text-slate-500">Pick one section to load its roster.</p>
+            ) : null}
+          </div>
 
-                <div className="flex items-center justify-center w-full">
-                  <label 
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                    className={`flex flex-col items-center justify-center w-full h-32 border-2 ${isDragging ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20" : "border-slate-300 bg-slate-50 dark:border-slate-800 dark:bg-slate-900"} border-dashed rounded-lg cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors`}
-                   >
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <Upload className={`w-8 h-8 mb-2 ${isDragging ? "text-indigo-500" : "text-slate-400"}`} />
-                      <p className="text-sm text-slate-500"><span className="font-medium text-indigo-600">Click to upload</span> or drag and drop CSV file</p>
+          <div className="space-y-2">
+            <div className="text-sm font-medium text-slate-700 dark:text-slate-300">Component</div>
+            <div className="flex flex-wrap gap-2">
+              {assessments.map((assessment) => {
+                const isActive = assessment.id === activeAssessment
+                return (
+                  <button
+                    key={assessment.id}
+                    type="button"
+                    onClick={() => setActiveAssessment(assessment.id)}
+                    className={`rounded-2xl border px-3 py-2 text-left text-sm transition-colors ${
+                      isActive
+                        ? "border-emerald-600 bg-emerald-600 text-white shadow-sm shadow-emerald-600/20"
+                        : "border-slate-200 bg-slate-50 text-slate-700 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-200 dark:hover:border-emerald-800 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-300"
+                    }`}
+                  >
+                    <div className="font-medium">{assessment.name}</div>
+                    <div className={`text-xs ${isActive ? "text-emerald-50/90" : "text-slate-500 dark:text-slate-400"}`}>
+                      {assessment.maxMarks} marks
                     </div>
-                    <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} ref={fileInputRef} />
-                  </label>
+                  </button>
+                )
+              })}
+            </div>
+            {!activeAssessment ? (
+              <p className="text-xs text-slate-500">Choose one component for editing and uploads.</p>
+            ) : null}
+          </div>
+
+          <div className="flex items-start xl:items-end">
+            <Dialog open={openCsv} onOpenChange={setOpenCsv}>
+              <DialogTrigger render={
+                <Button 
+                  variant="outline" 
+                  disabled={!canEdit}
+                  className="w-full bg-white dark:bg-slate-900 xl:w-auto"
+                />
+              }>
+                <Upload className="w-4 h-4 mr-2" />
+                Bulk CSV Upload
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[600px]">
+                <DialogHeader>
+                  <DialogTitle>Import Component Marks</DialogTitle>
+                  <DialogDescription>
+                    Upload marks for <span className="font-bold text-indigo-600 dark:text-indigo-400">{activeAssessmentDetails?.name}</span> mapped to <span className="font-bold text-indigo-600 dark:text-indigo-400">{activeSectionLabel}</span>.
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="py-6">
+                  <Button variant="outline" size="sm" className="mb-4" onClick={downloadTemplate}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Download Template
+                  </Button>
+
+                  <div className="flex items-center justify-center w-full">
+                    <label 
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      className={`flex flex-col items-center justify-center w-full h-32 border-2 ${isDragging ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20" : "border-slate-300 bg-slate-50 dark:border-slate-800 dark:bg-slate-900"} border-dashed rounded-lg cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors`}
+                     >
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <Upload className={`w-8 h-8 mb-2 ${isDragging ? "text-indigo-500" : "text-slate-400"}`} />
+                        <p className="text-sm text-slate-500"><span className="font-medium text-indigo-600">Click to upload</span> or drag and drop CSV file</p>
+                      </div>
+                      <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} ref={fileInputRef} />
+                    </label>
+                  </div>
+
+                  {csvErrors.length > 0 && (
+                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md max-h-32 overflow-y-auto">
+                      <div className="flex items-center text-red-800 mb-2 font-medium text-sm">
+                        <AlertCircle className="w-4 h-4 mr-2" /> Errors
+                      </div>
+                      <ul className="text-xs text-red-600 list-disc pl-5">
+                        {csvErrors.map((e, i) => <li key={i}>{e}</li>)}
+                      </ul>
+                    </div>
+                  )}
+
+                  {parsedData.length > 0 && (
+                    <div className="mt-4">
+                      <div className="flex items-center mb-2 font-medium text-sm text-emerald-700">
+                        <CheckCircle className="w-4 h-4 mr-2" /> Ready to Import: {parsedData.length} marks
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {csvErrors.length > 0 && (
-                  <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md max-h-32 overflow-y-auto">
-                    <div className="flex items-center text-red-800 mb-2 font-medium text-sm">
-                      <AlertCircle className="w-4 h-4 mr-2" /> Errors
-                    </div>
-                    <ul className="text-xs text-red-600 list-disc pl-5">
-                      {csvErrors.map((e, i) => <li key={i}>{e}</li>)}
-                    </ul>
-                  </div>
-                )}
-
-                {parsedData.length > 0 && (
-                  <div className="mt-4">
-                    <div className="flex items-center mb-2 font-medium text-sm text-emerald-700">
-                      <CheckCircle className="w-4 h-4 mr-2" /> Ready to Import: {parsedData.length} marks
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setOpenCsv(false)}>Cancel</Button>
-                <Button onClick={submitBulkMarks} disabled={loading || parsedData.length === 0} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20">
-                  {loading ? "Uploading..." : `Upload ${parsedData.length} Records`}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setOpenCsv(false)}>Cancel</Button>
+                  <Button onClick={submitBulkMarks} disabled={loading || parsedData.length === 0} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20">
+                    {loading ? "Uploading..." : `Upload ${parsedData.length} Records`}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
+
+        {activeSection || activeAssessmentDetails ? (
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+            {activeSection ? (
+              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                Section: {activeSectionLabel}
+              </span>
+            ) : null}
+            {activeAssessmentDetails ? (
+              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                Component: {formatAssessmentChipLabel(activeAssessmentDetails)}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">

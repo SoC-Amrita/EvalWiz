@@ -1,7 +1,6 @@
 import { auth } from "@/auth"
 import prisma from "@/lib/db"
-import { buildScopedSectionWhere, getActiveWorkspaceState, getRoleViewLabel } from "@/lib/course-workspace"
-import { formatWorkspaceFullLabel } from "@/lib/workspace-labels"
+import { buildScopedSectionWhere, getActiveWorkspaceState } from "@/lib/course-workspace"
 import { redirect } from "next/navigation"
 import { MarksClient } from "./client"
 
@@ -35,7 +34,7 @@ export default async function MarksPage() {
           Marks Entry & Assessment
         </h1>
         <p className="text-slate-500">
-          {formatWorkspaceFullLabel(activeWorkspace)} · {getRoleViewLabel(activeRoleView)} view
+          Choose one section and one component to enter, upload, or export marks.
         </p>
       </div>
 

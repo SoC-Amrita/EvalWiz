@@ -1,29 +1,24 @@
 "use client"
 
+import { usePathname } from "next/navigation"
 import {
   createContext,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react"
-
-export const PALETTE_STORAGE_KEY = "evalwiz-palette"
-
-export const PALETTE_THEMES = [
-  "light",
-  "classic",
-  "ocean",
-  "forest",
-  "aurora",
-  "dark",
-  "neon",
-] as const
-
-export type PaletteTheme = (typeof PALETTE_THEMES)[number]
-
-const DARK_PALETTES = new Set<PaletteTheme>(["dark", "neon"])
+import {
+  getEffectivePaletteTheme,
+  getInitialPaletteTheme,
+  isDarkPaletteTheme,
+  isPaletteTheme,
+  PALETTE_STORAGE_KEY,
+  PALETTE_THEMES,
+  type PaletteTheme,
+} from "@/lib/palette-theme"
 
 type ThemeContextValue = {
   theme: PaletteTheme
@@ -32,27 +27,28 @@ type ThemeContextValue = {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
-function isPaletteTheme(value: string | null): value is PaletteTheme {
-  return PALETTE_THEMES.includes((value ?? "") as PaletteTheme)
-}
-
 export function applyThemeClass(theme: PaletteTheme) {
   const root = document.documentElement
   root.classList.remove(...PALETTE_THEMES)
   root.classList.add(theme)
-  root.style.colorScheme = DARK_PALETTES.has(theme) ? "dark" : "light"
+  root.style.colorScheme = isDarkPaletteTheme(theme) ? "dark" : "light"
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname()
   const [theme, setThemeState] = useState<PaletteTheme>(() => {
-    if (typeof window === "undefined") return "light"
+    if (typeof window === "undefined") return getInitialPaletteTheme(null)
 
     const storedTheme = window.localStorage.getItem(PALETTE_STORAGE_KEY)
-    return isPaletteTheme(storedTheme) ? storedTheme : "light"
+    return getInitialPaletteTheme(storedTheme)
   })
+  const effectiveTheme = getEffectivePaletteTheme(pathname, theme)
+
+  useLayoutEffect(() => {
+    applyThemeClass(effectiveTheme)
+  }, [effectiveTheme])
 
   useEffect(() => {
-    applyThemeClass(theme)
     window.localStorage.setItem(PALETTE_STORAGE_KEY, theme)
   }, [theme])
 

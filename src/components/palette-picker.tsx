@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { MoonStar, Palette, Sparkles, SunMedium, Waves, Trees } from "lucide-react"
 
-import { PaletteTheme, PALETTE_STORAGE_KEY, PALETTE_THEMES, useAppTheme } from "@/components/theme-provider"
+import { useAppTheme } from "@/components/theme-provider"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { PALETTE_STORAGE_KEY, PALETTE_THEMES, type PaletteTheme } from "@/lib/palette-theme"
 import { cn } from "@/lib/utils"
 
 const PALETTES: Array<{

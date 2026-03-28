@@ -2,6 +2,7 @@
 
 import { auth } from "@/auth"
 import { getActiveWorkspaceState, setActiveWorkspaceCookies, setAdminConsoleModeCookie, type WorkspaceRoleView } from "@/lib/course-workspace"
+import { enableAnalysisPreviewCookie } from "@/lib/analysis-preview-access"
 import { canManageUsers } from "@/lib/user-roles"
 
 export async function activateWorkspace(courseKey: string, roleView: WorkspaceRoleView) {
@@ -33,5 +34,16 @@ export async function setAdminConsoleMode(mode: "admin" | "workspace") {
   }
 
   await setAdminConsoleModeCookie(mode)
+  return { success: true }
+}
+
+export async function enableAnalysisPreview() {
+  const session = await auth()
+  const user = session?.user
+  if (!user) {
+    throw new Error("Unauthorized")
+  }
+
+  await enableAnalysisPreviewCookie()
   return { success: true }
 }

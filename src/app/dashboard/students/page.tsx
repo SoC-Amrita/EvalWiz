@@ -1,4 +1,5 @@
 import { auth } from "@/auth"
+import { classifyAssessment } from "@/lib/assessment-structure"
 import prisma from "@/lib/db"
 import { buildScopedSectionWhere, buildScopedStudentWhere, getActiveWorkspaceState, getRoleViewLabel } from "@/lib/course-workspace"
 import { formatWorkspaceCode, formatWorkspaceRoleHeading } from "@/lib/workspace-labels"
@@ -22,7 +23,21 @@ export default async function StudentsPage() {
       redirect("/dashboard")
     }
 
-    const [students, sections] = await Promise.all([
+    const assessments = await prisma.assessment.findMany({
+      where: { isActive: true, offeringId: activeWorkspace.offeringId },
+      orderBy: { displayOrder: "asc" },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        maxMarks: true,
+        category: true,
+      },
+    })
+
+    const assessmentIds = assessments.map((assessment) => assessment.id)
+
+    const [students, scopedSections] = await Promise.all([
       prisma.student.findMany({
         where: await buildScopedStudentWhere(user, activeWorkspace, activeRoleView),
         include: {
@@ -33,6 +48,13 @@ export default async function StudentsPage() {
               semester: true,
               programCode: true,
               sectionCode: true,
+            },
+          },
+          marks: {
+            where: { assessmentId: { in: assessmentIds } },
+            select: {
+              assessmentId: true,
+              marks: true,
             },
           },
         },
@@ -66,7 +88,11 @@ export default async function StudentsPage() {
 
         <WorkspaceStudentsClient
           initialData={students}
-          sections={sections}
+          sections={scopedSections}
+          assessments={assessments.map((assessment) => ({
+            ...assessment,
+            classification: classifyAssessment(assessment),
+          }))}
           roleView={activeRoleView}
         />
       </div>

@@ -26,7 +26,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Upload, Download, AlertCircle, CheckCircle, FileSpreadsheet, FileText, Save } from "lucide-react"
-import { fetchSectionData, fetchSectionExportData, type SectionExportData } from "./fetcher"
+import { fetchSectionData, fetchSectionExportData, fetchSectionRoster, type SectionExportData } from "./fetcher"
 import { saveStudentMark, bulkUploadMarks } from "./actions"
 import { toast } from "sonner"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -249,17 +249,36 @@ export function MarksClient({
     }
   }
 
-  const downloadTemplate = () => {
-    const csvContent = "rollNo,marks\nCB.EN.U4CYS23A001,45.5"
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement("a")
-    link.href = url
-    link.setAttribute("download", "marks_template.csv")
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+  const downloadTemplate = async () => {
+    if (!activeSection) return
+
+    try {
+      const rollNumbers =
+        students.length > 0 && activeSectionDetails?.id === activeSection
+          ? students.map((student) => student.rollNo)
+          : await fetchSectionRoster(activeSection)
+
+      const csvRows = rollNumbers.map((rollNo) => `${rollNo},`)
+      const csvContent = ["rollNo,marks", ...csvRows].join("\n")
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+      const sectionSlug = activeSectionLabel.replace(/\s+/g, "_")
+      const componentSlug = activeAssessmentDetails?.code.replace(/\s+/g, "_") ?? "marks"
+      const filename = `${sectionSlug}_${componentSlug}_template.csv`
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      link.setAttribute("download", filename)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      if (rollNumbers.length === 0) {
+        toast.info("Downloaded an empty template because this section has no roster yet.")
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to download template")
+    }
   }
 
   const exportSectionXlsx = async (mode: "full" | "component") => {
@@ -723,9 +742,9 @@ export function MarksClient({
                 </DialogHeader>
                 
                 <div className="py-6">
-                  <Button variant="outline" size="sm" className="mb-4" onClick={downloadTemplate}>
+                  <Button variant="outline" size="sm" className="mb-4" onClick={() => void downloadTemplate()}>
                     <Download className="w-4 h-4 mr-2" />
-                    Download Template
+                    Download Prefilled Template
                   </Button>
 
                   <div className="flex items-center justify-center w-full">

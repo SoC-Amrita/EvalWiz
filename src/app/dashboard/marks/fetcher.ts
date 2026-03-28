@@ -13,6 +13,38 @@ async function getScopedExportContext() {
   }
 }
 
+export async function fetchSectionRoster(sectionId: string) {
+  const { activeWorkspace, allowedSectionIds } = await getScopedExportContext()
+  if (!allowedSectionIds.has(sectionId)) {
+    throw new Error("Unauthorized assignment")
+  }
+
+  const students = activeWorkspace.isElective
+    ? await prisma.courseOfferingEnrollment.findMany({
+        where: {
+          offeringId: activeWorkspace.offeringId,
+          sectionId,
+        },
+        include: {
+          student: {
+            select: {
+              rollNo: true,
+            },
+          },
+        },
+        orderBy: { student: { rollNo: "asc" } },
+      }).then((enrollments) => enrollments.map((enrollment) => enrollment.student))
+    : await prisma.student.findMany({
+        where: { sectionId },
+        select: {
+          rollNo: true,
+        },
+        orderBy: { rollNo: "asc" },
+      })
+
+  return students.map((student) => student.rollNo)
+}
+
 export async function fetchSectionData(sectionId: string, assessmentId: string) {
   const { activeWorkspace, allowedSectionIds } = await getScopedExportContext()
   if (!allowedSectionIds.has(sectionId)) {

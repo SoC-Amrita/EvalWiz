@@ -1,7 +1,7 @@
 import { auth } from "@/auth"
 import prisma from "@/lib/db"
 import { buildScopedStudentWhere, getActiveWorkspaceState } from "@/lib/course-workspace"
-import { formatWorkspaceCode } from "@/lib/workspace-labels"
+import { formatCompactSectionName, formatWorkspaceCode } from "@/lib/workspace-labels"
 import { redirect } from "next/navigation"
 import { AnalyticsClient } from "./client"
 
@@ -16,6 +16,28 @@ export default async function AnalyticsPage() {
   const assessments = await prisma.assessment.findMany({
     where: { isActive: true, offeringId: activeWorkspace.offeringId },
     orderBy: { displayOrder: "asc" }
+  })
+
+  const scopedStudents = await prisma.student.findMany({
+    where: studentWhere,
+    select: {
+      section: {
+        select: {
+          name: true,
+          sectionCode: true,
+        },
+      },
+      marks: {
+        where: {
+          assessmentId: {
+            in: assessments.map((assessment) => assessment.id),
+          },
+        },
+        select: {
+          assessmentId: true,
+        },
+      },
+    },
   })
 
   // We need to fetch marks and aggregate them per assessment
@@ -56,7 +78,21 @@ export default async function AnalyticsPage() {
         max: agg._max.marks ?? 0,
         min: agg._min.marks ?? 0,
         countEntered: agg._count.marks,
-        countMissing
+        countMissing,
+        missingSections: Array.from(
+          scopedStudents.reduce((missingMap, student) => {
+            const hasMark = student.marks.some((mark) => mark.assessmentId === a.id)
+            if (hasMark || !student.section) {
+              return missingMap
+            }
+
+            const label = formatCompactSectionName(student.section.name, student.section.sectionCode)
+            missingMap.set(label, (missingMap.get(label) ?? 0) + 1)
+            return missingMap
+          }, new Map<string, number>())
+        )
+          .map(([label, missingCount]) => ({ label, missingCount }))
+          .sort((left, right) => left.label.localeCompare(right.label)),
       }
     })
   )

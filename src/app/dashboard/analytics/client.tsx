@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { CHART_THEME, METRIC_COLOR_MAP } from "@/lib/chart-theme"
 import { 
   BarChart, 
@@ -10,7 +11,7 @@ import {
   XAxis, 
   YAxis, 
   CartesianGrid, 
-  Tooltip, 
+  Tooltip as RechartsTooltip, 
   ResponsiveContainer,
   Legend,
   LineChart,
@@ -29,6 +30,10 @@ type ComponentStat = {
   min: number
   countEntered: number
   countMissing: number
+  missingSections: Array<{
+    label: string
+    missingCount: number
+  }>
 }
 
 type TooltipEntry = {
@@ -104,7 +109,8 @@ export function AnalyticsClient({ data }: { data: ComponentStat[] }) {
   const finalTotal = caPlusMid + endSemTotal
 
   return (
-    <div className="space-y-6">
+    <TooltipProvider>
+      <div className="space-y-6">
       {/* Component Toggles */}
       <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
         <h3 className="mb-3 text-sm font-semibold text-foreground">Include in Analytics Calculation</h3>
@@ -172,54 +178,88 @@ export function AnalyticsClient({ data }: { data: ComponentStat[] }) {
         </Card>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {activeData.map((stat) => (
-          <Card key={stat.id} className="border-border bg-card shadow-sm transition-all hover:shadow-md">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <div className="space-y-1">
-                <CardTitle className="text-base font-bold">{stat.name}</CardTitle>
-                <div className="flex space-x-2 items-center">
-                  <Badge variant="outline" className="h-4 border-primary/20 bg-primary/10 px-1.5 py-0 font-mono text-[10px] text-primary">
-                    {stat.code}
-                  </Badge>
-                  <span className="text-xs font-medium text-muted-foreground">Max {stat.maxMarks}</span>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {activeData.map((stat) => (
+            <Tooltip key={stat.id}>
+              <TooltipTrigger className="block text-left">
+                <Card className="border-border bg-card shadow-sm transition-all hover:shadow-md">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <div className="space-y-1">
+                      <CardTitle className="text-base font-bold">{stat.name}</CardTitle>
+                      <div className="flex space-x-2 items-center">
+                        <Badge variant="outline" className="h-4 border-primary/20 bg-primary/10 px-1.5 py-0 font-mono text-[10px] text-primary">
+                          {stat.code}
+                        </Badge>
+                        <span className="text-xs font-medium text-muted-foreground">Max {stat.maxMarks}</span>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="mt-4 flex items-end justify-between">
+                      <div>
+                        <div className="text-3xl font-bold tracking-tighter text-foreground">
+                          {stat.avg}
+                        </div>
+                        <p className="mt-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Class Average</p>
+                      </div>
+                      <div className="space-y-1 text-right">
+                        <p className="text-xs font-mono" style={{ color: METRIC_COLOR_MAP.endSemester }}>Max: {stat.max}</p>
+                        <p className="text-xs font-mono text-destructive">Min: {stat.min}</p>
+                      </div>
+                    </div>
+                    <div className="mt-5 h-1.5 w-full overflow-hidden rounded-full bg-accent">
+                      <div 
+                        className="h-full rounded-full bg-primary transition-all duration-1000 ease-out" 
+                        style={{ width: `${stat.maxMarks > 0 ? (stat.avg / stat.maxMarks) * 100 : 0}%` }} 
+                      />
+                    </div>
+                    <div className="mt-4 flex justify-between border-t border-border pt-4 text-xs">
+                      <span className="text-muted-foreground">{stat.countEntered} Entries</span>
+                      {stat.countMissing > 0 ? (
+                        <span className="flex items-center font-medium text-[color:var(--chart-6)]">
+                          <span className="mr-1 h-1.5 w-1.5 animate-pulse rounded-full bg-[color:var(--chart-6)]" />
+                          {stat.countMissing} Missing
+                        </span>
+                      ) : (
+                        <span style={{ color: METRIC_COLOR_MAP.endSemester }}>100% Complete</span>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TooltipTrigger>
+              <TooltipContent
+                side="top"
+                align="start"
+                className="max-w-sm rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-slate-50 shadow-2xl"
+              >
+                <div className="space-y-1.5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">
+                    Missing Marks Snapshot
+                  </p>
+                  {stat.countMissing > 0 ? (
+                    <>
+                      <p className="text-sm font-medium text-white">
+                        {stat.countMissing} student records are still missing for {stat.name}.
+                      </p>
+                      <div className="space-y-1 text-xs text-slate-200">
+                        {stat.missingSections.map((section) => (
+                          <div key={section.label} className="flex items-center justify-between gap-4">
+                            <span>{section.label}</span>
+                            <span className="font-semibold text-amber-300">{section.missingCount}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-sm font-medium text-emerald-300">
+                      Every visible section is complete for this component.
+                    </p>
+                  )}
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-between items-end mt-4">
-                <div>
-                  <div className="text-3xl font-bold tracking-tighter text-foreground">
-                    {stat.avg}
-                  </div>
-                  <p className="mt-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Class Average</p>
-                </div>
-                <div className="text-right space-y-1">
-                  <p className="text-xs font-mono" style={{ color: METRIC_COLOR_MAP.endSemester }}>Max: {stat.max}</p>
-                  <p className="text-xs font-mono text-destructive">Min: {stat.min}</p>
-                </div>
-              </div>
-              <div className="mt-5 h-1.5 w-full overflow-hidden rounded-full bg-accent">
-                <div 
-                  className="h-full rounded-full bg-primary transition-all duration-1000 ease-out" 
-                  style={{ width: `${stat.maxMarks > 0 ? (stat.avg / stat.maxMarks) * 100 : 0}%` }} 
-                />
-              </div>
-              <div className="mt-4 flex justify-between border-t border-border pt-4 text-xs">
-                <span className="text-muted-foreground">{stat.countEntered} Entries</span>
-                {stat.countMissing > 0 ? (
-                  <span className="flex items-center font-medium text-[color:var(--chart-6)]">
-                    <span className="mr-1 h-1.5 w-1.5 animate-pulse rounded-full bg-[color:var(--chart-6)]" />
-                    {stat.countMissing} Missing
-                  </span>
-                ) : (
-                  <span style={{ color: METRIC_COLOR_MAP.endSemester }}>100% Complete</span>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </TooltipContent>
+            </Tooltip>
+          ))}
+        </div>
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="col-span-2 bg-card shadow-sm border-border md:col-span-1">
@@ -245,7 +285,7 @@ export function AnalyticsClient({ data }: { data: ComponentStat[] }) {
                   dx={-10}
                   domain={[0, 100]}
                 />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: CHART_THEME.cursor }} />
+                <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: CHART_THEME.cursor }} />
                 <Bar 
                   dataKey="avgPercent" 
                   name="Avg %" 
@@ -280,7 +320,7 @@ export function AnalyticsClient({ data }: { data: ComponentStat[] }) {
                   tick={{ fontSize: 12, fill: CHART_THEME.axis }}
                   dx={-10}
                 />
-                <Tooltip content={<CustomTooltip />} />
+                <RechartsTooltip content={<CustomTooltip />} />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
                 <Line 
                   type="monotone" 
@@ -313,6 +353,7 @@ export function AnalyticsClient({ data }: { data: ComponentStat[] }) {
           </CardContent>
         </Card>
       </div>
-    </div>
+      </div>
+    </TooltipProvider>
   )
 }

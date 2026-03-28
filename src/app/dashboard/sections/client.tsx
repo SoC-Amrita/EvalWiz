@@ -57,18 +57,36 @@ export function SectionsClient({
   const [electiveRosterOpen, setElectiveRosterOpen] = useState(false)
   const [parsedRollNumbers, setParsedRollNumbers] = useState<string[]>([])
   const [rosterErrors, setRosterErrors] = useState<string[]>([])
+  const [assignmentDialogSectionId, setAssignmentDialogSectionId] = useState<string | null>(null)
+  const [pendingFacultyId, setPendingFacultyId] = useState<string>("unassigned")
 
   const handleAssign = async (sectionId: string, facultyId: string) => {
     setAssigningId(sectionId)
     try {
       await assignFacultyToSection(sectionId, facultyId === "unassigned" ? null : facultyId)
       toast.success("Section assignment updated")
+      setAssignmentDialogSectionId(null)
     } catch {
       toast.error("Failed to update section assignment")
     } finally {
       setAssigningId(null)
     }
   }
+
+  const openAssignmentDialog = (section: SectionWithFaculty) => {
+    setAssignmentDialogSectionId(section.id)
+    setPendingFacultyId(section.facultyId ?? "unassigned")
+  }
+
+  const activeAssignmentSection = assignmentDialogSectionId
+    ? sections.find((section) => section.id === assignmentDialogSectionId) ?? null
+    : null
+  const currentFaculty = activeAssignmentSection?.facultyId
+    ? facultyMembers.find((faculty) => faculty.id === activeAssignmentSection.facultyId) ?? null
+    : null
+  const pendingFaculty = pendingFacultyId !== "unassigned"
+    ? facultyMembers.find((faculty) => faculty.id === pendingFacultyId) ?? null
+    : null
 
   const processElectiveRosterFile = (file: File) => {
     Papa.parse(file, {
@@ -142,6 +160,93 @@ export function SectionsClient({
 
   return (
     <div className="space-y-8">
+      {!isElective ? (
+        <Dialog
+          open={Boolean(activeAssignmentSection)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setAssignmentDialogSectionId(null)
+            }
+          }}
+        >
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Update Section Allocation</DialogTitle>
+              <DialogDescription>
+                Review the current faculty assignment, choose a new faculty member if needed, and confirm before the section assignment is changed.
+              </DialogDescription>
+            </DialogHeader>
+
+            {activeAssignmentSection ? (
+              <div className="space-y-4">
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-800 dark:bg-slate-950/40">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Section</div>
+                  <div className="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100">
+                    {activeAssignmentSection.compactName}
+                  </div>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm dark:border-slate-800 dark:bg-slate-900">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Current Faculty</div>
+                    <div className="mt-1 font-medium text-slate-900 dark:text-slate-100">
+                      {currentFaculty?.user.name ?? "Unassigned"}
+                    </div>
+                  </div>
+                  <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm dark:border-slate-800 dark:bg-slate-900">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Students</div>
+                    <div className="mt-1 font-medium text-slate-900 dark:text-slate-100">
+                      {activeAssignmentSection._count.students}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="text-sm font-semibold text-slate-700 dark:text-slate-300">Assigned Faculty</div>
+                  <Select
+                    value={pendingFacultyId}
+                    onValueChange={(value) => setPendingFacultyId(value ?? "unassigned")}
+                    disabled={assigningId === activeAssignmentSection.id}
+                  >
+                    <SelectTrigger className="w-full bg-white dark:bg-slate-900">
+                      {pendingFaculty ? pendingFaculty.user.name : <span className="text-slate-400 italic">Leave unassigned</span>}
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unassigned" className="text-slate-400 italic">-- Unassigned --</SelectItem>
+                      {facultyMembers.map((faculty) => (
+                        <SelectItem key={faculty.id} value={faculty.id}>
+                          {faculty.user.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-sm text-indigo-700 dark:border-indigo-900/60 dark:bg-indigo-950/30 dark:text-indigo-300">
+                  {pendingFaculty
+                    ? `Confirm to assign ${pendingFaculty.user.name} as the coordinator for ${activeAssignmentSection.compactName}.`
+                    : `Confirm to clear the coordinator assignment for ${activeAssignmentSection.compactName}.`}
+                </div>
+              </div>
+            ) : null}
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setAssignmentDialogSectionId(null)}>
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                disabled={!activeAssignmentSection || assigningId === activeAssignmentSection.id}
+                onClick={() => activeAssignmentSection && handleAssign(activeAssignmentSection.id, pendingFacultyId)}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white"
+              >
+                {assigningId === activeAssignmentSection?.id ? "Updating..." : "Confirm Allocation"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      ) : null}
+
       <Card className="border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
         <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
           <div>
@@ -225,7 +330,7 @@ export function SectionsClient({
               <TableRow>
                 <TableHead className="w-[100px]">{isElective ? "Class" : "Section"}</TableHead>
                 <TableHead className="w-[120px]">Enrolled</TableHead>
-                <TableHead>{isElective ? "Teaching Owner" : "Assigned Coordinator"}</TableHead>
+                <TableHead>{isElective ? "Teaching Owner" : "Assigned Faculty"}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -250,23 +355,22 @@ export function SectionsClient({
                             : "Mentor-owned"}
                         </div>
                       ) : (
-                        <Select 
-                          value={section.facultyId || "unassigned"} 
-                          onValueChange={(val) => handleAssign(section.id, val || "unassigned")}
-                          disabled={assigningId === section.id}
-                        >
-                          <SelectTrigger className="w-[300px] bg-white dark:bg-slate-900">
-                            {section.facultyId && section.facultyId !== "unassigned" 
-                              ? facultyMembers.find(f => f.id === section.facultyId)?.user.name 
-                              : <span className="text-slate-400 italic">Select faculty to assign</span>}
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="unassigned" className="text-slate-400 italic">-- Unassigned --</SelectItem>
-                            {facultyMembers.map(fm => (
-                              <SelectItem key={fm.id} value={fm.id}>{fm.user.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <div className="min-w-[220px] text-sm text-slate-700 dark:text-slate-300">
+                            {section.facultyId && section.facultyId !== "unassigned"
+                              ? facultyMembers.find((faculty) => faculty.id === section.facultyId)?.user.name ?? "Unassigned"
+                              : "Unassigned"}
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openAssignmentDialog(section)}
+                            disabled={assigningId === section.id}
+                          >
+                            Review & Update
+                          </Button>
+                        </div>
                       )}
                     </TableCell>
                   </TableRow>

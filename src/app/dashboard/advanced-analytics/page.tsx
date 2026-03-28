@@ -1,7 +1,7 @@
 import { auth } from "@/auth"
 import { buildScopedStudentWhere, getActiveWorkspaceState } from "@/lib/course-workspace"
 import prisma from "@/lib/db"
-import { formatWorkspaceFullLabel } from "@/lib/workspace-labels"
+import { formatWorkspaceCode } from "@/lib/workspace-labels"
 import { redirect } from "next/navigation"
 import { AdvancedAnalyticsClient } from "./client"
 
@@ -153,7 +153,7 @@ export default async function AdvancedAnalyticsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Advanced Analytics</h1>
-        <p className="text-slate-500">{formatWorkspaceFullLabel(activeWorkspace)}</p>
+        <p className="text-slate-500">Deep performance analysis for {formatWorkspaceCode(activeWorkspace)}.</p>
       </div>
       <AdvancedAnalyticsClient
         rawMarks={rawMarks}

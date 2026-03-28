@@ -116,11 +116,20 @@ const TAB_META: Record<
       "Pearson correlation on normalized percentages, based only on students who have both components entered.",
   },
   seccompheat: {
-    label: "Sec x Component",
+    label: "Section x Component",
     title: "Section vs Component Performance Heatmap",
     description:
       "Rows are sections and columns are components. Each cell shows average percentage of max marks.",
   },
+}
+
+function getTintedHeatmapBackground(color: string, strength: number) {
+  const clamped = Math.max(0.18, Math.min(0.82, strength))
+  return `color-mix(in srgb, ${color} ${Math.round(clamped * 100)}%, var(--card))`
+}
+
+function getHeatmapForeground(strength: number) {
+  return strength >= 0.58 ? "var(--primary-foreground)" : "var(--foreground)"
 }
 
 function quantile(sorted: number[], q: number) {
@@ -790,7 +799,7 @@ function BoxWhiskerTab({
                 fontSize={11}
                 fill={CHART_THEME.axis}
               >
-                Sec {entry.section.name}
+                Section {entry.section.name}
               </text>
               <text
                 x={centerX}
@@ -883,7 +892,7 @@ function GroupedBarTab({
               <Bar
                 key={section.id}
                 dataKey={section.name}
-                name={`Sec ${section.name}`}
+                name={`Section ${section.name}`}
                 fill={getSectionColor(index)}
                 radius={[3, 3, 0, 0]}
                 maxBarSize={28}
@@ -950,7 +959,7 @@ function RadarTab({
               <Radar
                 key={section.id}
                 dataKey={section.name}
-                name={`Sec ${section.name}`}
+                name={`Section ${section.name}`}
                 stroke={getSectionColor(index)}
                 fill={getSectionColor(index)}
                 fillOpacity={0.1}
@@ -1078,7 +1087,7 @@ function ViolinTab({
                 fontSize={11}
                 fill={CHART_THEME.axis}
               >
-                Sec {entry.section.name}
+                Section {entry.section.name}
               </text>
               <text
                 x={centerX}
@@ -1181,10 +1190,16 @@ function GradeHeatmapTab({
             {GRADE_BUCKETS.map((bucket, index) => (
               <th
                 key={bucket}
-                className="px-2 py-2 text-center text-xs font-semibold"
-                style={{ color: GRADE_BUCKET_COLORS[index] }}
+                className="px-2 py-2 text-center text-xs font-semibold text-foreground"
               >
-                {bucket}
+                <span
+                  className="inline-flex rounded-full px-2 py-1"
+                  style={{
+                    background: getTintedHeatmapBackground(GRADE_BUCKET_COLORS[index], 0.26),
+                  }}
+                >
+                  {bucket}
+                </span>
               </th>
             ))}
           </tr>
@@ -1197,21 +1212,21 @@ function GradeHeatmapTab({
               </td>
               {GRADE_BUCKETS.map((bucket, index) => {
                 const proportion = row.total > 0 ? row.buckets[bucket] / row.total : 0
-                const opacity = 0.12 + (proportion / maxProportion) * 0.88
+                const strength = 0.18 + (proportion / maxProportion) * 0.64
                 return (
                   <td key={bucket} className="p-1">
-                    <div
-                      className="flex min-h-14 min-w-20 flex-col items-center justify-center rounded-lg"
-                      style={{
-                        backgroundColor: GRADE_BUCKET_COLORS[index],
-                        opacity,
-                      }}
-                      title={`${row.section.name} - ${bucket}: ${row.buckets[bucket]} students`}
+                  <div
+                    className="flex min-h-14 min-w-20 flex-col items-center justify-center rounded-lg"
+                    style={{
+                      background: getTintedHeatmapBackground(GRADE_BUCKET_COLORS[index], strength),
+                      color: getHeatmapForeground(strength),
+                    }}
+                    title={`${row.section.name} - ${bucket}: ${row.buckets[bucket]} students`}
                     >
-                      <span className="text-sm font-bold text-white">
+                      <span className="text-sm font-bold">
                         {row.buckets[bucket]}
                       </span>
-                      <span className="text-[10px] text-white/80">
+                      <span className="text-[10px] opacity-80">
                         {row.total > 0 ? `${(proportion * 100).toFixed(0)}%` : "0%"}
                       </span>
                     </div>
@@ -1463,26 +1478,30 @@ function SectionComponentHeatmapTab({
           {grid.map((row, rowIndex) => (
             <tr key={sections[rowIndex].id}>
               <td className="px-3 py-2 text-sm font-semibold text-foreground">
-                Sec {sections[rowIndex].name}
+                Section {sections[rowIndex].name}
               </td>
-              {row.map((value, columnIndex) => (
-                <td key={`${rowIndex}-${columnIndex}`} className="p-0">
-                  <div
-                    className="flex h-14 items-center justify-center rounded-lg text-sm font-bold text-white"
-                    style={{
-                      minWidth: cellWidth,
-                      background: getHeatColor(value),
-                    }}
-                    title={
-                      value !== null
-                        ? `${sections[rowIndex].name} x ${assessments[columnIndex].code}: ${value}%`
-                        : `${sections[rowIndex].name} x ${assessments[columnIndex].code}: no data`
-                    }
-                  >
-                    {value !== null ? `${value}%` : "-"}
-                  </div>
-                </td>
-              ))}
+              {row.map((value, columnIndex) => {
+                const strength = value === null ? 0.2 : 0.26 + Math.min(value / 100, 1) * 0.5
+                return (
+                  <td key={`${rowIndex}-${columnIndex}`} className="p-0">
+                    <div
+                      className="flex h-14 items-center justify-center rounded-lg text-sm font-bold"
+                      style={{
+                        minWidth: cellWidth,
+                        background: getTintedHeatmapBackground(getHeatColor(value), strength),
+                        color: value === null ? "var(--muted-foreground)" : getHeatmapForeground(strength),
+                      }}
+                      title={
+                        value !== null
+                          ? `${sections[rowIndex].name} x ${assessments[columnIndex].code}: ${value}%`
+                          : `${sections[rowIndex].name} x ${assessments[columnIndex].code}: no data`
+                      }
+                    >
+                      {value !== null ? `${value}%` : "-"}
+                    </div>
+                  </td>
+                )
+              })}
             </tr>
           ))}
         </tbody>

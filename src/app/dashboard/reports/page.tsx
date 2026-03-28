@@ -2,7 +2,7 @@ import { auth } from "@/auth"
 import { APP_INFO } from "@/lib/app-info"
 import { buildScopedSectionWhere, buildScopedStudentWhere, getActiveWorkspaceState } from "@/lib/course-workspace"
 import prisma from "@/lib/db"
-import { formatWorkspaceFullLabel } from "@/lib/workspace-labels"
+import { formatDetailedCompactSectionName, formatWorkspaceCode } from "@/lib/workspace-labels"
 import {
   buildWeightedStudentTotals,
   computeMetricStats,
@@ -25,6 +25,20 @@ export type SectionReportData = {
   caMidTerm: MetricStats
   endSemester: MetricStats
   overall: MetricStats
+}
+
+export type AssessmentComponentReport = {
+  assessmentId: string
+  assessmentCode: string
+  assessmentName: string
+  assessmentCategory: string
+  maxMarks: number
+  rows: Array<{
+    sectionId: string
+    sectionName: string
+    totalStudents: number
+    stats: MetricStats
+  }>
 }
 
 export type ReportMeta = {
@@ -167,7 +181,46 @@ export default async function ReportsPage() {
     }
   }
 
-  const reportData: SectionReportData[] = activeWorkspace.isElective
+  const buildComponentStats = ({
+    sectionId,
+    sectionName,
+    studentMarks,
+    assessmentId,
+    maxMarks,
+  }: {
+    sectionId: string
+    sectionName: string
+    studentMarks: Array<Array<{ assessmentId: string; marks: number }>>
+    assessmentId: string
+    maxMarks: number
+  }) => ({
+    sectionId,
+    sectionName,
+    totalStudents: studentMarks.length,
+    stats: computeMetricStats(
+      studentMarks
+        .map((marks) => marks.find((mark) => mark.assessmentId === assessmentId)?.marks)
+        .filter((mark): mark is number => typeof mark === "number"),
+      maxMarks
+    ),
+  })
+
+  const sectionSummaries: Array<{
+    sectionId: string
+    sectionName: string
+    facultyName: string | null
+    studentMarks: Array<Array<{
+      assessmentId: string
+      marks: number
+      assessment: {
+        code: string
+        name: string
+        category: string
+        weightage: number
+        maxMarks: number
+      }
+    }>>
+  }> = activeWorkspace.isElective
     ? [...new Map(
         electiveEnrollments.map((enrollment) => {
           const groupedMarks = electiveEnrollments
@@ -176,6 +229,7 @@ export default async function ReportsPage() {
               candidate.student.marks
                 .filter((mark) => activeAssessmentIds.has(mark.assessmentId))
                 .map((mark) => ({
+                  assessmentId: mark.assessmentId,
                   marks: mark.marks,
                   assessment: {
                     code: mark.assessment.code,
@@ -187,35 +241,38 @@ export default async function ReportsPage() {
                 }))
             )
 
-          return [enrollment.sectionId, buildReportRow({
+          return [enrollment.sectionId, {
             sectionId: enrollment.sectionId,
-            sectionName: enrollment.section.name,
+            sectionName: formatDetailedCompactSectionName(enrollment.section),
             facultyName: facultyBySectionId.get(enrollment.sectionId) ?? mentorNameList[0] ?? "Mentor-owned",
             studentMarks: groupedMarks,
-          })]
+          }]
         })
       ).values()]
-    : sections.map((section) =>
-        buildReportRow({
-          sectionId: section.id,
-          sectionName: section.name,
-          facultyName: facultyBySectionId.get(section.id) ?? "Unassigned",
-          studentMarks: section.students.map((student) =>
-            student.marks
-              .filter((mark) => activeAssessmentIds.has(mark.assessmentId))
-              .map((mark) => ({
-                marks: mark.marks,
-                assessment: {
-                  code: mark.assessment.code,
-                  name: mark.assessment.name,
-                  category: mark.assessment.category,
-                  weightage: mark.assessment.weightage,
-                  maxMarks: mark.assessment.maxMarks,
-                },
-              }))
-          ),
-        })
-      )
+    : sections.map((section) => ({
+        sectionId: section.id,
+        sectionName: formatDetailedCompactSectionName(section),
+        facultyName: facultyBySectionId.get(section.id) ?? "Unassigned",
+        studentMarks: section.students.map((student) =>
+          student.marks
+            .filter((mark) => activeAssessmentIds.has(mark.assessmentId))
+            .map((mark) => ({
+              assessmentId: mark.assessmentId,
+              marks: mark.marks,
+              assessment: {
+                code: mark.assessment.code,
+                name: mark.assessment.name,
+                category: mark.assessment.category,
+                weightage: mark.assessment.weightage,
+                maxMarks: mark.assessment.maxMarks,
+              },
+            }))
+        ),
+      }))
+
+  const reportData: SectionReportData[] = sectionSummaries.map((summary) =>
+    buildReportRow(summary)
+  )
 
   const isCourseView = activeRoleView !== "faculty" && sections.length > 1
   let courseAggregate: SectionReportData | null = null
@@ -244,6 +301,51 @@ export default async function ReportsPage() {
     })
   }
 
+  const componentReports: AssessmentComponentReport[] = assessments.map((assessment) => {
+    const rows = sectionSummaries.map((summary) =>
+      buildComponentStats({
+        sectionId: summary.sectionId,
+        sectionName: summary.sectionName,
+        studentMarks: summary.studentMarks.map((marks) =>
+          marks.map((mark) => ({
+            assessmentId: mark.assessmentId,
+            marks: mark.marks,
+          }))
+        ),
+        assessmentId: assessment.id,
+        maxMarks: assessment.maxMarks,
+      })
+    )
+
+    if (isCourseView) {
+      rows.push(
+        buildComponentStats({
+          sectionId: "ALL",
+          sectionName: "Entire Course",
+          studentMarks: sectionSummaries.flatMap((summary) =>
+            summary.studentMarks.map((marks) =>
+              marks.map((mark) => ({
+                assessmentId: mark.assessmentId,
+                marks: mark.marks,
+              }))
+            )
+          ),
+          assessmentId: assessment.id,
+          maxMarks: assessment.maxMarks,
+        })
+      )
+    }
+
+    return {
+      assessmentId: assessment.id,
+      assessmentCode: assessment.code,
+      assessmentName: assessment.name,
+      assessmentCategory: assessment.category,
+      maxMarks: assessment.maxMarks,
+      rows,
+    }
+  })
+
   return (
     <div className="space-y-6">
       <div>
@@ -251,13 +353,14 @@ export default async function ReportsPage() {
           Consolidated Section Reports
         </h1>
         <p className="text-slate-500">
-          {formatWorkspaceFullLabel(activeWorkspace)}
+          Structured statistical reporting for {formatWorkspaceCode(activeWorkspace)}.
         </p>
       </div>
 
       <ReportsClient
         data={reportData}
         courseAggregate={courseAggregate}
+        componentReports={componentReports}
         reportMeta={{
           appName: APP_INFO.name,
           school: "School of Computing",

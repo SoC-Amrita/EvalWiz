@@ -7,6 +7,10 @@ type WorkspaceLabelInput = Pick<
   "subjectCode" | "subjectTitle" | "program" | "semester" | "academicYear" | "term" | "year" | "batchLabel"
 >
 
+export function formatWorkspaceCode(workspace: Pick<CourseWorkspace, "subjectCode">) {
+  return workspace.subjectCode?.trim() || "Selected course"
+}
+
 export function formatWorkspaceIdentity(workspace: Pick<CourseWorkspace, "subjectCode" | "subjectTitle">) {
   return [workspace.subjectCode, workspace.subjectTitle].filter(Boolean).join(" ")
 }
@@ -33,6 +37,30 @@ export function formatWorkspaceFullLabel(workspace: WorkspaceLabelInput) {
   ].filter(Boolean).join(" · ")
 }
 
+export function formatWorkspaceRoleHeading(
+  roleLabel: string,
+  workspace: Pick<CourseWorkspace, "subjectCode">
+) {
+  return `${roleLabel} view for ${formatWorkspaceCode(workspace)}`
+}
+
 export function formatCompactSectionName(sectionName: string, sectionCode?: string | null) {
   return sectionCode?.trim().toUpperCase() || inferSectionCodeFromLabel(sectionName) || sectionName
+}
+
+export function formatDetailedCompactSectionName(section: {
+  name: string
+  semester?: string | null
+  programCode?: string | null
+  sectionCode?: string | null
+}) {
+  const semester = section.semester?.trim() || null
+  const programCode = section.programCode?.trim().toUpperCase() || null
+  const sectionCode = section.sectionCode?.trim().toUpperCase() || inferSectionCodeFromLabel(section.name) || null
+
+  if (semester && programCode && sectionCode) {
+    return `${semester} ${programCode} ${sectionCode}`
+  }
+
+  return formatCompactSectionName(section.name, section.sectionCode)
 }

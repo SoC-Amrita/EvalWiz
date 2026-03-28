@@ -2,7 +2,7 @@ import { auth } from "@/auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import prisma from "@/lib/db"
 import { buildScopedSectionWhere, buildScopedStudentWhere, getActiveWorkspaceState, getRoleViewLabel, hasRealWorkspace } from "@/lib/course-workspace"
-import { formatWorkspaceCycleLabel, formatWorkspaceFullLabel } from "@/lib/workspace-labels"
+import { formatWorkspaceCode, formatWorkspaceRoleHeading } from "@/lib/workspace-labels"
 import { BarChart3, BookOpen, Clock, Users } from "lucide-react"
 import { AdminModePrompt } from "./admin-mode-prompt"
 import { AdminModeSwitchButton } from "./admin-mode-switch-button"
@@ -202,10 +202,10 @@ export default async function DashboardOverview() {
 
       <div>
         <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
-          {formatWorkspaceFullLabel(activeWorkspace)}
+          {formatWorkspaceRoleHeading(getRoleViewLabel(activeRoleView), activeWorkspace)}
         </h2>
         <p className="text-slate-500">
-          {getRoleViewLabel(activeRoleView)} view for {formatWorkspaceCycleLabel(activeWorkspace)}
+          Stay focused on {formatWorkspaceCode(activeWorkspace)} while the top bar keeps the full course context visible.
         </p>
       </div>
 

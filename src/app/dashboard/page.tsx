@@ -25,6 +25,10 @@ export default async function DashboardOverview() {
   const { workspaces, activeWorkspace, activeRoleView, needsAdminModeChoice } = await getActiveWorkspaceState(user)
   const isAdministratorView = activeRoleView === "administrator"
   const hasWorkspace = hasRealWorkspace(activeWorkspace)
+  const greetingName =
+    user.firstName?.trim() ||
+    user.name?.trim().split(/\s+/)[0] ||
+    "there"
 
   if (isAdministratorView) {
     const [subjectCount, classCount, activeOfferingCount, userCount, activeMentorAssignments] = await Promise.all([
@@ -121,10 +125,10 @@ export default async function DashboardOverview() {
         {user.isAdmin ? <AdminModePrompt open={needsAdminModeChoice} /> : null}
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-            Welcome Back
+            Welcome back, {greetingName}
           </h1>
           <p className="text-slate-500">
-            Your course spaces will appear here as soon as an active offering is assigned to you. When one becomes available, you can step into it deliberately and work in the right role view.
+            Your course spaces will settle here as soon as an active offering is assigned to you. Once one opens up, you can step into it in the right role and pick up where you left off.
           </p>
         </div>
 
@@ -187,10 +191,10 @@ export default async function DashboardOverview() {
       {user.isAdmin ? <AdminModePrompt open={needsAdminModeChoice} /> : null}
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-          Welcome Back
+          Welcome back, {greetingName}
         </h1>
         <p className="text-slate-500">
-          Choose the course and role view you want to step into today. Once you select one, the dashboard will narrow itself to that workspace and keep the rest out of your way.
+          Pick the course space you want to step into today, and I&apos;ll keep the rest of the system out of your way while you work there.
         </p>
       </div>
 

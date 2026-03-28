@@ -1,11 +1,12 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { REPORT_METRICS, type ReportMetricKey } from "@/lib/assessment-structure"
+import { classifyAssessment, REPORT_METRICS } from "@/lib/assessment-structure"
+import { CHART_THEME, METRIC_COLOR_MAP } from "@/lib/chart-theme"
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table"
-import { ReportMeta, SectionReportData } from "./page"
+import { AssessmentComponentReport, ReportMeta, SectionReportData } from "./page"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Download, FileText, BookOpen } from "lucide-react"
@@ -87,7 +88,7 @@ function ReportVisualSummary({
 
   const sectionChartData = isCourse
     ? rows.map((row) => ({
-        name: row.sectionName.replace("Section ", ""),
+        name: row.sectionName,
         value: Number(row.overall.avg.toFixed(1)),
       }))
     : REPORT_METRICS.map((metric) => ({
@@ -380,9 +381,7 @@ function ReportConfigDialog({
           REPORT_METRICS.length * tableRowHeight +
           cardPadding
         const headerY = cardY + cardPadding
-        const sectionLabel = row.sectionName.startsWith("Section ")
-          ? row.sectionName
-          : `Section ${row.sectionName}`
+        const sectionLabel = row.sectionId === "ALL" ? "Course Average" : row.sectionName
 
         pdf.setFillColor(255, 247, 237)
         pdf.roundedRect(margin, headerY, contentWidth, sectionHeaderHeight, 10, 10, "F")
@@ -633,44 +632,60 @@ function ReportConfigDialog({
   )
 }
 
-// ─── Mini stat table for dashboard ────────────────────────────────────────
-
-function MiniTable({ title, data, metricKey, headerColor }: {
-  title: string
-  data: SectionReportData[]
-  metricKey: ReportMetricKey
-  headerColor: string
+function ComponentMiniTable({ component }: {
+  component: AssessmentComponentReport
 }) {
+  const classification = classifyAssessment({
+    code: component.assessmentCode,
+    name: component.assessmentName,
+    category: component.assessmentCategory,
+  })
+
+  const headerColor =
+    classification.family === "MID_TERM"
+      ? "bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300"
+      : classification.family === "END_SEMESTER"
+        ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300"
+        : classification.subcomponent === "QUIZ"
+          ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-800 dark:text-indigo-300"
+          : classification.subcomponent === "REVIEW"
+            ? "bg-violet-50 dark:bg-violet-900/20 text-violet-800 dark:text-violet-300"
+            : classification.family === "CONTINUOUS_ASSESSMENT"
+              ? "bg-sky-50 dark:bg-sky-900/20 text-sky-800 dark:text-sky-300"
+              : "bg-slate-50 dark:bg-slate-900/60 text-slate-800 dark:text-slate-300"
+
   return (
     <Card className="border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden bg-white dark:bg-slate-900">
-      <CardHeader className={`py-3 px-4 ${headerColor}`}>
-        <CardTitle className="text-sm font-bold truncate">{title}</CardTitle>
+      <CardHeader className={`py-3 px-4 border-b border-slate-200 dark:border-slate-800 ${headerColor}`}>
+        <CardTitle className="text-sm font-bold">
+          {component.assessmentName} [{component.maxMarks}]
+        </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <Table className="text-xs">
+        <Table className="table-fixed text-xs">
           <TableHeader>
             <TableRow className="bg-slate-50 dark:bg-slate-800/50">
-              <TableHead className="py-2">Section</TableHead>
-              <TableHead className="py-2 text-right">Stdts</TableHead>
-              <TableHead className="py-2 text-right">Mean</TableHead>
-              <TableHead className="py-2 text-right">Median</TableHead>
-              <TableHead className="py-2 text-right">Mode</TableHead>
-              <TableHead className="py-2 text-right">SD</TableHead>
-              <TableHead className="py-2 text-right">Min</TableHead>
-              <TableHead className="py-2 text-right">Max</TableHead>
+              <TableHead className="w-[108px] py-2">Section</TableHead>
+              <TableHead className="w-[80px] py-2 text-right">Students</TableHead>
+              <TableHead className="w-[68px] py-2 text-right">Mean</TableHead>
+              <TableHead className="w-[68px] py-2 text-right">Median</TableHead>
+              <TableHead className="w-[68px] py-2 text-right">Mode</TableHead>
+              <TableHead className="w-[64px] py-2 text-right">SD</TableHead>
+              <TableHead className="w-[64px] py-2 text-right">Min</TableHead>
+              <TableHead className="w-[64px] py-2 text-right">Max</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.map(row => (
-              <TableRow key={row.sectionId} className={row.sectionId === "ALL" ? "bg-slate-100 dark:bg-slate-800 font-bold" : ""}>
-                <TableCell className="py-2">{row.sectionId === "ALL" ? "Course Avg" : row.sectionName.replace("Section ", "")}</TableCell>
-                <TableCell className="py-2 text-right font-mono text-slate-500">{row.totalStudents}</TableCell>
-                <TableCell className="py-2 text-right font-mono text-indigo-700 dark:text-indigo-400 font-medium">{row[metricKey].avg.toFixed(1)}</TableCell>
-                <TableCell className="py-2 text-right font-mono">{row[metricKey].median.toFixed(1)}</TableCell>
-                <TableCell className="py-2 text-right font-mono text-slate-500">{row[metricKey].mode}</TableCell>
-                <TableCell className="py-2 text-right font-mono text-slate-400">{row[metricKey].stdDev.toFixed(1)}</TableCell>
-                <TableCell className="py-2 text-right font-mono text-rose-600">{row[metricKey].min.toFixed(1)}</TableCell>
-                <TableCell className="py-2 text-right font-mono text-emerald-600">{row[metricKey].max.toFixed(1)}</TableCell>
+            {component.rows.map((row) => (
+              <TableRow key={`${component.assessmentId}-${row.sectionId}`} className={row.sectionId === "ALL" ? "bg-slate-100 dark:bg-slate-800 font-bold" : ""}>
+                <TableCell className="w-[108px] py-2 truncate">{row.sectionId === "ALL" ? "Course Avg" : row.sectionName}</TableCell>
+                <TableCell className="w-[80px] py-2 text-right font-mono text-slate-500">{row.totalStudents}</TableCell>
+                <TableCell className="w-[68px] py-2 text-right font-mono font-medium text-indigo-700 dark:text-indigo-400">{row.stats.avg.toFixed(1)}</TableCell>
+                <TableCell className="w-[68px] py-2 text-right font-mono">{row.stats.median.toFixed(1)}</TableCell>
+                <TableCell className="w-[68px] py-2 text-right font-mono text-slate-500">{row.stats.mode}</TableCell>
+                <TableCell className="w-[64px] py-2 text-right font-mono text-slate-400">{row.stats.stdDev.toFixed(1)}</TableCell>
+                <TableCell className="w-[64px] py-2 text-right font-mono text-rose-600">{row.stats.min.toFixed(1)}</TableCell>
+                <TableCell className="w-[64px] py-2 text-right font-mono text-emerald-600">{row.stats.max.toFixed(1)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -682,9 +697,10 @@ function MiniTable({ title, data, metricKey, headerColor }: {
 
 // ─── Main client component ─────────────────────────────────────────────────
 
-export function ReportsClient({ data, courseAggregate, reportMeta }: {
+export function ReportsClient({ data, courseAggregate, componentReports, reportMeta }: {
   data: SectionReportData[]
   courseAggregate: SectionReportData | null
+  componentReports: AssessmentComponentReport[]
   reportMeta: ReportMeta
 }) {
   const [configOpen, setConfigOpen] = useState(false)
@@ -692,7 +708,7 @@ export function ReportsClient({ data, courseAggregate, reportMeta }: {
   const allRows = courseAggregate ? [...data, courseAggregate] : data
 
   const chartData = data.map(r => ({
-    name: r.sectionName.replace("Section ", ""),
+    name: r.sectionName,
     quizAvg: r.quiz.avg,
     reviewAvg: r.review.avg,
     caAvg: r.ca.avg,
@@ -734,7 +750,7 @@ export function ReportsClient({ data, courseAggregate, reportMeta }: {
             <TableHeader>
               <TableRow className="bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-100">
                 <TableHead rowSpan={2} className="border-r border-slate-200 dark:border-slate-700 font-bold bg-white dark:bg-slate-900 sticky left-0 z-20">Section</TableHead>
-                <TableHead rowSpan={2} className="border-r border-slate-200 dark:border-slate-700 text-center">Stdts</TableHead>
+                <TableHead rowSpan={2} className="border-r border-slate-200 dark:border-slate-700 text-center">Students</TableHead>
                 {REPORT_METRICS.map((metric, index) => (
                   <TableHead
                     key={metric.key}
@@ -761,7 +777,7 @@ export function ReportsClient({ data, courseAggregate, reportMeta }: {
             <TableBody>
               {allRows.map(row => (
                 <TableRow key={row.sectionId} className={row.sectionId === "ALL" ? "bg-slate-100 dark:bg-slate-800 font-bold" : ""}>
-                  <TableCell className={`border-r border-slate-200 dark:border-slate-700 sticky left-0 z-20 ${row.sectionId === "ALL" ? "bg-slate-100 dark:bg-slate-800" : "bg-white dark:bg-slate-900"}`}>{row.sectionName}</TableCell>
+                  <TableCell className={`border-r border-slate-200 dark:border-slate-700 sticky left-0 z-20 ${row.sectionId === "ALL" ? "bg-slate-100 dark:bg-slate-800" : "bg-white dark:bg-slate-900"}`}>{row.sectionId === "ALL" ? "Course Avg" : row.sectionName}</TableCell>
                   <TableCell className="border-r border-slate-200 dark:border-slate-700 text-center font-mono">{row.totalStudents}</TableCell>
                   {REPORT_METRICS.map((metric, ki) => (
                     <React.Fragment key={`${row.sectionId}-${metric.key}`}>
@@ -781,14 +797,16 @@ export function ReportsClient({ data, courseAggregate, reportMeta }: {
       </Card>
 
       {/* ── Component mini tables ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        <MiniTable title={`Quiz [${allRows[0]?.quiz.outOf ?? 0}]`} data={allRows} metricKey="quiz" headerColor="bg-indigo-50 dark:bg-indigo-900/20 text-indigo-800 dark:text-indigo-300" />
-        <MiniTable title={`Review [${allRows[0]?.review.outOf ?? 0}]`} data={allRows} metricKey="review" headerColor="bg-violet-50 dark:bg-violet-900/20 text-violet-800 dark:text-violet-300" />
-        <MiniTable title={`Continuous Assessment [${allRows[0]?.ca.outOf ?? 0}]`} data={allRows} metricKey="ca" headerColor="bg-sky-50 dark:bg-sky-900/20 text-sky-800 dark:text-sky-300" />
-        <MiniTable title={`CA + Mid Term [${allRows[0]?.caMidTerm.outOf ?? 0}]`} data={allRows} metricKey="caMidTerm" headerColor="bg-teal-50 dark:bg-teal-900/20 text-teal-800 dark:text-teal-300" />
-        <MiniTable title={`Mid Term [${allRows[0]?.midTerm.outOf ?? 0}]`} data={allRows} metricKey="midTerm" headerColor="bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300" />
-        <MiniTable title={`End Semester [${allRows[0]?.endSemester.outOf ?? 0}]`} data={allRows} metricKey="endSemester" headerColor="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300" />
-        <MiniTable title={`Overall [${allRows[0]?.overall.outOf ?? 0}]`} data={allRows} metricKey="overall" headerColor="bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-300" />
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Component-wise Statistical Summary</h2>
+          <p className="text-sm text-slate-500">
+            Each assessment component is listed separately below so individual quizzes, reviews, and other components stay visible on their own.
+          </p>
+        </div>
+        {componentReports.map((component) => (
+          <ComponentMiniTable key={component.assessmentId} component={component} />
+        ))}
       </div>
 
       {/* ── Charts ── */}
@@ -799,11 +817,19 @@ export function ReportsClient({ data, courseAggregate, reportMeta }: {
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.2} />
-                  <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: "#64748b", fontSize: 12 }} axisLine={false} tickLine={false} domain={[0, 100]} />
-                  <RechartsTooltip contentStyle={{ backgroundColor: "#0f172a", borderColor: "#1e293b", color: "#f8fafc", borderRadius: "8px" }} cursor={{ fill: "#334155", opacity: 0.1 }} />
-                  <Bar dataKey="overallAvg" name="Overall Mean" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                  <CartesianGrid stroke={CHART_THEME.grid} strokeDasharray="3 3" vertical={false} opacity={0.45} />
+                  <XAxis dataKey="name" tick={{ fill: CHART_THEME.axis, fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: CHART_THEME.axis, fontSize: 12 }} axisLine={false} tickLine={false} domain={[0, 100]} />
+                  <RechartsTooltip
+                    contentStyle={{
+                      backgroundColor: CHART_THEME.tooltipBackground,
+                      borderColor: CHART_THEME.tooltipBorder,
+                      color: CHART_THEME.tooltipForeground,
+                      borderRadius: "8px",
+                    }}
+                    cursor={{ fill: CHART_THEME.cursor, opacity: 0.18 }}
+                  />
+                  <Bar dataKey="overallAvg" name="Overall Mean" fill="var(--primary)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -816,16 +842,24 @@ export function ReportsClient({ data, courseAggregate, reportMeta }: {
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.2} />
-                  <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: "#64748b", fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <RechartsTooltip contentStyle={{ backgroundColor: "#0f172a", borderColor: "#1e293b", color: "#f8fafc", borderRadius: "8px" }} cursor={{ fill: "#334155", opacity: 0.1 }} />
+                  <CartesianGrid stroke={CHART_THEME.grid} strokeDasharray="3 3" vertical={false} opacity={0.45} />
+                  <XAxis dataKey="name" tick={{ fill: CHART_THEME.axis, fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: CHART_THEME.axis, fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <RechartsTooltip
+                    contentStyle={{
+                      backgroundColor: CHART_THEME.tooltipBackground,
+                      borderColor: CHART_THEME.tooltipBorder,
+                      color: CHART_THEME.tooltipForeground,
+                      borderRadius: "8px",
+                    }}
+                    cursor={{ fill: CHART_THEME.cursor, opacity: 0.18 }}
+                  />
                   <Legend wrapperStyle={{ paddingTop: "10px", fontSize: "12px" }} />
-                  <Bar dataKey="quizAvg" name="Quiz Avg" fill="#6366f1" />
-                  <Bar dataKey="reviewAvg" name="Review Avg" fill="#8b5cf6" />
-                  <Bar dataKey="caAvg" name="CA Avg" fill="#38bdf8" />
-                  <Bar dataKey="midTermAvg" name="Mid Term Avg" fill="#fbbf24" />
-                  <Bar dataKey="caMidTermAvg" name="CA + Mid Avg" fill="#14b8a6" />
+                  <Bar dataKey="quizAvg" name="Quiz Avg" fill={METRIC_COLOR_MAP.quiz} />
+                  <Bar dataKey="reviewAvg" name="Review Avg" fill={METRIC_COLOR_MAP.review} />
+                  <Bar dataKey="caAvg" name="CA Avg" fill={METRIC_COLOR_MAP.ca} />
+                  <Bar dataKey="midTermAvg" name="Mid Term Avg" fill={METRIC_COLOR_MAP.midTerm} />
+                  <Bar dataKey="caMidTermAvg" name="CA + Mid Avg" fill={METRIC_COLOR_MAP.caMidTerm} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

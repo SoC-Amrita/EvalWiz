@@ -1,7 +1,7 @@
 import { auth } from "@/auth"
 import { buildScopedSectionWhere, getActiveWorkspaceState } from "@/lib/course-workspace"
 import prisma from "@/lib/db"
-import { formatCompactSectionName, formatWorkspaceFullLabel } from "@/lib/workspace-labels"
+import { formatCompactSectionName, formatWorkspaceCode } from "@/lib/workspace-labels"
 import { redirect } from "next/navigation"
 import { SectionsClient } from "./client"
 import { canManageUsers } from "@/lib/user-roles"
@@ -78,8 +78,8 @@ export default async function SectionsPage() {
         </h1>
         <p className="text-slate-500">
           {activeWorkspace.isElective
-            ? `Manage the single elective class and roster for ${formatWorkspaceFullLabel(activeWorkspace)}. The mentor remains the default faculty for this offering.`
-            : `Assign section coordinators for ${formatWorkspaceFullLabel(activeWorkspace)}.`}
+            ? `Manage the single elective class and roster for ${formatWorkspaceCode(activeWorkspace)}. The mentor remains the default faculty for this offering.`
+            : `Assign section coordinators for ${formatWorkspaceCode(activeWorkspace)}.`}
         </p>
       </div>
       <SectionsClient
@@ -98,7 +98,7 @@ export default async function SectionsPage() {
         }))}
         facultyMembers={facultyMembers}
         canManageUsers={isAdmin}
-        workspaceLabel={formatWorkspaceFullLabel(activeWorkspace)}
+        workspaceLabel={formatWorkspaceCode(activeWorkspace)}
         isElective={activeWorkspace.isElective}
       />
     </div>

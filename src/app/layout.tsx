@@ -16,6 +16,11 @@ const uiSans = Instrument_Sans({
 export const metadata: Metadata = {
   title: APP_INFO.name,
   description: `${APP_INFO.name} for ${getCourseDisplayTitle()}, developed by ${APP_INFO.developer}.`,
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({

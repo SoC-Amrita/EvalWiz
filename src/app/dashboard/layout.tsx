@@ -4,16 +4,21 @@ import Link from "next/link"
 import type { ComponentType } from "react"
 import { APP_INFO } from "@/lib/app-info"
 import { getActiveWorkspaceState, getRoleViewLabel, hasRealWorkspace } from "@/lib/course-workspace"
-import { formatWorkspaceFullLabel, formatWorkspaceIdentity } from "@/lib/workspace-labels"
+import { formatWorkspaceFullLabel } from "@/lib/workspace-labels"
 import { AdminModeSwitchButton } from "./admin-mode-switch-button"
 import { changeOwnPassword, signOutToLogin } from "./account-actions"
 import { UserMenu } from "./user-menu"
+import {
+  WorkspaceContextBeacon,
+  AnalysisPreviewDialog,
+  CONTEXT_BEACON_PRIMARY,
+  CONTEXT_BEACON_SECONDARY,
+} from "./workspace-context-gate"
 import { 
   BarChart, 
   Users, 
   BookOpen, 
   Settings, 
-  GraduationCap, 
   FileSpreadsheet 
 } from "lucide-react"
 
@@ -37,8 +42,8 @@ export default async function DashboardLayout({
   const sidebarSubtitle = isAdmin
     ? "Administrator Console"
     : hasWorkspace
-      ? formatWorkspaceIdentity(activeWorkspace)
-      : "Choose an active offering to unlock course tools"
+      ? `${getRoleViewLabel(activeRoleView)} Workspace`
+      : "Choose a workspace"
   const headerLabel = isAdmin
     ? "Administrator View"
     : hasWorkspace
@@ -55,7 +60,16 @@ export default async function DashboardLayout({
             <BookOpen className="h-5 w-5" />
           </div>
           <div>
-            <span className="text-lg font-semibold tracking-tight text-foreground">{APP_INFO.name}</span>
+            {hasWorkspace && !isAdmin ? (
+              <WorkspaceContextBeacon
+                step={CONTEXT_BEACON_PRIMARY}
+                className="text-left text-lg font-semibold tracking-tight text-foreground"
+              >
+                {APP_INFO.name}
+              </WorkspaceContextBeacon>
+            ) : (
+              <span className="text-lg font-semibold tracking-tight text-foreground">{APP_INFO.name}</span>
+            )}
             <p className="text-xs text-muted-foreground">
               {sidebarSubtitle}
             </p>
@@ -64,9 +78,7 @@ export default async function DashboardLayout({
                 Course-specific tools only apply after you explicitly select a workspace.
               </p>
             ) : (
-              <p className="mt-1 text-[11px] text-muted-foreground/80">
-                {getRoleViewLabel(activeRoleView)} Workspace
-              </p>
+              null
             )}
           </div>
         </div>
@@ -102,9 +114,6 @@ export default async function DashboardLayout({
               <NavLink href="/dashboard/advanced-analytics" icon={BarChart} label="Advanced Analytics" />
               <NavLink href="/dashboard/marks" icon={Users} label="Marks Entry" />
               
-              <div className="mb-2 mt-6 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Simulation</div>
-              <NavLink href="/dashboard/what-if" icon={GraduationCap} label="What-If Scenarios" />
-
               {canManageAssessments || canAccessSections ? (
                 <>
                   <div className="mb-2 mt-6 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Admin</div>
@@ -120,9 +129,18 @@ export default async function DashboardLayout({
       {/* Main Content */}
       <main className="relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden">
         <header className="relative z-30 flex h-16 items-center justify-between border-b border-border/80 bg-background/78 px-6 backdrop-blur-xl">
-          <div className="max-w-[70vw] truncate text-xs text-muted-foreground md:text-sm">
-            {headerLabel}
-          </div>
+          {hasWorkspace && !isAdmin ? (
+            <WorkspaceContextBeacon
+              step={CONTEXT_BEACON_SECONDARY}
+              className="max-w-[70vw] truncate text-left text-xs text-muted-foreground md:text-sm"
+            >
+              {headerLabel}
+            </WorkspaceContextBeacon>
+          ) : (
+            <div className="max-w-[70vw] truncate text-xs text-muted-foreground md:text-sm">
+              {headerLabel}
+            </div>
+          )}
           <UserMenu
             name={user.name ?? "Account"}
             roleLabel={getRoleViewLabel(activeRoleView)}
@@ -132,6 +150,7 @@ export default async function DashboardLayout({
           />
         </header>
         <div className="flex-1 overflow-auto p-6 md:p-8">
+          {hasWorkspace && !isAdmin ? <AnalysisPreviewDialog /> : null}
           <div className="max-w-7xl mx-auto">
             {children}
           </div>

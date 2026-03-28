@@ -1,7 +1,7 @@
 import { auth } from "@/auth"
 import prisma from "@/lib/db"
 import { buildScopedStudentWhere, getActiveWorkspaceState } from "@/lib/course-workspace"
-import { formatWorkspaceFullLabel } from "@/lib/workspace-labels"
+import { formatWorkspaceCode } from "@/lib/workspace-labels"
 import { redirect } from "next/navigation"
 import { AnalyticsClient } from "./client"
 
@@ -68,7 +68,7 @@ export default async function AnalyticsPage() {
           Course Analytics
         </h1>
         <p className="text-slate-500">
-          {formatWorkspaceFullLabel(activeWorkspace)}
+          Component trends and score patterns for {formatWorkspaceCode(activeWorkspace)}.
         </p>
       </div>
 

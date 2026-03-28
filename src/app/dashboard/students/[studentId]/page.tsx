@@ -2,7 +2,7 @@ import { auth } from "@/auth"
 import prisma from "@/lib/db"
 import { getActiveWorkspaceState } from "@/lib/course-workspace"
 import { requireAllowedSectionAccess, requireRealWorkspace } from "@/lib/workspace-guards"
-import { formatWorkspaceFullLabel } from "@/lib/workspace-labels"
+import { formatWorkspaceCode } from "@/lib/workspace-labels"
 import { redirect } from "next/navigation"
 
 import { StudentRecordClient } from "../record-client"
@@ -92,7 +92,7 @@ export default async function StudentRecordPage({
           sectionName: student.section.name,
         }}
         roleView={scopedRoleView}
-        workspaceLabel={formatWorkspaceFullLabel(activeWorkspace)}
+        workspaceLabel={formatWorkspaceCode(activeWorkspace)}
         assessments={assessments.map((assessment) => {
           const existingMark = markByAssessmentId.get(assessment.id)
           return {

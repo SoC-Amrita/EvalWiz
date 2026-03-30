@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Papa from "papaparse"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
 import {
   Table,
@@ -318,9 +318,12 @@ export function SectionsClient({
             ) : null}
 
             {canManageUsers ? (
-              <Button variant="outline" size="sm" render={<Link href="/dashboard/academic-setup" />}>
+              <Link
+                href="/dashboard/academic-setup"
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              >
                 Open Academic Setup
-              </Button>
+              </Link>
             ) : null}
           </div>
         </CardHeader>

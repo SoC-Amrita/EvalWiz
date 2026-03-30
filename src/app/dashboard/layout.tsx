@@ -1,26 +1,9 @@
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import Link from "next/link"
-import type { ComponentType } from "react"
-import { APP_INFO } from "@/lib/app-info"
 import { getActiveWorkspaceState, getRoleViewLabel, hasRealWorkspace } from "@/lib/course-workspace"
 import { formatWorkspaceFullLabel } from "@/lib/workspace-labels"
-import { AdminModeSwitchButton } from "./admin-mode-switch-button"
 import { changeOwnPassword, signOutToLogin } from "./account-actions"
-import { UserMenu } from "./user-menu"
-import {
-  WorkspaceContextBeacon,
-  AnalysisPreviewDialog,
-  CONTEXT_BEACON_PRIMARY,
-  CONTEXT_BEACON_SECONDARY,
-} from "./workspace-context-gate"
-import { 
-  BarChart, 
-  Users, 
-  BookOpen, 
-  Settings, 
-  FileSpreadsheet 
-} from "lucide-react"
+import { DashboardShell } from "./dashboard-shell"
 
 export default async function DashboardLayout({
   children,
@@ -51,123 +34,22 @@ export default async function DashboardLayout({
       : "No Workspace Selected"
 
   return (
-    <div className="relative flex min-h-screen overflow-hidden app-shell">
-      <div className="pointer-events-none absolute inset-0 app-grid opacity-60" />
-      {/* Sidebar Navigation */}
-      <aside className="relative z-10 hidden w-64 flex-col border-r border-border/80 bg-background/85 backdrop-blur-xl md:flex">
-        <div className="flex items-center space-x-3 border-b border-border/80 p-6">
-          <div className="rounded-lg bg-primary/12 p-2 text-primary ring-1 ring-primary/15">
-            <BookOpen className="h-5 w-5" />
-          </div>
-          <div>
-            {hasWorkspace && !isAdmin ? (
-              <WorkspaceContextBeacon
-                step={CONTEXT_BEACON_PRIMARY}
-                className="text-left text-lg font-semibold tracking-tight text-foreground"
-              >
-                {APP_INFO.name}
-              </WorkspaceContextBeacon>
-            ) : (
-              <span className="text-lg font-semibold tracking-tight text-foreground">{APP_INFO.name}</span>
-            )}
-            <p className="text-xs text-muted-foreground">
-              {sidebarSubtitle}
-            </p>
-            {isAdmin ? (
-              <p className="mt-1 text-[11px] text-muted-foreground/80">
-                Course-specific tools only apply after you explicitly select a workspace.
-              </p>
-            ) : (
-              null
-            )}
-          </div>
-        </div>
-
-        <div className="px-6 py-3">
-          {isAdmin ? (
-            <AdminModeSwitchButton targetMode="workspace" />
-          ) : user.isAdmin ? (
-            <AdminModeSwitchButton targetMode="admin" />
-          ) : (
-            <Link href="/dashboard" className="text-xs font-medium text-primary hover:underline">
-              Switch Workspace
-            </Link>
-          )}
-        </div>
-        
-        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-          <div className="mb-2 mt-4 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Overview</div>
-          <NavLink href="/dashboard" icon={BarChart} label={isAdmin ? "Admin Console" : "Workspace Home"} />
-
-          {isAdmin ? (
-            <>
-              <div className="mb-2 mt-6 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Administration</div>
-              <NavLink href="/dashboard/academic-setup" icon={Settings} label="Academic Setup" />
-              <NavLink href="/dashboard/students" icon={Users} label="Student Master List" />
-              <NavLink href="/dashboard/users" icon={Users} label="User Admin" />
-            </>
-          ) : (
-            <>
-              <NavLink href="/dashboard/analytics" icon={BarChart} label="Course Analytics" />
-              <NavLink href="/dashboard/students" icon={Users} label="Students" />
-              <NavLink href="/dashboard/reports" icon={FileSpreadsheet} label="Section Reports" />
-              <NavLink href="/dashboard/advanced-analytics" icon={BarChart} label="Advanced Analytics" />
-              <NavLink href="/dashboard/marks" icon={Users} label="Marks Entry" />
-              
-              {canManageAssessments || canAccessSections ? (
-                <>
-                  <div className="mb-2 mt-6 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Admin</div>
-                  {canManageAssessments ? <NavLink href="/dashboard/assessments" icon={Settings} label="Assessments" /> : null}
-                  {canAccessSections ? <NavLink href="/dashboard/sections" icon={Users} label="Section Allocation" /> : null}
-                </>
-              ) : null}
-            </>
-          )}
-        </nav>
-      </aside>
-
-      {/* Main Content */}
-      <main className="relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="relative z-30 flex h-16 items-center justify-between border-b border-border/80 bg-background/78 px-6 backdrop-blur-xl">
-          {hasWorkspace && !isAdmin ? (
-            <WorkspaceContextBeacon
-              step={CONTEXT_BEACON_SECONDARY}
-              className="max-w-[70vw] truncate text-left text-xs text-muted-foreground md:text-sm"
-            >
-              {headerLabel}
-            </WorkspaceContextBeacon>
-          ) : (
-            <div className="max-w-[70vw] truncate text-xs text-muted-foreground md:text-sm">
-              {headerLabel}
-            </div>
-          )}
-          <UserMenu
-            name={user.name ?? "Account"}
-            roleLabel={getRoleViewLabel(activeRoleView)}
-            initials={user.firstName?.[0] || user.name?.[0] || "U"}
-            signOutAction={signOutToLogin}
-            changePasswordAction={changeOwnPassword}
-          />
-        </header>
-        <div className="flex-1 overflow-auto p-6 md:p-8">
-          {hasWorkspace && !isAdmin ? <AnalysisPreviewDialog /> : null}
-          <div className="max-w-7xl mx-auto">
-            {children}
-          </div>
-        </div>
-      </main>
-    </div>
-  )
-}
-
-function NavLink({ href, icon: Icon, label }: { href: string; icon: ComponentType<{ className?: string }>; label: string }) {
-  return (
-    <Link 
-      href={href}
-      className="flex items-center rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+    <DashboardShell
+      isAdmin={isAdmin}
+      hasWorkspace={hasWorkspace}
+      activeRoleLabel={getRoleViewLabel(activeRoleView)}
+      sidebarSubtitle={sidebarSubtitle}
+      headerLabel={headerLabel}
+      userIsAdmin={user.isAdmin}
+      canManageAssessments={canManageAssessments}
+      canAccessSections={canAccessSections}
+      userName={user.name ?? "Account"}
+      userInitials={user.firstName?.[0] || user.name?.[0] || "U"}
+      showAnalysisPreview={hasWorkspace && !isAdmin}
+      signOutAction={signOutToLogin}
+      changePasswordAction={changeOwnPassword}
     >
-      <Icon className="mr-3 h-5 w-5 text-primary/80" />
-      {label}
-    </Link>
+      {children}
+    </DashboardShell>
   )
 }

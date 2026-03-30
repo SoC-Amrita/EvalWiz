@@ -7,7 +7,6 @@ import {
   getInitialPaletteTheme,
   DEFAULT_PALETTE_THEME,
   PALETTE_THEMES,
-  type PaletteTheme,
 } from "@/lib/palette-theme"
 
 describe("isPaletteTheme", () => {
@@ -36,6 +35,8 @@ describe("isDarkPaletteTheme", () => {
     expect(isDarkPaletteTheme("neon")).toBe(true)
     expect(isDarkPaletteTheme("obsidian")).toBe(true)
     expect(isDarkPaletteTheme("ember")).toBe(true)
+    expect(isDarkPaletteTheme("harbor")).toBe(true)
+    expect(isDarkPaletteTheme("slate-frost")).toBe(true)
   })
 
   it("returns false for light themes", () => {
@@ -44,6 +45,7 @@ describe("isDarkPaletteTheme", () => {
     expect(isDarkPaletteTheme("ocean")).toBe(false)
     expect(isDarkPaletteTheme("forest")).toBe(false)
     expect(isDarkPaletteTheme("aurora")).toBe(false)
+    expect(isDarkPaletteTheme("linen")).toBe(false)
   })
 })
 
@@ -88,6 +90,9 @@ describe("getInitialPaletteTheme", () => {
   it("returns the stored theme when it is a valid palette theme", () => {
     expect(getInitialPaletteTheme("ocean")).toBe("ocean")
     expect(getInitialPaletteTheme("dark")).toBe("dark")
+    expect(getInitialPaletteTheme("linen")).toBe("linen")
+    expect(getInitialPaletteTheme("harbor")).toBe("harbor")
+    expect(getInitialPaletteTheme("slate-frost")).toBe("slate-frost")
   })
 
   it("returns the default theme when stored value is invalid", () => {

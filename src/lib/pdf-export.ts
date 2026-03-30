@@ -29,10 +29,13 @@ export const captureElementAsImage = async (
   const hadOcean = html.classList.contains("ocean")
   const hadForest = html.classList.contains("forest")
   const hadAurora = html.classList.contains("aurora")
+  const hadLinen = html.classList.contains("linen")
   const hadDark = html.classList.contains("dark")
   const hadNeon = html.classList.contains("neon")
   const hadObsidian = html.classList.contains("obsidian")
   const hadEmber = html.classList.contains("ember")
+  const hadHarbor = html.classList.contains("harbor")
+  const hadSlateFrost = html.classList.contains("slate-frost")
   const previousFont = html.dataset.font
   const hadSansFont = html.classList.contains("font-style-sans")
   const hadSerifFont = html.classList.contains("font-style-serif")
@@ -46,10 +49,13 @@ export const captureElementAsImage = async (
         "ocean",
         "forest",
         "aurora",
+        "linen",
         "dark",
         "neon",
         "obsidian",
-        "ember"
+        "ember",
+        "harbor",
+        "slate-frost"
       )
       html.classList.add("classic")
       html.style.colorScheme = "light"
@@ -92,20 +98,26 @@ export const captureElementAsImage = async (
         "ocean",
         "forest",
         "aurora",
+        "linen",
         "dark",
         "neon",
         "obsidian",
-        "ember"
+        "ember",
+        "harbor",
+        "slate-frost"
       )
       if (hadLight) html.classList.add("light")
       if (hadClassic) html.classList.add("classic")
       if (hadOcean) html.classList.add("ocean")
       if (hadForest) html.classList.add("forest")
       if (hadAurora) html.classList.add("aurora")
+      if (hadLinen) html.classList.add("linen")
       if (hadDark) html.classList.add("dark")
       if (hadNeon) html.classList.add("neon")
       if (hadObsidian) html.classList.add("obsidian")
       if (hadEmber) html.classList.add("ember")
+      if (hadHarbor) html.classList.add("harbor")
+      if (hadSlateFrost) html.classList.add("slate-frost")
       html.style.colorScheme = previousColorScheme
     }
 

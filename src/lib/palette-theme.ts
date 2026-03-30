@@ -7,17 +7,20 @@ export const PALETTE_THEMES = [
   "ocean",
   "forest",
   "aurora",
+  "linen",
   "dark",
   "neon",
   "obsidian",
   "ember",
+  "harbor",
+  "slate-frost",
 ] as const
 
 export const DEFAULT_PALETTE_THEME = "light" as const
 
 export type PaletteTheme = (typeof PALETTE_THEMES)[number]
 
-const DARK_PALETTES = new Set<PaletteTheme>(["dark", "neon", "obsidian", "ember"])
+const DARK_PALETTES = new Set<PaletteTheme>(["dark", "neon", "obsidian", "ember", "harbor", "slate-frost"])
 
 export function isPaletteTheme(value: string | null): value is PaletteTheme {
   return PALETTE_THEMES.includes((value ?? "") as PaletteTheme)

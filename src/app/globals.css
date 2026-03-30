@@ -18,7 +18,7 @@
   font-display: swap;
 }
 
-@custom-variant dark (&:is(.dark *, .neon *, .obsidian *, .ember *));
+@custom-variant dark (&:is(.dark *, .neon *, .obsidian *, .ember *, .harbor *, .slate-frost *));
 
 @theme inline {
   --color-background: var(--background);
@@ -620,42 +620,132 @@
   --app-accent-soft: #fdf2f8;
 }
 
+.linen {
+  color-scheme: light;
+  --theme-accent-50: #fff8eb;
+  --theme-accent-100: #f9ecd0;
+  --theme-accent-200: #efd59e;
+  --theme-accent-300: #e3ba67;
+  --theme-accent-400: #d49b34;
+  --theme-accent-500: #b7791f;
+  --theme-accent-600: #975d16;
+  --theme-accent-700: #7b4a15;
+  --theme-accent-800: #613a13;
+  --theme-accent-900: #472a0f;
+  --theme-accent-950: #281506;
+  --background: #fffdf8;
+  --foreground: #1f2937;
+  --card: #fffdfa;
+  --card-foreground: #1f2937;
+  --popover: #fffdfa;
+  --popover-foreground: #1f2937;
+  --primary: #b7791f;
+  --primary-foreground: #fffaf0;
+  --secondary: #faf3e6;
+  --secondary-foreground: #5b4632;
+  --muted: #fbf6ec;
+  --muted-foreground: #786b57;
+  --accent: #f5ead7;
+  --accent-foreground: #6c4c17;
+  --destructive: #dc2626;
+  --border: #eadfca;
+  --input: #e8dcc5;
+  --ring: #d49b34;
+  --chart-1: #b7791f;
+  --chart-2: #8b5e34;
+  --chart-3: #d97706;
+  --chart-4: #c2410c;
+  --chart-5: #d6a756;
+  --chart-6: #0f766e;
+  --chart-7: #7c3aed;
+  --chart-8: #475569;
+  --metric-quiz: var(--chart-1);
+  --metric-review: var(--chart-2);
+  --metric-ca: var(--chart-3);
+  --metric-mid: var(--chart-4);
+  --metric-ca-mid: var(--chart-6);
+  --metric-end: var(--chart-7);
+  --metric-overall: var(--chart-8);
+  --chart-grid: #e7dfd0;
+  --chart-axis: #786b57;
+  --chart-tooltip-bg: rgba(255, 253, 248, 0.98);
+  --chart-tooltip-border: #ded2bb;
+  --chart-tooltip-foreground: #1f2937;
+  --chart-tooltip-muted: #6b7280;
+  --chart-cursor: rgba(183, 121, 31, 0.08);
+  --heat-empty: #f8fafc;
+  --heat-low: #f59e0b;
+  --heat-mid: #d97706;
+  --heat-high: #b7791f;
+  --heat-hot: #7b4a15;
+  --correlation-strong-pos: #7b4a15;
+  --correlation-pos: #b7791f;
+  --correlation-soft-pos: #d49b34;
+  --correlation-faint-pos: #f3e3c2;
+  --correlation-neutral: #faf3e6;
+  --correlation-faint-neg: #fee2e2;
+  --correlation-soft-neg: #fb7185;
+  --correlation-neg: #dc2626;
+  --correlation-strong-neg: #991b1b;
+  --sidebar: #fbf6ec;
+  --sidebar-foreground: #5b4632;
+  --sidebar-primary: #b7791f;
+  --sidebar-primary-foreground: #fffaf0;
+  --sidebar-accent: #f3e3c2;
+  --sidebar-accent-foreground: #6c4c17;
+  --sidebar-border: #e7dbc3;
+  --sidebar-ring: #d49b34;
+  --app-shell: #f8f3e8;
+  --app-shell-strong: #fffdfa;
+  --app-shell-glow-a: rgba(183, 121, 31, 0.12);
+  --app-shell-glow-b: rgba(214, 167, 86, 0.12);
+  --app-grid-line: rgba(183, 121, 31, 0.06);
+  --app-panel: rgba(255, 253, 248, 0.92);
+  --app-panel-strong: #fffdfa;
+  --app-panel-border: rgba(183, 121, 31, 0.14);
+  --app-muted-surface: rgba(250, 243, 230, 0.96);
+  --app-hero-text: #1f2937;
+  --app-hero-subtext: #786b57;
+  --app-kicker: #b7791f;
+  --app-accent-soft: #f5ead7;
+}
+
 .neon {
   color-scheme: dark;
-  --theme-accent-50: #e0e7ff;
-  --theme-accent-100: #c7d2fe;
-  --theme-accent-200: #a5b4fc;
-  --theme-accent-300: #818cf8;
-  --theme-accent-400: #6366f1;
-  --theme-accent-500: #4f46e5;
-  --theme-accent-600: #4338ca;
-  --theme-accent-700: #3730a3;
-  --theme-accent-800: #312e81;
-  --theme-accent-900: #1e1b4b;
-  --theme-accent-950: #0f0f2a;
-  --background: #030712;
+  --theme-accent-50: #e0f2fe;
+  --theme-accent-100: #bae6fd;
+  --theme-accent-200: #7dd3fc;
+  --theme-accent-300: #38bdf8;
+  --theme-accent-400: #22d3ee;
+  --theme-accent-500: #0ea5e9;
+  --theme-accent-600: #0284c7;
+  --theme-accent-700: #0369a1;
+  --theme-accent-800: #1d4ed8;
+  --theme-accent-900: #1e3a8a;
+  --theme-accent-950: #0b1128;
+  --background: #020617;
   --foreground: #f8fafc;
-  --card: #0b1220;
+  --card: #09111f;
   --card-foreground: #f8fafc;
-  --popover: #0b1220;
+  --popover: #09111f;
   --popover-foreground: #f8fafc;
-  --primary: #818cf8;
-  --primary-foreground: #0b1020;
-  --secondary: #111a2f;
+  --primary: #38bdf8;
+  --primary-foreground: #07111d;
+  --secondary: #101b31;
   --secondary-foreground: #dbeafe;
   --muted: #0f172a;
   --muted-foreground: #94a3b8;
-  --accent: #172036;
+  --accent: #12203a;
   --accent-foreground: #e2e8f0;
   --destructive: #fb7185;
   --border: #1e293b;
   --input: #1e293b;
   --ring: #22d3ee;
-  --chart-1: #818cf8;
+  --chart-1: #38bdf8;
   --chart-2: #22d3ee;
-  --chart-3: #ec4899;
+  --chart-3: #60a5fa;
   --chart-4: #f59e0b;
-  --chart-5: #8b5cf6;
+  --chart-5: #818cf8;
   --chart-6: #10b981;
   --chart-7: #fb7185;
   --chart-8: #f8fafc;
@@ -672,13 +762,13 @@
   --chart-tooltip-border: #23314d;
   --chart-tooltip-foreground: #f8fafc;
   --chart-tooltip-muted: #cbd5e1;
-  --chart-cursor: rgba(129, 140, 248, 0.14);
+  --chart-cursor: rgba(56, 189, 248, 0.14);
   --heat-empty: rgba(15, 23, 42, 0.78);
   --heat-low: #f59e0b;
-  --heat-mid: #ec4899;
+  --heat-mid: #60a5fa;
   --heat-high: #22d3ee;
-  --heat-hot: #818cf8;
-  --correlation-strong-pos: #818cf8;
+  --heat-hot: #38bdf8;
+  --correlation-strong-pos: #38bdf8;
   --correlation-pos: #22d3ee;
   --correlation-soft-pos: #10b981;
   --correlation-faint-pos: #1e293b;
@@ -686,28 +776,28 @@
   --correlation-faint-neg: #3f2a18;
   --correlation-soft-neg: #f59e0b;
   --correlation-neg: #fb7185;
-  --correlation-strong-neg: #ec4899;
-  --sidebar: #07101d;
+  --correlation-strong-neg: #f43f5e;
+  --sidebar: #07101c;
   --sidebar-foreground: #e2e8f0;
-  --sidebar-primary: #818cf8;
-  --sidebar-primary-foreground: #0b1020;
-  --sidebar-accent: #13213a;
+  --sidebar-primary: #38bdf8;
+  --sidebar-primary-foreground: #07111d;
+  --sidebar-accent: #11203a;
   --sidebar-accent-foreground: #f8fafc;
   --sidebar-border: #1e293b;
   --sidebar-ring: #22d3ee;
   --app-shell: #020617;
   --app-shell-strong: #030712;
-  --app-shell-glow-a: rgba(129, 140, 248, 0.18);
+  --app-shell-glow-a: rgba(56, 189, 248, 0.18);
   --app-shell-glow-b: rgba(34, 211, 238, 0.14);
-  --app-grid-line: rgba(129, 140, 248, 0.08);
-  --app-panel: rgba(11, 18, 32, 0.84);
-  --app-panel-strong: rgba(11, 18, 32, 0.94);
-  --app-panel-border: rgba(129, 140, 248, 0.16);
+  --app-grid-line: rgba(56, 189, 248, 0.08);
+  --app-panel: rgba(9, 17, 31, 0.84);
+  --app-panel-strong: rgba(9, 17, 31, 0.94);
+  --app-panel-border: rgba(56, 189, 248, 0.16);
   --app-muted-surface: rgba(15, 23, 42, 0.82);
   --app-hero-text: #f8fafc;
   --app-hero-subtext: #cbd5e1;
   --app-kicker: #22d3ee;
-  --app-accent-soft: rgba(129, 140, 248, 0.14);
+  --app-accent-soft: rgba(56, 189, 248, 0.14);
 }
 
 .obsidian {
@@ -888,6 +978,186 @@
   --app-hero-subtext: #f5d7c8;
   --app-kicker: #fb923c;
   --app-accent-soft: rgba(249, 115, 22, 0.14);
+}
+
+.harbor {
+  color-scheme: dark;
+  --theme-accent-50: #e6fffb;
+  --theme-accent-100: #bdfcf2;
+  --theme-accent-200: #8cf5e5;
+  --theme-accent-300: #5ce8d8;
+  --theme-accent-400: #2dd4bf;
+  --theme-accent-500: #14b8a6;
+  --theme-accent-600: #0f8f86;
+  --theme-accent-700: #0f6f6d;
+  --theme-accent-800: #164e63;
+  --theme-accent-900: #123247;
+  --theme-accent-950: #07111b;
+  --background: #04111a;
+  --foreground: #e7f6fb;
+  --card: #081722;
+  --card-foreground: #e7f6fb;
+  --popover: #081722;
+  --popover-foreground: #e7f6fb;
+  --primary: #2dd4bf;
+  --primary-foreground: #05151a;
+  --secondary: #102534;
+  --secondary-foreground: #d5edf5;
+  --muted: #0d1c29;
+  --muted-foreground: #91afbf;
+  --accent: #102433;
+  --accent-foreground: #e7f6fb;
+  --destructive: #fb7185;
+  --border: #214055;
+  --input: #214055;
+  --ring: #38bdf8;
+  --chart-1: #2dd4bf;
+  --chart-2: #38bdf8;
+  --chart-3: #7dd3fc;
+  --chart-4: #f59e0b;
+  --chart-5: #60a5fa;
+  --chart-6: #14b8a6;
+  --chart-7: #fb7185;
+  --chart-8: #f8fafc;
+  --metric-quiz: var(--chart-1);
+  --metric-review: var(--chart-2);
+  --metric-ca: var(--chart-3);
+  --metric-mid: var(--chart-4);
+  --metric-ca-mid: var(--chart-6);
+  --metric-end: var(--chart-5);
+  --metric-overall: var(--chart-8);
+  --chart-grid: rgba(56, 189, 248, 0.14);
+  --chart-axis: #91afbf;
+  --chart-tooltip-bg: rgba(4, 17, 26, 0.96);
+  --chart-tooltip-border: #214055;
+  --chart-tooltip-foreground: #e7f6fb;
+  --chart-tooltip-muted: #c7dde7;
+  --chart-cursor: rgba(45, 212, 191, 0.12);
+  --heat-empty: rgba(13, 28, 41, 0.78);
+  --heat-low: #f59e0b;
+  --heat-mid: #38bdf8;
+  --heat-high: #2dd4bf;
+  --heat-hot: #60a5fa;
+  --correlation-strong-pos: #60a5fa;
+  --correlation-pos: #38bdf8;
+  --correlation-soft-pos: #2dd4bf;
+  --correlation-faint-pos: #214055;
+  --correlation-neutral: #0d1c29;
+  --correlation-faint-neg: #3f2a18;
+  --correlation-soft-neg: #f59e0b;
+  --correlation-neg: #fb7185;
+  --correlation-strong-neg: #f43f5e;
+  --sidebar: #071520;
+  --sidebar-foreground: #d9eef5;
+  --sidebar-primary: #2dd4bf;
+  --sidebar-primary-foreground: #05151a;
+  --sidebar-accent: #102433;
+  --sidebar-accent-foreground: #e7f6fb;
+  --sidebar-border: #214055;
+  --sidebar-ring: #38bdf8;
+  --app-shell: #03131f;
+  --app-shell-strong: #020c14;
+  --app-shell-glow-a: rgba(45, 212, 191, 0.16);
+  --app-shell-glow-b: rgba(56, 189, 248, 0.12);
+  --app-grid-line: rgba(45, 212, 191, 0.08);
+  --app-panel: rgba(8, 23, 34, 0.88);
+  --app-panel-strong: rgba(8, 23, 34, 0.96);
+  --app-panel-border: rgba(45, 212, 191, 0.14);
+  --app-muted-surface: rgba(13, 28, 41, 0.82);
+  --app-hero-text: #e7f6fb;
+  --app-hero-subtext: #bfd8e3;
+  --app-kicker: #2dd4bf;
+  --app-accent-soft: rgba(45, 212, 191, 0.14);
+}
+
+.slate-frost {
+  color-scheme: dark;
+  --theme-accent-50: #eff6ff;
+  --theme-accent-100: #dbeafe;
+  --theme-accent-200: #bfdbfe;
+  --theme-accent-300: #93c5fd;
+  --theme-accent-400: #60a5fa;
+  --theme-accent-500: #3b82f6;
+  --theme-accent-600: #2563eb;
+  --theme-accent-700: #1d4ed8;
+  --theme-accent-800: #243b72;
+  --theme-accent-900: #202b46;
+  --theme-accent-950: #0b1120;
+  --background: #0a101b;
+  --foreground: #eef5ff;
+  --card: #0d1423;
+  --card-foreground: #eef5ff;
+  --popover: #0d1423;
+  --popover-foreground: #eef5ff;
+  --primary: #93c5fd;
+  --primary-foreground: #08111f;
+  --secondary: #151f34;
+  --secondary-foreground: #dbeafe;
+  --muted: #121a2b;
+  --muted-foreground: #a6b8d5;
+  --accent: #182238;
+  --accent-foreground: #eef5ff;
+  --destructive: #fb7185;
+  --border: #2b3a55;
+  --input: #2b3a55;
+  --ring: #93c5fd;
+  --chart-1: #93c5fd;
+  --chart-2: #60a5fa;
+  --chart-3: #c4b5fd;
+  --chart-4: #f59e0b;
+  --chart-5: #38bdf8;
+  --chart-6: #34d399;
+  --chart-7: #fb7185;
+  --chart-8: #f8fafc;
+  --metric-quiz: var(--chart-1);
+  --metric-review: var(--chart-2);
+  --metric-ca: var(--chart-3);
+  --metric-mid: var(--chart-4);
+  --metric-ca-mid: var(--chart-6);
+  --metric-end: var(--chart-5);
+  --metric-overall: var(--chart-8);
+  --chart-grid: rgba(148, 163, 184, 0.18);
+  --chart-axis: #a6b8d5;
+  --chart-tooltip-bg: rgba(10, 16, 27, 0.96);
+  --chart-tooltip-border: #2b3a55;
+  --chart-tooltip-foreground: #eef5ff;
+  --chart-tooltip-muted: #d3deef;
+  --chart-cursor: rgba(147, 197, 253, 0.12);
+  --heat-empty: rgba(18, 26, 43, 0.78);
+  --heat-low: #f59e0b;
+  --heat-mid: #c4b5fd;
+  --heat-high: #60a5fa;
+  --heat-hot: #93c5fd;
+  --correlation-strong-pos: #93c5fd;
+  --correlation-pos: #60a5fa;
+  --correlation-soft-pos: #38bdf8;
+  --correlation-faint-pos: #2b3a55;
+  --correlation-neutral: #121a2b;
+  --correlation-faint-neg: #3f2a18;
+  --correlation-soft-neg: #f59e0b;
+  --correlation-neg: #fb7185;
+  --correlation-strong-neg: #f43f5e;
+  --sidebar: #0b1322;
+  --sidebar-foreground: #e3edf9;
+  --sidebar-primary: #93c5fd;
+  --sidebar-primary-foreground: #08111f;
+  --sidebar-accent: #172339;
+  --sidebar-accent-foreground: #eef5ff;
+  --sidebar-border: #2b3a55;
+  --sidebar-ring: #93c5fd;
+  --app-shell: #0b1120;
+  --app-shell-strong: #070d18;
+  --app-shell-glow-a: rgba(147, 197, 253, 0.14);
+  --app-shell-glow-b: rgba(196, 181, 253, 0.1);
+  --app-grid-line: rgba(147, 197, 253, 0.07);
+  --app-panel: rgba(13, 20, 35, 0.88);
+  --app-panel-strong: rgba(13, 20, 35, 0.96);
+  --app-panel-border: rgba(147, 197, 253, 0.14);
+  --app-muted-surface: rgba(18, 26, 43, 0.82);
+  --app-hero-text: #eef5ff;
+  --app-hero-subtext: #ccd8ea;
+  --app-kicker: #93c5fd;
+  --app-accent-soft: rgba(147, 197, 253, 0.14);
 }
 
 html.font-style-sans {
@@ -1113,86 +1383,116 @@ html.font-style-serif {
     color: var(--theme-accent-400) !important;
   }
 
-  :is(.dark, .neon, .obsidian, .ember) .dark\:bg-indigo-900\/10 {
+  :is(.dark, .neon, .obsidian, .ember, .harbor, .slate-frost) .dark\:bg-indigo-900\/10 {
     background-color: color-mix(in srgb, var(--theme-accent-900) 18%, transparent) !important;
   }
 
-  :is(.dark, .neon, .obsidian, .ember) .dark\:bg-indigo-900\/20 {
+  :is(.dark, .neon, .obsidian, .ember, .harbor, .slate-frost) .dark\:bg-indigo-900\/20 {
     background-color: color-mix(in srgb, var(--theme-accent-900) 24%, transparent) !important;
   }
 
-  :is(.dark, .neon, .obsidian, .ember) .dark\:bg-indigo-900\/40 {
+  :is(.dark, .neon, .obsidian, .ember, .harbor, .slate-frost) .dark\:bg-indigo-900\/40 {
     background-color: color-mix(in srgb, var(--theme-accent-900) 40%, transparent) !important;
   }
 
-  :is(.dark, .neon, .obsidian, .ember) .dark\:bg-indigo-950\/40,
-  :is(.dark, .neon, .obsidian, .ember) .dark\:bg-indigo-950\/50 {
+  :is(.dark, .neon, .obsidian, .ember, .harbor, .slate-frost) .dark\:bg-indigo-950\/40,
+  :is(.dark, .neon, .obsidian, .ember, .harbor, .slate-frost) .dark\:bg-indigo-950\/50 {
     background-color: color-mix(in srgb, var(--theme-accent-950) 48%, transparent) !important;
   }
 
-  :is(.dark, .neon, .obsidian, .ember) .dark\:from-indigo-950 {
+  :is(.dark, .neon, .obsidian, .ember, .harbor, .slate-frost) .dark\:from-indigo-950 {
     --tw-gradient-from: var(--theme-accent-950) var(--tw-gradient-from-position) !important;
     --tw-gradient-to: color-mix(in srgb, var(--theme-accent-950) 0%, transparent) var(--tw-gradient-to-position) !important;
     --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
   }
 
-  :is(.dark, .neon, .obsidian, .ember) .dark\:border-indigo-900 {
+  :is(.dark, .neon, .obsidian, .ember, .harbor, .slate-frost) .dark\:border-indigo-900 {
     border-color: color-mix(in srgb, var(--theme-accent-900) 72%, transparent) !important;
   }
 
-  :is(.dark, .neon, .obsidian, .ember) .dark\:ring-indigo-900\/40 {
+  :is(.dark, .neon, .obsidian, .ember, .harbor, .slate-frost) .dark\:ring-indigo-900\/40 {
     --tw-ring-color: rgba(109, 16, 45, 0.4) !important;
   }
 
-  :is(.dark, .neon, .obsidian, .ember) .dark\:text-indigo-200 {
+  :is(.dark, .neon, .obsidian, .ember, .harbor, .slate-frost) .dark\:text-indigo-200 {
     color: #f3dbe4 !important;
   }
 
-  :is(.dark, .neon, .obsidian, .ember) .dark\:text-indigo-300 {
+  :is(.dark, .neon, .obsidian, .ember, .harbor, .slate-frost) .dark\:text-indigo-300 {
     color: #e8b4c7 !important;
   }
 
-  :is(.dark, .neon, .obsidian, .ember) .dark\:text-indigo-400 {
+  :is(.dark, .neon, .obsidian, .ember, .harbor, .slate-frost) .dark\:text-indigo-400 {
     color: var(--theme-accent-400) !important;
   }
 
-  :is(.dark, .neon, .obsidian, .ember) .dark\:text-indigo-100 {
+  :is(.dark, .neon, .obsidian, .ember, .harbor, .slate-frost) .dark\:text-indigo-100 {
     color: color-mix(in srgb, white 88%, var(--theme-accent-50)) !important;
   }
 
-  :is(.dark, .neon, .obsidian, .ember) .dark\:bg-indigo-900 {
+  :is(.dark, .neon, .obsidian, .ember, .harbor, .slate-frost) .dark\:bg-indigo-900 {
     background-color: var(--theme-accent-900) !important;
   }
 
-  :is(.dark, .neon, .obsidian, .ember) .dark\:hover\:bg-indigo-900\/60:hover {
+  :is(.dark, .neon, .obsidian, .ember, .harbor, .slate-frost) .dark\:hover\:bg-indigo-900\/60:hover {
     background-color: color-mix(in srgb, var(--theme-accent-900) 60%, transparent) !important;
   }
 
-  :is(.dark, .neon, .obsidian, .ember) .dark\:bg-slate-800,
-  :is(.dark, .neon, .obsidian, .ember) .dark\:bg-slate-900,
-  :is(.dark, .neon, .obsidian, .ember) .dark\:bg-slate-900\/30,
-  :is(.dark, .neon, .obsidian, .ember) .dark\:bg-slate-900\/40,
-  :is(.dark, .neon, .obsidian, .ember) .dark\:bg-slate-900\/50,
-  :is(.dark, .neon, .obsidian, .ember) .dark\:bg-slate-950\/40,
-  :is(.dark, .neon, .obsidian, .ember) .dark\:bg-slate-950\/50 {
+  :is(.dark, .neon, .obsidian, .ember, .harbor, .slate-frost) .dark\:bg-slate-800,
+  :is(.dark, .neon, .obsidian, .ember, .harbor, .slate-frost) .dark\:bg-slate-900,
+  :is(.dark, .neon, .obsidian, .ember, .harbor, .slate-frost) .dark\:bg-slate-900\/30,
+  :is(.dark, .neon, .obsidian, .ember, .harbor, .slate-frost) .dark\:bg-slate-900\/40,
+  :is(.dark, .neon, .obsidian, .ember, .harbor, .slate-frost) .dark\:bg-slate-900\/50,
+  :is(.dark, .neon, .obsidian, .ember, .harbor, .slate-frost) .dark\:bg-slate-950\/40,
+  :is(.dark, .neon, .obsidian, .ember, .harbor, .slate-frost) .dark\:bg-slate-950\/50 {
     background-color: var(--card) !important;
   }
 
-  :is(.dark, .neon, .obsidian, .ember) .dark\:border-slate-700,
-  :is(.dark, .neon, .obsidian, .ember) .dark\:border-slate-800 {
+  :is(.dark, .neon, .obsidian, .ember, .harbor, .slate-frost) .dark\:border-slate-700,
+  :is(.dark, .neon, .obsidian, .ember, .harbor, .slate-frost) .dark\:border-slate-800 {
     border-color: var(--border) !important;
   }
 
-  :is(.dark, .neon, .obsidian, .ember) .dark\:text-slate-100,
-  :is(.dark, .neon, .obsidian, .ember) .dark\:text-slate-200,
-  :is(.dark, .neon, .obsidian, .ember) .dark\:text-slate-300,
-  :is(.dark, .neon, .obsidian, .ember) .dark\:text-slate-400 {
+  :is(.dark, .neon, .obsidian, .ember, .harbor, .slate-frost) .dark\:text-slate-100,
+  :is(.dark, .neon, .obsidian, .ember, .harbor, .slate-frost) .dark\:text-slate-200,
+  :is(.dark, .neon, .obsidian, .ember, .harbor, .slate-frost) .dark\:text-slate-300,
+  :is(.dark, .neon, .obsidian, .ember, .harbor, .slate-frost) .dark\:text-slate-400 {
     color: var(--muted-foreground) !important;
   }
 
-  :is(.dark, .neon, .obsidian, .ember) .dark\:hover\:bg-slate-800:hover,
-  :is(.dark, .neon, .obsidian, .ember) .dark\:hover\:bg-slate-900:hover {
+  :is(.dark, .neon, .obsidian, .ember, .harbor, .slate-frost) .dark\:hover\:bg-slate-800:hover,
+  :is(.dark, .neon, .obsidian, .ember, .harbor, .slate-frost) .dark\:hover\:bg-slate-900:hover {
     background-color: var(--accent) !important;
+  }
+
+  .chip-soft-primary {
+    border-color: color-mix(in srgb, var(--primary) 30%, transparent) !important;
+    background-color: color-mix(in srgb, var(--primary) 14%, var(--card)) !important;
+    color: color-mix(in srgb, var(--primary) 72%, var(--foreground) 28%) !important;
+  }
+
+  .chip-soft-neutral {
+    border-color: color-mix(in srgb, var(--border) 88%, transparent) !important;
+    background-color: color-mix(in srgb, var(--muted) 82%, var(--card)) !important;
+    color: color-mix(in srgb, var(--foreground) 76%, var(--muted-foreground) 24%) !important;
+  }
+
+  .chip-soft-success {
+    border-color: color-mix(in srgb, #10b981 34%, transparent) !important;
+    background-color: color-mix(in srgb, #10b981 16%, var(--card)) !important;
+    color: color-mix(in srgb, #10b981 74%, var(--foreground) 26%) !important;
+  }
+
+  .chip-soft-danger {
+    border-color: color-mix(in srgb, #f43f5e 34%, transparent) !important;
+    background-color: color-mix(in srgb, #f43f5e 16%, var(--card)) !important;
+    color: color-mix(in srgb, #f43f5e 72%, var(--foreground) 28%) !important;
+  }
+
+  .chip-soft-info {
+    border-color: color-mix(in srgb, #38bdf8 34%, transparent) !important;
+    background-color: color-mix(in srgb, #38bdf8 16%, var(--card)) !important;
+    color: color-mix(in srgb, #38bdf8 72%, var(--foreground) 28%) !important;
   }
 
 }

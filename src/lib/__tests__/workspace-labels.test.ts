@@ -7,6 +7,7 @@ import {
   formatWorkspaceFullLabel,
   formatWorkspaceRoleHeading,
   formatCompactSectionName,
+  formatCompactProgramSectionName,
   formatDetailedCompactSectionName,
 } from "@/lib/workspace-labels"
 
@@ -152,5 +153,27 @@ describe("formatDetailedCompactSectionName", () => {
       sectionCode: null,
     })
     expect(result).toBe("II CSE C")
+  })
+})
+
+describe("formatCompactProgramSectionName", () => {
+  it("formats with programCode and sectionCode when both are present", () => {
+    const result = formatCompactProgramSectionName({
+      name: "BTech CSE H (2023 Batch)",
+      programCode: "cse",
+      sectionCode: "h",
+    })
+
+    expect(result).toBe("CSE H")
+  })
+
+  it("falls back to compact section formatting when the program code is unavailable", () => {
+    const result = formatCompactProgramSectionName({
+      name: "Section B",
+      programCode: null,
+      sectionCode: "B",
+    })
+
+    expect(result).toBe("B")
   })
 })

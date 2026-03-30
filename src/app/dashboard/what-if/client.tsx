@@ -529,8 +529,8 @@ export function WhatIfClient({
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
-        <Card className="border-border/70 shadow-sm">
+      <div className="grid items-start gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
+        <Card className="self-start border-border/70 shadow-sm xl:sticky xl:top-24">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <WandSparkles className="h-4 w-4 text-primary" />

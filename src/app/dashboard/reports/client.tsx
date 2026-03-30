@@ -661,31 +661,31 @@ function ComponentMiniTable({ component }: {
           {component.assessmentName} [{component.maxMarks}]
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-0">
-        <Table className="table-fixed text-xs">
+      <CardContent className="p-0 overflow-x-auto">
+        <Table className="table-fixed text-[11px]">
           <TableHeader>
             <TableRow className="bg-slate-50 dark:bg-slate-800/50">
-              <TableHead className="w-[108px] py-2">Section</TableHead>
-              <TableHead className="w-[80px] py-2 text-right">Students</TableHead>
-              <TableHead className="w-[68px] py-2 text-right">Mean</TableHead>
-              <TableHead className="w-[68px] py-2 text-right">Median</TableHead>
-              <TableHead className="w-[68px] py-2 text-right">Mode</TableHead>
-              <TableHead className="w-[64px] py-2 text-right">SD</TableHead>
-              <TableHead className="w-[64px] py-2 text-right">Min</TableHead>
-              <TableHead className="w-[64px] py-2 text-right">Max</TableHead>
+              <TableHead className="w-[68px] py-2">Section</TableHead>
+              <TableHead className="w-[64px] py-2 text-right">Students</TableHead>
+              <TableHead className="w-[58px] py-2 text-right">Mean</TableHead>
+              <TableHead className="w-[58px] py-2 text-right">Median</TableHead>
+              <TableHead className="w-[58px] py-2 text-right">Mode</TableHead>
+              <TableHead className="w-[54px] py-2 text-right">SD</TableHead>
+              <TableHead className="w-[54px] py-2 text-right">Min</TableHead>
+              <TableHead className="w-[54px] py-2 text-right">Max</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {component.rows.map((row) => (
               <TableRow key={`${component.assessmentId}-${row.sectionId}`} className={row.sectionId === "ALL" ? "bg-slate-100 dark:bg-slate-800 font-bold" : ""}>
-                <TableCell className="w-[108px] py-2 truncate">{row.sectionId === "ALL" ? "Course Avg" : row.sectionName}</TableCell>
-                <TableCell className="w-[80px] py-2 text-right font-mono text-slate-500">{row.totalStudents}</TableCell>
-                <TableCell className="w-[68px] py-2 text-right font-mono font-medium text-indigo-700 dark:text-indigo-400">{row.stats.avg.toFixed(1)}</TableCell>
-                <TableCell className="w-[68px] py-2 text-right font-mono">{row.stats.median.toFixed(1)}</TableCell>
-                <TableCell className="w-[68px] py-2 text-right font-mono text-slate-500">{row.stats.mode}</TableCell>
-                <TableCell className="w-[64px] py-2 text-right font-mono text-slate-400">{row.stats.stdDev.toFixed(1)}</TableCell>
-                <TableCell className="w-[64px] py-2 text-right font-mono text-rose-600">{row.stats.min.toFixed(1)}</TableCell>
-                <TableCell className="w-[64px] py-2 text-right font-mono text-emerald-600">{row.stats.max.toFixed(1)}</TableCell>
+                <TableCell className="w-[68px] py-2 truncate">{row.sectionId === "ALL" ? "Course Avg" : row.sectionName}</TableCell>
+                <TableCell className="w-[64px] py-2 text-right font-mono text-slate-500">{row.totalStudents}</TableCell>
+                <TableCell className="w-[58px] py-2 text-right font-mono font-medium text-indigo-700 dark:text-indigo-400">{row.stats.avg.toFixed(1)}</TableCell>
+                <TableCell className="w-[58px] py-2 text-right font-mono">{row.stats.median.toFixed(1)}</TableCell>
+                <TableCell className="w-[58px] py-2 text-right font-mono text-slate-500">{row.stats.mode}</TableCell>
+                <TableCell className="w-[54px] py-2 text-right font-mono text-slate-400">{row.stats.stdDev.toFixed(1)}</TableCell>
+                <TableCell className="w-[54px] py-2 text-right font-mono text-rose-600">{row.stats.min.toFixed(1)}</TableCell>
+                <TableCell className="w-[54px] py-2 text-right font-mono text-emerald-600">{row.stats.max.toFixed(1)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -804,9 +804,11 @@ export function ReportsClient({ data, courseAggregate, componentReports, reportM
             Each assessment component is listed separately below so individual quizzes, reviews, and other components stay visible on their own.
           </p>
         </div>
-        {componentReports.map((component) => (
-          <ComponentMiniTable key={component.assessmentId} component={component} />
-        ))}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
+          {componentReports.map((component) => (
+            <ComponentMiniTable key={component.assessmentId} component={component} />
+          ))}
+        </div>
       </div>
 
       {/* ── Charts ── */}

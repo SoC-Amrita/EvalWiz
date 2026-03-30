@@ -304,7 +304,7 @@ export function WorkspaceStudentsClient({
       ) : null}
 
       <div className="flex items-center justify-between gap-3">
-        <Badge variant="outline" className="bg-indigo-50 px-3 py-1 font-mono text-xs text-indigo-700 border-indigo-200 whitespace-nowrap">
+        <Badge variant="outline" className="chip-soft-primary px-3 py-1 font-mono text-xs whitespace-nowrap">
           {filteredStudents.length} / {initialData.length}
         </Badge>
       </div>
@@ -351,7 +351,7 @@ export function WorkspaceStudentsClient({
                       {student.name}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary" className="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                      <Badge variant="secondary" className="chip-soft-neutral">
                         {formatCompactSectionLabel(student.section)}
                       </Badge>
                     </TableCell>

@@ -379,7 +379,7 @@ export function StudentsClient({
           </div>
 
           <div className="flex flex-wrap items-center gap-2 xl:justify-end">
-            <Badge variant="outline" className="px-3 py-1 font-mono text-xs text-indigo-700 bg-indigo-50 border-indigo-200 whitespace-nowrap">
+            <Badge variant="outline" className="chip-soft-primary px-3 py-1 font-mono text-xs whitespace-nowrap">
               {filtered.length} / {initialData.length}
             </Badge>
             <Button

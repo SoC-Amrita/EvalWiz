@@ -796,12 +796,12 @@ export function MarksClient({
         {activeSection || activeAssessmentDetails ? (
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
             {activeSection ? (
-              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+              <span className="chip-soft-neutral rounded-full px-2.5 py-1">
                 Section: {activeSectionLabel}
               </span>
             ) : null}
             {activeAssessmentDetails ? (
-              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+              <span className="chip-soft-neutral rounded-full px-2.5 py-1">
                 Component: {formatAssessmentChipLabel(activeAssessmentDetails)}
               </span>
             ) : null}

@@ -187,7 +187,7 @@ export function AnalyticsClient({ data }: { data: ComponentStat[] }) {
                     <div className="space-y-1">
                       <CardTitle className="text-base font-bold">{stat.name}</CardTitle>
                       <div className="flex space-x-2 items-center">
-                        <Badge variant="outline" className="h-4 border-primary/20 bg-primary/10 px-1.5 py-0 font-mono text-[10px] text-primary">
+                        <Badge variant="outline" className="chip-soft-primary h-4 px-1.5 py-0 font-mono text-[10px]">
                           {stat.code}
                         </Badge>
                         <span className="text-xs font-medium text-muted-foreground">Max {stat.maxMarks}</span>

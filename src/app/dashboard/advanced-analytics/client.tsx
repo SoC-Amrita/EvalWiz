@@ -387,29 +387,34 @@ function SectionFilterBar({
             <RotateCcw className="h-3.5 w-3.5" />
             Reset defaults
           </Button>
-          <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
+          <Badge variant="outline" className="chip-soft-primary">
             {selectedSectionIds.size} of {sections.length} sections visible
           </Badge>
         </div>
         <div className="flex flex-wrap gap-2">
           {sections.map((section, index) => {
             const isSelected = selectedSectionIds.has(section.id)
+            const sectionColor = getSectionColor(index)
             return (
               <button
                 key={section.id}
                 onClick={() => onToggle(section.id)}
                 className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
                   isSelected
-                    ? "border-transparent text-white"
+                    ? ""
                     : "border-border bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                 }`}
                 style={
                   isSelected
-                    ? { backgroundColor: getSectionColor(index) }
+                    ? {
+                        backgroundColor: getTintedHeatmapBackground(sectionColor, 0.22),
+                        borderColor: `color-mix(in srgb, ${sectionColor} 46%, transparent)`,
+                        color: sectionColor,
+                      }
                     : undefined
                 }
               >
-                Section {section.name}
+                {section.name}
               </button>
             )
           })}
@@ -455,7 +460,7 @@ function AssessmentFilterBar({
               className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
                 selectedFilterKey === filter.key
                   ? "bg-primary text-primary-foreground"
-                  : "bg-primary/10 text-primary hover:bg-primary/15"
+                  : "chip-soft-primary hover:bg-primary/15"
               }`}
             >
               {filter.label}
@@ -799,7 +804,7 @@ function BoxWhiskerTab({
                 fontSize={11}
                 fill={CHART_THEME.axis}
               >
-                Section {entry.section.name}
+                {entry.section.name}
               </text>
               <text
                 x={centerX}
@@ -810,7 +815,7 @@ function BoxWhiskerTab({
               >
                 n={entry.values.length}
               </text>
-              <title>{`Section ${entry.section.name}
+              <title>{`${entry.section.name}
 Min ${entry.summary.min}
 Q1 ${entry.summary.q1}
 Median ${entry.summary.median}
@@ -892,7 +897,7 @@ function GroupedBarTab({
               <Bar
                 key={section.id}
                 dataKey={section.name}
-                name={`Section ${section.name}`}
+                name={section.name}
                 fill={getSectionColor(index)}
                 radius={[3, 3, 0, 0]}
                 maxBarSize={28}
@@ -959,7 +964,7 @@ function RadarTab({
               <Radar
                 key={section.id}
                 dataKey={section.name}
-                name={`Section ${section.name}`}
+                name={section.name}
                 stroke={getSectionColor(index)}
                 fill={getSectionColor(index)}
                 fillOpacity={0.1}
@@ -1087,7 +1092,7 @@ function ViolinTab({
                 fontSize={11}
                 fill={CHART_THEME.axis}
               >
-                Section {entry.section.name}
+                {entry.section.name}
               </text>
               <text
                 x={centerX}
@@ -1098,7 +1103,7 @@ function ViolinTab({
               >
                 n={entry.values.length}
               </text>
-              <title>{`Section ${entry.section.name}
+              <title>{`${entry.section.name}
 Mean ${entry.summary.mean}
 Median ${entry.summary.median}
 Std Dev ${entry.summary.stdDev}`}</title>
@@ -1196,6 +1201,8 @@ function GradeHeatmapTab({
                   className="inline-flex rounded-full px-2 py-1"
                   style={{
                     background: getTintedHeatmapBackground(GRADE_BUCKET_COLORS[index], 0.26),
+                    border: `1px solid color-mix(in srgb, ${GRADE_BUCKET_COLORS[index]} 42%, transparent)`,
+                    color: GRADE_BUCKET_COLORS[index],
                   }}
                 >
                   {bucket}
@@ -1208,7 +1215,7 @@ function GradeHeatmapTab({
           {rows.map((row) => (
             <tr key={row.section.id}>
               <td className="px-2 py-2 text-sm font-semibold text-foreground">
-                Section {row.section.name}
+                {row.section.name}
               </td>
               {GRADE_BUCKETS.map((bucket, index) => {
                 const proportion = row.total > 0 ? row.buckets[bucket] / row.total : 0
@@ -1478,7 +1485,7 @@ function SectionComponentHeatmapTab({
           {grid.map((row, rowIndex) => (
             <tr key={sections[rowIndex].id}>
               <td className="px-3 py-2 text-sm font-semibold text-foreground">
-                Section {sections[rowIndex].name}
+                {sections[rowIndex].name}
               </td>
               {row.map((value, columnIndex) => {
                 const strength = value === null ? 0.2 : 0.26 + Math.min(value / 100, 1) * 0.5
@@ -1842,7 +1849,7 @@ export function AdvancedAnalyticsClient({
                 <div className="pt-1">
                   <Badge
                     variant="outline"
-                    className="border-primary/20 bg-primary/10 text-primary"
+                    className="chip-soft-primary"
                   >
                     Focus component: {selectedAssessment.code} - {selectedAssessment.name}
                   </Badge>
@@ -1863,13 +1870,13 @@ export function AdvancedAnalyticsClient({
               <div className="flex flex-wrap items-center gap-2 lg:justify-end">
                 <Badge
                   variant="outline"
-                  className="border-border text-muted-foreground"
+                  className="chip-soft-neutral"
                 >
                   {visibleSections.length} sections
                 </Badge>
                 <Badge
                   variant="outline"
-                  className="border-border text-muted-foreground"
+                  className="chip-soft-neutral"
                 >
                   {visibleAssessments.length} components
                 </Badge>

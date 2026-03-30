@@ -200,20 +200,23 @@ export function AssessmentClient({ data }: { data: Assessment[] }) {
                 <TableRow key={item.id} className="group">
                   <TableCell className="font-medium text-slate-500">{item.displayOrder}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="font-mono bg-slate-50 dark:bg-slate-900 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900">
+                    <Badge variant="outline" className="chip-soft-primary font-mono">
                       {item.code}
                     </Badge>
                   </TableCell>
                   <TableCell className="font-medium">{item.name}</TableCell>
                   <TableCell>
-                    <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                    <Badge variant="secondary" className="chip-soft-neutral">
                       {getStructuredCategoryLabel(item)}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right font-medium">{item.maxMarks}</TableCell>
                   <TableCell className="text-right text-slate-500 font-medium">{item.weightage}%</TableCell>
                   <TableCell className="text-center">
-                    <Badge variant={item.isActive ? "default" : "destructive"} className={item.isActive ? "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 shadow-none border-0" : "border-0 shadow-none"}>
+                    <Badge
+                      variant={item.isActive ? "default" : "destructive"}
+                      className={item.isActive ? "chip-soft-success border-0 shadow-none" : "chip-soft-danger border-0 shadow-none"}
+                    >
                       {item.isActive ? "Active" : "Inactive"}
                     </Badge>
                   </TableCell>

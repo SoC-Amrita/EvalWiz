@@ -108,7 +108,7 @@ export function WorkspaceSelector({
                   ) : null}
                 </div>
                 {isActiveCourse && isSelectableWorkspace ? (
-                  <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                  <Badge className="chip-soft-success">
                     Active
                   </Badge>
                 ) : null}

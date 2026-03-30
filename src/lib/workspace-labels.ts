@@ -48,6 +48,21 @@ export function formatCompactSectionName(sectionName: string, sectionCode?: stri
   return sectionCode?.trim().toUpperCase() || inferSectionCodeFromLabel(sectionName) || sectionName
 }
 
+export function formatCompactProgramSectionName(section: {
+  name: string
+  programCode?: string | null
+  sectionCode?: string | null
+}) {
+  const programCode = section.programCode?.trim().toUpperCase() || null
+  const sectionCode = section.sectionCode?.trim().toUpperCase() || inferSectionCodeFromLabel(section.name) || null
+
+  if (programCode && sectionCode) {
+    return `${programCode} ${sectionCode}`
+  }
+
+  return formatCompactSectionName(section.name, section.sectionCode)
+}
+
 export function formatDetailedCompactSectionName(section: {
   name: string
   semester?: string | null

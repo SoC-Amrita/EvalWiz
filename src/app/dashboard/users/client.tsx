@@ -49,11 +49,11 @@ function RoleBadges({ role, isAdmin }: { role: string; isAdmin: boolean }) {
   return (
     <div className="flex flex-wrap gap-1">
       {isAdmin ? (
-        <Badge className="bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300">
+        <Badge className="chip-soft-danger">
           ADMIN
         </Badge>
       ) : null}
-      <Badge className="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+      <Badge className="chip-soft-neutral">
         {role}
       </Badge>
     </div>

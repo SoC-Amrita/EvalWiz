@@ -1,7 +1,7 @@
 import { auth } from "@/auth"
 import { buildScopedStudentWhere, getActiveWorkspaceState } from "@/lib/course-workspace"
 import prisma from "@/lib/db"
-import { formatWorkspaceCode } from "@/lib/workspace-labels"
+import { formatCompactProgramSectionName, formatWorkspaceCode } from "@/lib/workspace-labels"
 import { redirect } from "next/navigation"
 import { AdvancedAnalyticsClient } from "./client"
 
@@ -85,7 +85,7 @@ export default async function AdvancedAnalyticsPage() {
             studentId: enrollment.studentId,
             rollNo: enrollment.student.rollNo,
             sectionId: enrollment.sectionId,
-            sectionName: enrollment.section.name,
+            sectionName: formatCompactProgramSectionName(enrollment.section),
             assessmentId: mark.assessmentId,
             assessmentCode: mark.assessment.code,
             assessmentName: mark.assessment.name,
@@ -114,7 +114,7 @@ export default async function AdvancedAnalyticsPage() {
           studentId: mark.studentId,
           rollNo: mark.student.rollNo,
           sectionId: mark.student.section.id,
-          sectionName: mark.student.section.name,
+          sectionName: formatCompactProgramSectionName(mark.student.section),
           assessmentId: mark.assessmentId,
           assessmentCode: mark.assessment.code,
           assessmentName: mark.assessment.name,

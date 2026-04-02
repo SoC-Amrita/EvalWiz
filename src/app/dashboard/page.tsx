@@ -4,8 +4,6 @@ import prisma from "@/lib/db"
 import { buildScopedSectionWhere, buildScopedStudentWhere, getActiveWorkspaceState, getRoleViewLabel, hasRealWorkspace } from "@/lib/course-workspace"
 import { formatWorkspaceCode, formatWorkspaceRoleHeading } from "@/lib/workspace-labels"
 import { BarChart3, BookOpen, Clock, Users } from "lucide-react"
-import { AdminModePrompt } from "./admin-mode-prompt"
-import { AdminModeSwitchButton } from "./admin-mode-switch-button"
 import { DashboardTrendsChart } from "./trends-chart"
 import { WorkspaceSelector } from "./workspace-selector"
 
@@ -22,7 +20,7 @@ export default async function DashboardOverview() {
 
   if (!user) return null
 
-  const { workspaces, activeWorkspace, activeRoleView, needsAdminModeChoice } = await getActiveWorkspaceState(user)
+  const { workspaces, activeWorkspace, activeRoleView } = await getActiveWorkspaceState(user)
   const isAdministratorView = activeRoleView === "administrator"
   const hasWorkspace = hasRealWorkspace(activeWorkspace)
   const greetingName =
@@ -48,7 +46,6 @@ export default async function DashboardOverview() {
 
     return (
       <div className="space-y-6">
-        <AdminModePrompt open={needsAdminModeChoice} />
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
             EvalWiz Admin Console
@@ -105,14 +102,13 @@ export default async function DashboardOverview() {
           <CardHeader>
             <CardTitle>Subject Workspaces</CardTitle>
             <CardDescription>
-              Subject-specific tools are intentionally hidden in admin console mode. Leave the global console only when you want to work inside a course workspace.
+              Subject-specific tools are intentionally hidden in admin console mode. Open the account menu in the top right whenever you want to switch back to normal subject workspaces.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <CardContent className="flex flex-col gap-4">
             <p className="max-w-2xl text-sm text-slate-500">
-              Use the admin console for global records and setup. When you want assessments, marks, analytics, reports, or sections for a subject, switch into subject workspace mode first.
+              Use the admin console for global records and setup. When you want assessments, marks, analytics, reports, or section allocation for a course, switch modes from the account menu and the subject workspace picker will take over from there.
             </p>
-            <AdminModeSwitchButton targetMode="workspace" />
           </CardContent>
         </Card>
       </div>
@@ -122,7 +118,6 @@ export default async function DashboardOverview() {
   if (!hasWorkspace) {
     return (
       <div className="space-y-6">
-        {user.isAdmin ? <AdminModePrompt open={needsAdminModeChoice} /> : null}
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
             Welcome back, {greetingName}
@@ -188,7 +183,6 @@ export default async function DashboardOverview() {
 
   return (
     <div className="space-y-6">
-      {user.isAdmin ? <AdminModePrompt open={needsAdminModeChoice} /> : null}
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
           Welcome back, {greetingName}

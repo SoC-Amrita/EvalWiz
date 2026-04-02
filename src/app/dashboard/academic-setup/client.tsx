@@ -7,7 +7,7 @@ import { BookCopy, CalendarRange, Layers3, Pencil, Plus, Trash2 } from "lucide-r
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Dialog,
@@ -741,10 +741,13 @@ export function AcademicSetupClient({
                 Publish term-specific subject iterations, attach reusable classes, and control which offerings are active in workspace selection.
               </CardDescription>
             </div>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" render={<Link href="/dashboard/academic-setup/offerings/new" />}>
+            <Link
+              href="/dashboard/academic-setup/offerings/new"
+              className={buttonVariants({ className: "bg-emerald-600 text-white hover:bg-emerald-700" })}
+            >
               <Plus className="mr-2 h-4 w-4" />
               Add Offering
-            </Button>
+            </Link>
           </CardHeader>
           <CardContent className="space-y-4">
             {offerings.map((offering) => (
@@ -770,14 +773,13 @@ export function AcademicSetupClient({
                   </div>
 
                   <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      render={<Link href={`/dashboard/academic-setup/offerings/${offering.id}`} />}
+                    <Link
+                      href={`/dashboard/academic-setup/offerings/${offering.id}`}
+                      className={buttonVariants({ variant: "outline", size: "sm" })}
                     >
                       <Pencil className="mr-2 h-4 w-4" />
                       Edit Offering
-                    </Button>
+                    </Link>
                     <Button
                       variant="outline"
                       size="sm"

@@ -6,7 +6,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -229,9 +229,9 @@ export function OfferingFormPage({
               : "Update the academic context, allocations, and visibility for this course offering without fighting a cramped popup."}
           </p>
         </div>
-        <Button variant="outline" render={<Link href="/dashboard/academic-setup" />}>
+        <Link href="/dashboard/academic-setup" className={buttonVariants({ variant: "outline" })}>
           Back to Academic Setup
-        </Button>
+        </Link>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
@@ -434,9 +434,9 @@ export function OfferingFormPage({
       </div>
 
       <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 rounded-xl border border-slate-200 bg-background/95 px-5 py-4 backdrop-blur dark:border-slate-800">
-        <Button variant="outline" render={<Link href="/dashboard/academic-setup" />}>
+        <Link href="/dashboard/academic-setup" className={buttonVariants({ variant: "outline" })}>
           Cancel
-        </Button>
+        </Link>
         <Button onClick={handleSave} disabled={saving} className="bg-indigo-600 hover:bg-indigo-700 text-white">
           {saving ? "Saving..." : mode === "create" ? "Create Offering" : "Save Offering"}
         </Button>

@@ -16,7 +16,6 @@ import {
 import { APP_INFO } from "@/lib/app-info"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
-import { AdminModeSwitchButton } from "./admin-mode-switch-button"
 import { UserMenu } from "./user-menu"
 import {
   AnalysisPreviewDialog,
@@ -34,11 +33,13 @@ type DashboardShellProps = {
   sidebarSubtitle: string
   headerLabel: string
   userIsAdmin: boolean
+  isAdminConsole: boolean
   canManageAssessments: boolean
   canAccessSections: boolean
   userName: string
   userInitials: string
   showAnalysisPreview: boolean
+  switchAdminModeAction: (mode: "admin" | "workspace") => Promise<{ success: boolean }>
   signOutAction: () => Promise<void>
   changePasswordAction: (formData: FormData) => Promise<{ success: boolean }>
   children: ReactNode
@@ -51,11 +52,13 @@ export function DashboardShell({
   sidebarSubtitle,
   headerLabel,
   userIsAdmin,
+  isAdminConsole,
   canManageAssessments,
   canAccessSections,
   userName,
   userInitials,
   showAnalysisPreview,
+  switchAdminModeAction,
   signOutAction,
   changePasswordAction,
   children,
@@ -147,6 +150,9 @@ export function DashboardShell({
             name={userName}
             roleLabel={activeRoleLabel}
             initials={userInitials}
+            userIsAdmin={userIsAdmin}
+            isAdminConsole={isAdminConsole}
+            switchAdminModeAction={switchAdminModeAction}
             signOutAction={signOutAction}
             changePasswordAction={changePasswordAction}
           />
@@ -219,15 +225,11 @@ function SidebarNavigation({
       </div>
 
       <div className="px-6 py-3">
-        {isAdmin ? (
-          <AdminModeSwitchButton targetMode="workspace" />
-        ) : userIsAdmin ? (
-          <AdminModeSwitchButton targetMode="admin" />
-        ) : (
+        {!userIsAdmin ? (
           <Link href="/dashboard" className="text-xs font-medium text-primary hover:underline" onClick={onNavigate}>
             Switch Workspace
           </Link>
-        )}
+        ) : null}
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-4 py-6">

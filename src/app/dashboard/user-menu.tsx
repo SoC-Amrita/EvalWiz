@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
-import { KeyRound, LogOut, Type } from "lucide-react"
+import { useEffect, useRef, useState, useTransition } from "react"
+import { KeyRound, Layers3, LogOut, Shield, Type } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 import { useFontPreference } from "@/components/font-provider"
@@ -30,19 +31,27 @@ export function UserMenu({
   name,
   roleLabel,
   initials,
+  userIsAdmin,
+  isAdminConsole,
+  switchAdminModeAction,
   signOutAction,
   changePasswordAction,
 }: {
   name: string
   roleLabel: string
   initials: string
+  userIsAdmin: boolean
+  isAdminConsole: boolean
+  switchAdminModeAction: (mode: "admin" | "workspace") => Promise<{ success: boolean }>
   signOutAction: () => Promise<void>
   changePasswordAction: (formData: FormData) => Promise<{ success: boolean }>
 }) {
   const { font, setFont } = useFontPreference()
+  const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
   const [savingPassword, setSavingPassword] = useState(false)
+  const [isSwitchingMode, startModeTransition] = useTransition()
   const menuRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -90,6 +99,18 @@ export function UserMenu({
     } finally {
       setSavingPassword(false)
     }
+  }
+
+  const handleAdminModeSwitch = (mode: "admin" | "workspace") => {
+    startModeTransition(async () => {
+      try {
+        await switchAdminModeAction(mode)
+        setMenuOpen(false)
+        router.refresh()
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to switch mode")
+      }
+    })
   }
 
   return (
@@ -149,6 +170,26 @@ export function UserMenu({
             </div>
 
             <div className="border-t border-border p-2">
+              {userIsAdmin ? (
+                <button
+                  type="button"
+                  onClick={() => handleAdminModeSwitch(isAdminConsole ? "workspace" : "admin")}
+                  disabled={isSwitchingMode}
+                  className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm text-left transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-60"
+                >
+                  {isAdminConsole ? (
+                    <>
+                      <Layers3 className="h-4 w-4" />
+                      Return to Subject Workspaces
+                    </>
+                  ) : (
+                    <>
+                      <Shield className="h-4 w-4" />
+                      Open Admin Console
+                    </>
+                  )}
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={() => {

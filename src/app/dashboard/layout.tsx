@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { getActiveWorkspaceState, getRoleViewLabel, hasRealWorkspace } from "@/lib/course-workspace"
 import { formatWorkspaceFullLabel } from "@/lib/workspace-labels"
 import { changeOwnPassword, signOutToLogin } from "./account-actions"
+import { setAdminConsoleMode } from "./workspace-actions"
 import { DashboardShell } from "./dashboard-shell"
 
 export default async function DashboardLayout({
@@ -41,11 +42,13 @@ export default async function DashboardLayout({
       sidebarSubtitle={sidebarSubtitle}
       headerLabel={headerLabel}
       userIsAdmin={user.isAdmin}
+      isAdminConsole={isAdminConsole}
       canManageAssessments={canManageAssessments}
       canAccessSections={canAccessSections}
       userName={user.name ?? "Account"}
       userInitials={user.firstName?.[0] || user.name?.[0] || "U"}
       showAnalysisPreview={hasWorkspace && !isAdmin}
+      switchAdminModeAction={setAdminConsoleMode}
       signOutAction={signOutToLogin}
       changePasswordAction={changeOwnPassword}
     >

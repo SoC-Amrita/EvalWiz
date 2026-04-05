@@ -783,5 +783,6 @@ export async function deleteCourseOffering(offeringId: string) {
   return { success: true }
 }
 
-// TODO: When semester rollover becomes routine, promote reusable classes through
-// immutable roster snapshots so future edits never change historical enrollment views.
+// Semester rollover still reuses the current class roster records. If rollover
+// becomes a routine workflow, this needs immutable roster snapshots so future
+// edits never change historical enrollment views.

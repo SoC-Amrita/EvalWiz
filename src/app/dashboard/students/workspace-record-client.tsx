@@ -51,6 +51,26 @@ export function WorkspaceStudentRecordClient({
     [assessments]
   )
 
+  const runningTotal = useMemo(() => {
+    const recordedAssessments = assessments.filter(
+      (assessment) => assessment.marks !== null && assessment.maxMarks > 0 && assessment.weightage > 0
+    )
+    const earned = recordedAssessments.reduce(
+      (sum, assessment) => sum + ((assessment.marks ?? 0) / assessment.maxMarks) * assessment.weightage,
+      0
+    )
+    const weightageSoFar = recordedAssessments.reduce((sum, assessment) => sum + assessment.weightage, 0)
+    return {
+      earned,
+      weightageSoFar,
+    }
+  }, [assessments])
+
+  const formatScore = (value: number) => {
+    const rounded = Number(value.toFixed(1))
+    return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(1)
+  }
+
   const handleMarkChange = (assessmentId: string, value: string) => {
     setDirtyMarks((previous) => ({ ...previous, [assessmentId]: value }))
   }
@@ -108,7 +128,7 @@ export function WorkspaceStudentRecordClient({
         <p className="font-mono text-sm text-slate-500">{student.rollNo}</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-slate-500">Current Class</CardTitle>
@@ -136,6 +156,17 @@ export function WorkspaceStudentRecordClient({
             <div className="text-lg font-semibold text-slate-900 dark:text-slate-100">
               {totalRecorded} / {assessments.length}
             </div>
+          </CardContent>
+        </Card>
+        <Card className="border-primary/25 bg-[linear-gradient(180deg,color-mix(in_srgb,var(--primary)_10%,transparent),color-mix(in_srgb,var(--card)_94%,transparent))] shadow-[0_12px_30px_color-mix(in_srgb,var(--primary)_10%,transparent)]">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-300">Running Total</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg font-semibold text-primary">
+              {formatScore(runningTotal.earned)} / {formatScore(runningTotal.weightageSoFar)}
+            </div>
+            <p className="mt-1 text-xs text-slate-500">Based only on the components recorded so far</p>
           </CardContent>
         </Card>
       </div>

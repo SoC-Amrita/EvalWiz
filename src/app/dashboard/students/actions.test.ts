@@ -5,8 +5,10 @@ const requireAdminUserMock = vi.fn()
 const requireAllowedSectionAccessMock = vi.fn()
 const requireAuthenticatedWorkspaceStateMock = vi.fn()
 const requireRealWorkspaceMock = vi.fn()
+const getAllowedStudentIdsForWorkspaceMock = vi.fn()
 
 const prismaMock = {
+  $transaction: vi.fn(),
   section: {
     findMany: vi.fn(),
     findUnique: vi.fn(),
@@ -19,11 +21,30 @@ const prismaMock = {
     update: vi.fn(),
     delete: vi.fn(),
   },
+  archivedStudent: {
+    create: vi.fn(),
+    findUnique: vi.fn(),
+    update: vi.fn(),
+  },
   courseOfferingClass: {
     findFirst: vi.fn(),
   },
   courseOfferingEnrollment: {
     upsert: vi.fn(),
+    create: vi.fn(),
+  },
+  studentDeletionRequest: {
+    findFirst: vi.fn(),
+    findUnique: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    updateMany: vi.fn(),
+  },
+  courseOffering: {
+    findUnique: vi.fn(),
+  },
+  auditLog: {
+    create: vi.fn(),
   },
   assessment: {
     findFirst: vi.fn(),
@@ -53,6 +74,10 @@ vi.mock("@/lib/workspace-guards", () => ({
   requireRealWorkspace: requireRealWorkspaceMock,
 }))
 
+vi.mock("@/lib/course-workspace", () => ({
+  getAllowedStudentIdsForWorkspace: getAllowedStudentIdsForWorkspaceMock,
+}))
+
 vi.mock("@/lib/roll-number", () => ({
   buildClassLabel: buildClassLabelMock,
   inferAcademicProgramLabel: inferAcademicProgramLabelMock,
@@ -73,6 +98,7 @@ describe("student actions", () => {
       activeWorkspace: { offeringId: "off-1", isElective: false },
       allowedSectionIds: new Set(["sec-a"]),
     })
+    getAllowedStudentIdsForWorkspaceMock.mockResolvedValue(["stu-1"])
     inferAcademicProgramLabelMock.mockReturnValue("BTech CSE")
     buildClassLabelMock.mockImplementation(
       ({ programLabel, programCode, sectionCode, batchYear }) =>
@@ -94,6 +120,8 @@ describe("student actions", () => {
       }
       return null
     })
+    prismaMock.$transaction.mockImplementation(async (callback: (tx: typeof prismaMock) => Promise<unknown>) => callback(prismaMock as never))
+    prismaMock.archivedStudent.create.mockResolvedValue({ id: "arch-1" })
   })
 
   it("uploads students and enrolls them into the active elective offering", async () => {
@@ -163,6 +191,110 @@ describe("student actions", () => {
     ).rejects.toThrow(
       "A student with this roll number already exists. Use Edit Student for manual reassignment."
     )
+  })
+
+  it("updates analytics exclusion along with student details", async () => {
+    const { updateStudentRecord } = await import("@/app/dashboard/students/actions")
+
+    await expect(
+      updateStudentRecord({
+        studentId: "stu-1",
+        rollNo: "CB.SC.U4CSE23001",
+        name: "Asha",
+        sectionId: "sec-a",
+        excludeFromAnalytics: true,
+      })
+    ).resolves.toEqual({ success: true })
+
+    expect(prismaMock.student.update).toHaveBeenCalledWith({
+      where: { id: "stu-1" },
+      data: {
+        rollNo: "CB.SC.U4CSE23001",
+        name: "Asha",
+        sectionId: "sec-a",
+        excludeFromAnalytics: true,
+      },
+    })
+  })
+
+  it("archives the student snapshot before deleting the active record", async () => {
+    prismaMock.student.findUnique.mockResolvedValue({
+      id: "stu-1",
+      rollNo: "CB.SC.U4CSE23001",
+      name: "Asha",
+      sectionId: "sec-a",
+      excludeFromAnalytics: true,
+      section: { name: "Section A" },
+      offeringEnrollments: [
+        {
+          offeringId: "off-1",
+          sectionId: "sec-a",
+          section: { name: "Section A" },
+          offering: {
+            term: "Even / Winter",
+            academicYear: "2025 - 2026",
+            semester: "VI",
+            year: "III",
+            courseType: "Theory",
+            evaluationPattern: "70 - 30",
+            subject: {
+              code: "23CSE311",
+              title: "Software Engineering",
+            },
+          },
+        },
+      ],
+      marks: [
+        {
+          assessmentId: "assess-1",
+          marks: 42,
+          assessment: {
+            name: "Midterm",
+            code: "MID",
+            category: "MID_TERM",
+            maxMarks: 50,
+            weightage: 20,
+            offering: {
+              id: "off-1",
+              term: "Even / Winter",
+              academicYear: "2025 - 2026",
+              semester: "VI",
+              year: "III",
+              courseType: "Theory",
+              evaluationPattern: "70 - 30",
+              subject: {
+                code: "23CSE311",
+                title: "Software Engineering",
+              },
+            },
+          },
+        },
+      ],
+    })
+
+    const { deleteStudentRecord } = await import("@/app/dashboard/students/actions")
+
+    await expect(deleteStudentRecord("stu-1")).resolves.toEqual({ success: true })
+    expect(prismaMock.archivedStudent.create).toHaveBeenCalledTimes(1)
+    expect(prismaMock.auditLog.create).toHaveBeenCalledWith({
+      data: {
+        action: "STUDENT_ARCHIVE_DELETE",
+        userId: "admin-1",
+        details: JSON.stringify({
+          studentId: "stu-1",
+          rollNo: "CB.SC.U4CSE23001",
+          name: "Asha",
+          markCount: 1,
+          enrollmentCount: 1,
+          archiveReason: "ADMIN_DELETE",
+          archivedStudentId: "arch-1",
+          deletionRequestId: null,
+        }),
+      },
+    })
+    expect(prismaMock.student.delete).toHaveBeenCalledWith({
+      where: { id: "stu-1" },
+    })
   })
 
   it("saves a student mark for an in-scope admin workspace view", async () => {

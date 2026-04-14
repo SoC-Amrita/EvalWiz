@@ -45,6 +45,7 @@ describe("assessment actions", () => {
         maxMarks: 20,
         weightage: 5,
         category: "CA_QUIZ",
+        componentType: "INTERNAL",
         isActive: true,
         includeInAgg: true,
         displayOrder: 1,
@@ -59,6 +60,7 @@ describe("assessment actions", () => {
         maxMarks: 20,
         weightage: 5,
         category: "CA_QUIZ",
+        componentType: "INTERNAL",
         isActive: true,
         includeInAgg: true,
         displayOrder: 1,
@@ -76,6 +78,42 @@ describe("assessment actions", () => {
       "Assessment not found in the active workspace"
     )
     expect(prismaMock.assessment.update).not.toHaveBeenCalled()
+  })
+
+  it("updates assessments that belong to the active workspace", async () => {
+    prismaMock.assessment.findFirst.mockResolvedValue({ id: "assess-1" })
+
+    const { updateAssessment } = await import("@/app/dashboard/assessments/actions")
+
+    await expect(
+      updateAssessment({
+        assessmentId: "assess-1",
+        name: "Updated Quiz 1",
+        code: "Q1A",
+        description: "Updated intro quiz",
+        maxMarks: 25,
+        weightage: 10,
+        category: "CA_QUIZ",
+        componentType: "INTERNAL",
+        includeInAgg: true,
+        displayOrder: 2,
+      })
+    ).resolves.toEqual({ success: true })
+
+    expect(prismaMock.assessment.update).toHaveBeenCalledWith({
+      where: { id: "assess-1" },
+      data: {
+        name: "Updated Quiz 1",
+        code: "Q1A",
+        description: "Updated intro quiz",
+        maxMarks: 25,
+        weightage: 10,
+        category: "CA_QUIZ",
+        componentType: "INTERNAL",
+        includeInAgg: true,
+        displayOrder: 2,
+      },
+    })
   })
 
   it("deletes assessments that belong to the active workspace", async () => {

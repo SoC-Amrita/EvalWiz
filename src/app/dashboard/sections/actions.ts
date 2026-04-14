@@ -34,7 +34,13 @@ export async function createFaculty(data: { name: string; email: string; passwor
   
   if (existingUser) throw new Error("A user with this email already exists")
 
-  const pass = data.password || "faculty123"
+  const pass = data.password?.trim()
+  if (!pass) {
+    throw new Error("Password is required")
+  }
+  if (pass.length < 8) {
+    throw new Error("Password must be at least 8 characters long")
+  }
   const hashedPassword = await bcrypt.hash(pass, 10)
 
   await prisma.$transaction(async (tx) => {

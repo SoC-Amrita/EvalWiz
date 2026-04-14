@@ -182,6 +182,9 @@ export async function fetchSectionExportData(
         },
       },
       students: {
+        where: {
+          excludeFromAnalytics: false,
+        },
         orderBy: { rollNo: "asc" },
         include: {
           marks: {
@@ -205,6 +208,9 @@ export async function fetchSectionExportData(
         where: {
           offeringId: activeWorkspace.offeringId,
           sectionId,
+          student: {
+            excludeFromAnalytics: false,
+          },
         },
         include: {
           student: {

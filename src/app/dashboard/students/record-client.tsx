@@ -31,6 +31,7 @@ type StudentRecord = {
   id: string
   rollNo: string
   name: string
+  excludeFromAnalytics: boolean
   section: Section
 }
 
@@ -67,7 +68,19 @@ export function StudentRecordClient({
   const router = useRouter()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedSectionId, setSelectedSectionId] = useState(student.section.id)
+  const [excludeFromAnalytics, setExcludeFromAnalytics] = useState(student.excludeFromAnalytics)
   const [saving, setSaving] = useState(false)
+
+  const handleAnalyticsIncludedChange = (checked: boolean) => {
+    if (!checked) {
+      const confirmed = window.confirm(
+        "Exclude this student from analytics? The student will be removed from analytics and report calculations globally."
+      )
+      if (!confirmed) return
+    }
+
+    setExcludeFromAnalytics(!checked)
+  }
 
   const handleChangeAssignment = async () => {
     setSaving(true)
@@ -77,8 +90,9 @@ export function StudentRecordClient({
         rollNo: student.rollNo,
         name: student.name,
         sectionId: selectedSectionId,
+        excludeFromAnalytics,
       })
-      toast.success("Class assignment updated")
+      toast.success("Student record updated")
       setDialogOpen(false)
       router.refresh()
     } catch (error) {
@@ -100,6 +114,11 @@ export function StudentRecordClient({
           </p>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{student.name}</h1>
           <p className="font-mono text-sm text-slate-500">{student.rollNo}</p>
+          {student.excludeFromAnalytics ? (
+            <Badge variant="secondary" className="mt-2 bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200">
+              Excluded from analytics globally
+            </Badge>
+          ) : null}
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger render={<Button variant="outline" />}>
@@ -132,6 +151,25 @@ export function StudentRecordClient({
                     </option>
                   ))}
                 </select>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/60">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-medium text-slate-900 dark:text-slate-100">Analytics</div>
+                    <div className="text-xs text-slate-600 dark:text-slate-300">
+                      Keep analytics on for this student by default. Turn it off to exclude the student from all analytics and reports globally.
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-3 text-sm font-medium text-slate-700 dark:text-slate-200">
+                    <input
+                      type="checkbox"
+                      checked={!excludeFromAnalytics}
+                      onChange={(event) => handleAnalyticsIncludedChange(event.target.checked)}
+                      className="h-4 w-4 rounded border-slate-300 accent-emerald-600"
+                    />
+                    Include in analytics
+                  </label>
+                </div>
               </div>
             </div>
             <DialogFooter>

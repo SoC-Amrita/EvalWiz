@@ -93,7 +93,7 @@ describe("sections actions", () => {
     })
   })
 
-  it("creates faculty accounts with the default password when none is provided", async () => {
+  it("creates faculty accounts with the provided password", async () => {
     prismaMock.user.findUnique.mockResolvedValue(null)
     prismaMock.user.create.mockResolvedValue({ id: "user-1" })
 
@@ -103,10 +103,11 @@ describe("sections actions", () => {
       createFaculty({
         name: "Dr. Anisha Radhakrishnan",
         email: "fac1@amrita.edu",
+        password: "strongpass1",
       })
     ).resolves.toEqual({ success: true })
 
-    expect(hashMock).toHaveBeenCalledWith("faculty123", 10)
+    expect(hashMock).toHaveBeenCalledWith("strongpass1", 10)
     expect(prismaMock.user.create).toHaveBeenCalledWith({
       data: {
         title: "Dr.",
@@ -124,6 +125,19 @@ describe("sections actions", () => {
         name: "Dr. Anisha Radhakrishnan",
       },
     })
+  })
+
+  it("rejects faculty creation when no password is provided", async () => {
+    prismaMock.user.findUnique.mockResolvedValue(null)
+
+    const { createFaculty } = await import("@/app/dashboard/sections/actions")
+
+    await expect(
+      createFaculty({
+        name: "Dr. Anisha Radhakrishnan",
+        email: "fac1@amrita.edu",
+      })
+    ).rejects.toThrow("Password is required")
   })
 
   it("blocks section reassignment inside elective workspaces", async () => {

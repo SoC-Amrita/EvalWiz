@@ -9,7 +9,6 @@ import {
   normalizeSectionCode,
   inferSectionCodeFromLabel,
   getBatchYearSuffix,
-  formatRollSignature,
   inferAcademicProgramLabel,
   buildClassLabel,
   parseAcademicYearStart,

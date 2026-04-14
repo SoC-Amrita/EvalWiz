@@ -127,8 +127,6 @@ describe("course-workspace", () => {
   })
 
   it("builds a scoped student filter for non-elective workspaces", async () => {
-    prismaMock.student.findMany.mockResolvedValue([{ id: "stu-1" }, { id: "stu-2" }])
-
     const { buildScopedStudentWhere } = await import("@/lib/course-workspace")
 
     const result = await buildScopedStudentWhere(
@@ -141,23 +139,13 @@ describe("course-workspace", () => {
       "mentor"
     )
 
-    expect(prismaMock.student.findMany).toHaveBeenCalledWith({
-      where: {
-        sectionId: { in: ["sec-a", "sec-b"] },
-      },
-      select: { id: true },
-    })
     expect(result).toEqual({
-      id: { in: ["stu-1", "stu-2"] },
+      sectionId: { in: ["sec-a", "sec-b"] },
     })
+    expect(prismaMock.student.findMany).not.toHaveBeenCalled()
   })
 
   it("builds a scoped student filter for elective workspaces", async () => {
-    prismaMock.courseOfferingEnrollment.findMany.mockResolvedValue([
-      { studentId: "stu-5" },
-      { studentId: "stu-6" },
-    ])
-
     const { buildScopedStudentWhere } = await import("@/lib/course-workspace")
 
     const result = await buildScopedStudentWhere(
@@ -170,15 +158,34 @@ describe("course-workspace", () => {
       "mentor"
     )
 
-    expect(prismaMock.courseOfferingEnrollment.findMany).toHaveBeenCalledWith({
-      where: {
-        offeringId: "off-1",
-        sectionId: { in: ["sec-elective"] },
-      },
-      select: { studentId: true },
-    })
     expect(result).toEqual({
-      id: { in: ["stu-5", "stu-6"] },
+      offeringEnrollments: {
+        some: {
+          offeringId: "off-1",
+          sectionId: { in: ["sec-elective"] },
+        },
+      },
+    })
+    expect(prismaMock.courseOfferingEnrollment.findMany).not.toHaveBeenCalled()
+  })
+
+  it("can exclude globally flagged students for analytics queries", async () => {
+    const { buildScopedStudentWhere } = await import("@/lib/course-workspace")
+
+    const result = await buildScopedStudentWhere(
+      { id: "u1", role: "FACULTY", isAdmin: false },
+      {
+        offeringId: "off-1",
+        isElective: false,
+        sectionIds: ["sec-a"],
+      } as never,
+      "mentor",
+      { excludeFromAnalytics: true }
+    )
+
+    expect(result).toEqual({
+      sectionId: { in: ["sec-a"] },
+      excludeFromAnalytics: false,
     })
   })
 

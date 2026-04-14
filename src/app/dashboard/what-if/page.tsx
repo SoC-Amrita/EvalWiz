@@ -59,6 +59,7 @@ export default async function WhatIfPage() {
         where: {
           offeringId: activeWorkspace.offeringId,
           sectionId: { in: sectionIds },
+          student: { excludeFromAnalytics: false },
         },
         include: {
           student: {
@@ -98,6 +99,7 @@ export default async function WhatIfPage() {
       const students = await prisma.student.findMany({
         where: {
           sectionId: { in: sectionIds },
+          excludeFromAnalytics: false,
         },
         select: {
           id: true,

@@ -87,7 +87,7 @@
   --theme-accent-800: var(--brand-800);
   --theme-accent-900: var(--brand-900);
   --theme-accent-950: var(--brand-950);
-  --font-ui-sans: var(--font-instrument-sans), "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-ui-sans: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-ui-serif: "Iowan Old Style", Georgia, Cambria, "Palatino Linotype", "Times New Roman", serif;
   --font-sans: var(--font-ui-sans);
   --font-geist-mono: "SFMono-Regular", "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;

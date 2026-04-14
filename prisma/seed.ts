@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
+import { randomBytes } from 'node:crypto'
 
 const prisma = new PrismaClient()
 
@@ -10,6 +11,10 @@ function buildNameFields(title: string, firstName: string, lastName: string) {
     lastName,
     name: `${title} ${firstName} ${lastName}`,
   }
+}
+
+function resolveSeedPassword(envVar: string) {
+  return process.env[envVar]?.trim() || randomBytes(12).toString("base64url")
 }
 
 async function main() {
@@ -29,8 +34,10 @@ async function main() {
   console.log('Database cleared.')
 
   // Create Admin
-  const passwordAdmin = bcrypt.hashSync('admin123', 10)
-  const passwordFaculty = bcrypt.hashSync('faculty123', 10)
+  const adminPlaintextPassword = resolveSeedPassword("SEED_ADMIN_PASSWORD")
+  const facultyPlaintextPassword = resolveSeedPassword("SEED_FACULTY_PASSWORD")
+  const passwordAdmin = bcrypt.hashSync(adminPlaintextPassword, 10)
+  const passwordFaculty = bcrypt.hashSync(facultyPlaintextPassword, 10)
 
   const adminUser = await prisma.user.create({
     data: {
@@ -176,6 +183,7 @@ async function main() {
       maxMarks: 50,
       weightage: 20,
       category: 'MID_TERM',
+      componentType: 'INTERNAL',
       displayOrder: 1
     },
     {
@@ -184,6 +192,7 @@ async function main() {
       maxMarks: 10,
       weightage: 5,
       category: 'CA_REVIEW',
+      componentType: 'INTERNAL',
       displayOrder: 2
     },
     {
@@ -192,6 +201,7 @@ async function main() {
       maxMarks: 100,
       weightage: 50,
       category: 'END_SEMESTER',
+      componentType: 'EXTERNAL',
       displayOrder: 3
     }
   ]
@@ -222,6 +232,8 @@ async function main() {
   }
 
   console.log('Seed completed successfully.')
+  console.log(`Admin demo password: ${adminPlaintextPassword}`)
+  console.log(`Faculty and mentor demo password: ${facultyPlaintextPassword}`)
 }
 
 main()

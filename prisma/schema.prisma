@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -71,19 +72,61 @@ model Section {
 
   // TODO: Once all reads are migrated, remove the legacy course metadata fields
   // above and treat Section exclusively as a reusable class roster snapshot.
+
+  @@index([facultyId])
 }
 
 model Student {
-  id        String    @id @default(cuid())
-  rollNo    String    @unique
-  name      String
-  sectionId String
-  section   Section   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  marks     Mark[]
+  id                   String    @id @default(cuid())
+  rollNo               String    @unique
+  name                 String
+  sectionId            String
+  excludeFromAnalytics Boolean   @default(false)
+  section              Section   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  marks                Mark[]
   offeringEnrollments CourseOfferingEnrollment[]
 
   // TODO: Add a canonical cross-offering student identity layer so mixed elective
   // enrollments and regular class enrollments can be analyzed together later.
+
+  @@index([sectionId])
+  @@index([sectionId, excludeFromAnalytics])
+}
+
+model ArchivedStudent {
+  id                   String   @id @default(cuid())
+  originalStudentId    String
+  rollNo               String
+  name                 String
+  sectionId            String?
+  sectionName          String
+  excludeFromAnalytics Boolean  @default(false)
+  archivedAt           DateTime @default(now())
+  archivedByUserId     String?
+  archiveReason        String
+  snapshot             String
+  restoredAt           DateTime?
+  restoredByUserId     String?
+  restoredStudentId    String?
+}
+
+model StudentDeletionRequest {
+  id               String   @id @default(cuid())
+  studentId        String?
+  studentRollNo    String
+  studentName      String
+  sectionName      String
+  requestedByUserId String
+  requestedByName  String
+  reason           String?
+  status           String   @default("PENDING")
+  reviewedAt       DateTime?
+  reviewedByUserId String?
+  reviewNote       String?
+  createdAt        DateTime @default(now())
+
+  @@index([status, createdAt])
+  @@index([studentId, status])
 }
 
 model Assessment {
@@ -96,12 +139,15 @@ model Assessment {
   maxMarks     Float
   weightage    Float    @default(0)
   category     String   // e.g., "CA_QUIZ", "CA_REVIEW", "MID_TERM", "END_SEMESTER"
+  componentType String  @default("INTERNAL") // INTERNAL or EXTERNAL
   isActive     Boolean  @default(true)
   includeInAgg Boolean  @default(true)
   displayOrder Int      @default(0)
   marks        Mark[]
 
   @@unique([offeringId, code])
+  @@index([offeringId, isActive, displayOrder])
+  @@index([offeringId, category])
 }
 
 model Mark {
@@ -113,6 +159,7 @@ model Mark {
   assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, assessmentId])
+  @@index([assessmentId])
 }
 
 model AuditLog {
@@ -140,6 +187,9 @@ model CourseOffering {
   enrollments       CourseOfferingEnrollment[]
   mentorAssignments CourseOfferingMentor[]
   createdAt         DateTime  @default(now())
+
+  @@index([isActive, academicYear, term])
+  @@index([subjectId, isActive])
 }
 
 model CourseOfferingClass {
@@ -152,6 +202,9 @@ model CourseOfferingClass {
   faculty    Faculty?       @relation(fields: [facultyId], references: [id], onDelete: SetNull)
 
   @@unique([offeringId, sectionId])
+  @@index([offeringId, facultyId])
+  @@index([facultyId])
+  @@index([sectionId])
 }
 
 model CourseOfferingMentor {
@@ -162,6 +215,7 @@ model CourseOfferingMentor {
   user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([offeringId, userId])
+  @@index([userId])
 }
 
 model CourseOfferingEnrollment {
@@ -174,4 +228,7 @@ model CourseOfferingEnrollment {
   section    Section        @relation(fields: [sectionId], references: [id], onDelete: Cascade)
 
   @@unique([offeringId, studentId])
+  @@index([offeringId, sectionId])
+  @@index([studentId])
+  @@index([sectionId])
 }

@@ -1,13 +1,40 @@
 import { auth } from "@/auth"
 import { classifyAssessment } from "@/lib/assessment-structure"
 import prisma from "@/lib/db"
-import { buildScopedSectionWhere, buildScopedStudentWhere, getActiveWorkspaceState, getRoleViewLabel } from "@/lib/course-workspace"
+import { buildScopedSectionWhere, getActiveWorkspaceState, getRoleViewLabel } from "@/lib/course-workspace"
 import { formatWorkspaceCode, formatWorkspaceRoleHeading } from "@/lib/workspace-labels"
 import { redirect } from "next/navigation"
 import { StudentsClient } from "./client"
+import { getAdminStudentsPage, getWorkspaceStudentsPage } from "./queries"
 import { WorkspaceStudentsClient } from "./workspace-students-client"
 
-export default async function StudentsPage() {
+const prismaWithStudentManagement = prisma as typeof prisma & {
+  studentDeletionRequest?: {
+    findMany: typeof prisma.auditLog.findMany
+  }
+  archivedStudent?: {
+    findMany: typeof prisma.auditLog.findMany
+  }
+}
+
+type StudentsPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>
+}
+
+function readSingleSearchParam(
+  searchParams: Record<string, string | string[] | undefined>,
+  key: string
+) {
+  const value = searchParams[key]
+  return Array.isArray(value) ? value[0] : value
+}
+
+function readPageParam(value: string | undefined) {
+  const parsed = Number.parseInt(value ?? "1", 10)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1
+}
+
+export default async function StudentsPage({ searchParams }: StudentsPageProps) {
   const session = await auth()
   const user = session?.user
 
@@ -17,6 +44,10 @@ export default async function StudentsPage() {
 
   const { activeWorkspace, activeRoleView } = await getActiveWorkspaceState(user)
   const isElectiveUploadContext = activeRoleView !== "administrator" && Boolean(activeWorkspace.offeringId && activeWorkspace.isElective)
+  const resolvedSearchParams = (await searchParams) ?? {}
+  const query = readSingleSearchParam(resolvedSearchParams, "q")?.trim() ?? ""
+  const page = readPageParam(readSingleSearchParam(resolvedSearchParams, "page"))
+  const requestedSectionId = readSingleSearchParam(resolvedSearchParams, "section")?.trim() ?? ""
 
   if (activeRoleView !== "administrator") {
     if (!activeWorkspace.offeringId) {
@@ -37,28 +68,15 @@ export default async function StudentsPage() {
 
     const assessmentIds = assessments.map((assessment) => assessment.id)
 
-    const [students, scopedSections] = await Promise.all([
-      prisma.student.findMany({
-        where: await buildScopedStudentWhere(user, activeWorkspace, activeRoleView),
-        include: {
-          section: {
-            select: {
-              id: true,
-              name: true,
-              semester: true,
-              programCode: true,
-              sectionCode: true,
-            },
-          },
-          marks: {
-            where: { assessmentId: { in: assessmentIds } },
-            select: {
-              assessmentId: true,
-              marks: true,
-            },
-          },
-        },
-        orderBy: [{ section: { name: "asc" } }, { rollNo: "asc" }],
+    const [studentPage, scopedSections] = await Promise.all([
+      getWorkspaceStudentsPage({
+        user,
+        workspace: activeWorkspace,
+        roleView: activeRoleView,
+        query,
+        page,
+        sectionId: requestedSectionId && requestedSectionId !== "ALL" ? requestedSectionId : null,
+        assessmentIds,
       }),
       prisma.section.findMany({
         where: await buildScopedSectionWhere(user, activeWorkspace, activeRoleView),
@@ -72,6 +90,19 @@ export default async function StudentsPage() {
         },
       }),
     ])
+    const pendingDeletionRequests = prismaWithStudentManagement.studentDeletionRequest
+      ? await prismaWithStudentManagement.studentDeletionRequest.findMany({
+          where: {
+            status: "PENDING",
+            studentId: {
+              in: studentPage.students.map((student) => student.id),
+            },
+          },
+          select: {
+            studentId: true,
+          },
+        })
+      : []
 
     return (
       <div className="space-y-6">
@@ -87,28 +118,71 @@ export default async function StudentsPage() {
       </div>
 
         <WorkspaceStudentsClient
-          initialData={students}
+          initialData={studentPage.students}
           sections={scopedSections}
           assessments={assessments.map((assessment) => ({
             ...assessment,
             classification: classifyAssessment(assessment),
           }))}
           roleView={activeRoleView}
+          searchQuery={query}
+          currentPage={studentPage.page}
+          pageCount={studentPage.pageCount}
+          totalCount={studentPage.totalCount}
+          selectedSectionId={requestedSectionId && requestedSectionId !== "ALL" ? requestedSectionId : "ALL"}
+          pendingDeletionStudentIds={pendingDeletionRequests
+            .map((request) => request.studentId)
+            .filter((studentId): studentId is string => Boolean(studentId))}
         />
       </div>
     )
   }
 
-  const [students, sections] = await Promise.all([
-    prisma.student.findMany({
-      include: {
-        section: true,
-      },
-      orderBy: [{ section: { name: "asc" } }, { rollNo: "asc" }]
+  const [studentPage, sections, pendingDeletionRequests, archivedStudents] = await Promise.all([
+    getAdminStudentsPage({
+      query,
+      page,
     }),
     prisma.section.findMany({
       orderBy: { name: "asc" },
     })
+    ,
+    prismaWithStudentManagement.studentDeletionRequest
+      ? prismaWithStudentManagement.studentDeletionRequest.findMany({
+          where: {
+            status: "PENDING",
+          },
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            studentId: true,
+            studentRollNo: true,
+            studentName: true,
+            sectionName: true,
+            requestedByName: true,
+            requestedByUserId: true,
+            reason: true,
+            createdAt: true,
+          },
+        })
+      : Promise.resolve([]),
+    prismaWithStudentManagement.archivedStudent
+      ? prismaWithStudentManagement.archivedStudent.findMany({
+          where: {
+            restoredAt: null,
+          },
+          orderBy: { archivedAt: "desc" },
+          select: {
+            id: true,
+            rollNo: true,
+            name: true,
+            sectionName: true,
+            archivedAt: true,
+            archiveReason: true,
+          },
+          take: 100,
+        })
+      : Promise.resolve([]),
   ])
 
   return (
@@ -125,10 +199,16 @@ export default async function StudentsPage() {
       </div>
 
       <StudentsClient
-        initialData={students}
+        initialData={studentPage.students}
         sections={sections}
         canManageAllSections
         isElectiveOffering={isElectiveUploadContext}
+        searchQuery={query}
+        currentPage={studentPage.page}
+        pageCount={studentPage.pageCount}
+        totalCount={studentPage.totalCount}
+        pendingDeletionRequests={pendingDeletionRequests}
+        archivedStudents={archivedStudents}
       />
     </div>
   )

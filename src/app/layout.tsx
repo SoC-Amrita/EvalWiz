@@ -1,17 +1,10 @@
 import type { Metadata } from "next";
-import { Instrument_Sans } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { APP_INFO, getCourseDisplayTitle } from "@/lib/app-info";
 import { FontProvider } from "@/components/font-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { getRootThemeBootstrapScript } from "@/lib/palette-theme";
-
-const uiSans = Instrument_Sans({
-  subsets: ["latin"],
-  variable: "--font-instrument-sans",
-  display: "swap",
-  weight: ["400", "500", "600", "700"],
-});
 
 export const metadata: Metadata = {
   title: APP_INFO.name,
@@ -29,13 +22,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${uiSans.variable} h-full antialiased light`}>
+    <html lang="en" suppressHydrationWarning className="h-full antialiased light">
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: getRootThemeBootstrapScript(),
-          }}
-        />
+        <Script id="root-theme-bootstrap" strategy="beforeInteractive">
+          {getRootThemeBootstrapScript()}
+        </Script>
       </head>
       <body className="min-h-full flex flex-col">
         <ThemeProvider>

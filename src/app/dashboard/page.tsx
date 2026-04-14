@@ -137,7 +137,9 @@ export default async function DashboardOverview() {
   }
 
   const sectionWhere = await buildScopedSectionWhere(user, activeWorkspace, activeRoleView)
-  const studentWhere = await buildScopedStudentWhere(user, activeWorkspace, activeRoleView)
+  const studentWhere = await buildScopedStudentWhere(user, activeWorkspace, activeRoleView, {
+    excludeFromAnalytics: true,
+  })
 
   const [totalStudents, totalSections, totalAssessments, allMarks, assessments, recentLogs] = await Promise.all([
     prisma.student.count({

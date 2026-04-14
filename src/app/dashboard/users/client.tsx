@@ -248,7 +248,7 @@ export function UserAdminClient({
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="password" className="text-right">Password</Label>
-                    <Input id="password" name="password" type="password" className="col-span-3" placeholder="Defaults to faculty123, or admin123 when admin access is enabled" />
+                    <Input id="password" name="password" type="password" minLength={8} className="col-span-3" placeholder="Set an initial password (minimum 8 characters)" required />
                   </div>
                 </div>
                 <DialogFooter>
@@ -401,7 +401,7 @@ export function UserAdminClient({
           <DialogHeader>
             <DialogTitle>Set / Reset Password</DialogTitle>
             <DialogDescription>
-              Enter a new password, or leave this blank to apply the default password based on admin access.
+              Enter a new password for this account.
             </DialogDescription>
           </DialogHeader>
           {resettingUser ? (
@@ -413,7 +413,7 @@ export function UserAdminClient({
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="reset-password" className="text-right">New Password</Label>
-                  <Input id="reset-password" name="password" type="password" className="col-span-3" placeholder={resettingUser.isAdmin ? "Defaults to admin123" : "Defaults to faculty123"} />
+                  <Input id="reset-password" name="password" type="password" minLength={8} className="col-span-3" placeholder="Enter a new password (minimum 8 characters)" required />
                 </div>
               </div>
               <DialogFooter>

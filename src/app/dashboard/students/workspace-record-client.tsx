@@ -2,14 +2,16 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useMemo, useState } from "react"
-import { Pencil, Save, X } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
+import { Pencil, Save, ShieldAlert, X } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { saveStudentMark } from "../marks/actions"
+import { requestStudentDeletion, setStudentAnalyticsExclusion } from "./actions"
 import { getErrorMessage } from "@/lib/client-errors"
 import type { WorkspaceRoleView } from "@/lib/course-workspace"
 
@@ -28,6 +30,8 @@ type StudentRecord = {
   rollNo: string
   name: string
   sectionName: string
+  excludeFromAnalytics: boolean
+  pendingDeletionRequest: boolean
 }
 
 export function WorkspaceStudentRecordClient({
@@ -45,6 +49,12 @@ export function WorkspaceStudentRecordClient({
   const [savingAssessmentId, setSavingAssessmentId] = useState<string | null>(null)
   const [editingAssessmentId, setEditingAssessmentId] = useState<string | null>(null)
   const [dirtyMarks, setDirtyMarks] = useState<Record<string, string>>({})
+  const [updatingStudentState, setUpdatingStudentState] = useState(false)
+  const [analyticsEnabled, setAnalyticsEnabled] = useState(!student.excludeFromAnalytics)
+
+  useEffect(() => {
+    setAnalyticsEnabled(!student.excludeFromAnalytics)
+  }, [student.excludeFromAnalytics])
 
   const totalRecorded = useMemo(
     () => assessments.filter((assessment) => assessment.marks !== null).length,
@@ -115,6 +125,45 @@ export function WorkspaceStudentRecordClient({
     }
   }
 
+  const handleSetAnalyticsEnabled = async (enabled: boolean) => {
+    if (!enabled) {
+      const confirmed = window.confirm(
+        "Exclude this student from analytics? The student will be removed from analytics and report calculations globally."
+      )
+      if (!confirmed) return
+    }
+
+    const previousValue = analyticsEnabled
+    setAnalyticsEnabled(enabled)
+    setUpdatingStudentState(true)
+    try {
+      await setStudentAnalyticsExclusion(student.id, !enabled)
+      toast.success(
+        enabled ? "Student included in analytics" : "Student excluded from analytics"
+      )
+      router.refresh()
+    } catch (error) {
+      setAnalyticsEnabled(previousValue)
+      toast.error(getErrorMessage(error, "Failed to update analytics exclusion"))
+    } finally {
+      setUpdatingStudentState(false)
+    }
+  }
+
+  const handleRequestDeletion = async () => {
+    const reason = window.prompt("Optional reason for the deletion request:")
+    setUpdatingStudentState(true)
+    try {
+      await requestStudentDeletion(student.id, reason ?? undefined)
+      toast.success("Deletion request sent to admin")
+      router.refresh()
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to request deletion"))
+    } finally {
+      setUpdatingStudentState(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -126,6 +175,43 @@ export function WorkspaceStudentRecordClient({
         </p>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{student.name}</h1>
         <p className="font-mono text-sm text-slate-500">{student.rollNo}</p>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          {student.excludeFromAnalytics ? (
+            <Badge variant="secondary" className="bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200">
+              Excluded from analytics
+            </Badge>
+          ) : null}
+          {student.pendingDeletionRequest ? (
+            <Badge variant="secondary" className="bg-rose-100 text-rose-900 dark:bg-rose-950/60 dark:text-rose-200">
+              Deletion request pending admin review
+            </Badge>
+          ) : null}
+        </div>
+        {roleView === "mentor" ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-950/60">
+              <label className="flex items-center gap-3 text-sm font-medium text-slate-700 dark:text-slate-200">
+                <input
+                  type="checkbox"
+                  checked={analyticsEnabled}
+                  disabled={updatingStudentState}
+                  onChange={(event) => void handleSetAnalyticsEnabled(event.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 accent-emerald-600"
+                />
+                Include in analytics
+              </label>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={updatingStudentState || student.pendingDeletionRequest}
+              onClick={() => void handleRequestDeletion()}
+            >
+              <ShieldAlert className="mr-2 h-4 w-4" />
+              {student.pendingDeletionRequest ? "Deletion Requested" : "Request Deletion"}
+            </Button>
+          </div>
+        ) : null}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

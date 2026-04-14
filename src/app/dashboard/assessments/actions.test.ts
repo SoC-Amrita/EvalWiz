@@ -126,4 +126,23 @@ describe("assessment actions", () => {
       where: { id: "assess-1" },
     })
   })
+
+  it("rejects unsupported assessment component types", async () => {
+    const { createAssessment } = await import("@/app/dashboard/assessments/actions")
+
+    await expect(
+      createAssessment({
+        name: "Quiz 1",
+        code: "Q1",
+        description: "Intro quiz",
+        maxMarks: 20,
+        weightage: 5,
+        category: "CA_QUIZ",
+        componentType: "PRACTICAL",
+        isActive: true,
+        includeInAgg: true,
+        displayOrder: 1,
+      })
+    ).rejects.toThrow("Assessment type must be INTERNAL or EXTERNAL")
+  })
 })

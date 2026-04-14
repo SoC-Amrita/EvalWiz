@@ -1,7 +1,5 @@
 import { PrismaClient } from "@prisma/client"
 import bcrypt from "bcryptjs"
-import { randomBytes } from "node:crypto"
-
 const prisma = new PrismaClient()
 
 type CanonicalUser = {
@@ -92,8 +90,13 @@ const CANONICAL_USERS: CanonicalUser[] = [
   },
 ]
 
-function resolveScriptPassword(envVar: string) {
-  return process.env[envVar]?.trim() || randomBytes(12).toString("base64url")
+function requireScriptPassword(envVar: string) {
+  const value = process.env[envVar]?.trim()
+  if (!value) {
+    throw new Error(`Set ${envVar} before running prisma/backfill-users.ts`)
+  }
+
+  return value
 }
 
 function buildName(title: string, firstName: string, lastName: string) {
@@ -207,9 +210,9 @@ async function normalizeRemainingUsers() {
 }
 
 async function main() {
-  const adminPassword = resolveScriptPassword("BACKFILL_ADMIN_PASSWORD")
-  const mentorPassword = resolveScriptPassword("BACKFILL_MENTOR_PASSWORD")
-  const facultyPassword = resolveScriptPassword("BACKFILL_FACULTY_PASSWORD")
+  const adminPassword = requireScriptPassword("BACKFILL_ADMIN_PASSWORD")
+  const mentorPassword = requireScriptPassword("BACKFILL_MENTOR_PASSWORD")
+  const facultyPassword = requireScriptPassword("BACKFILL_FACULTY_PASSWORD")
 
   for (const user of CANONICAL_USERS) {
     await upsertCanonicalUser({
@@ -236,9 +239,6 @@ async function main() {
   })
 
   console.table(summary)
-  console.log(`Backfill admin password: ${adminPassword}`)
-  console.log(`Backfill mentor password: ${mentorPassword}`)
-  console.log(`Backfill faculty password: ${facultyPassword}`)
 }
 
 main()

@@ -19,7 +19,7 @@ async function loadAdvancedAnalyticsBase() {
   })
   const sectionWhere = await buildScopedSectionWhere(user, activeWorkspace, activeRoleView)
 
-  const [assessments, mentorAssignments, totalStudents, totalSections, totalMarks] = await Promise.all([
+  const [assessments, sections, mentorAssignments, totalStudents, totalMarks] = await Promise.all([
     prisma.assessment.findMany({
       where: { isActive: true, offeringId: activeWorkspace.offeringId },
       orderBy: { displayOrder: "asc" },
@@ -32,6 +32,16 @@ async function loadAdvancedAnalyticsBase() {
         weightage: true,
       },
     }),
+    prisma.section.findMany({
+      where: sectionWhere,
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        programCode: true,
+        sectionCode: true,
+      },
+    }),
     prisma.courseOfferingMentor.findMany({
       where: { offeringId: activeWorkspace.offeringId },
       orderBy: { user: { name: "asc" } },
@@ -42,7 +52,6 @@ async function loadAdvancedAnalyticsBase() {
       },
     }),
     prisma.student.count({ where: studentWhere }),
-    prisma.section.count({ where: sectionWhere }),
     prisma.mark.count({
       where: {
         student: studentWhere,
@@ -58,9 +67,10 @@ async function loadAdvancedAnalyticsBase() {
   return {
     activeWorkspace,
     assessments,
+    sections,
     mentorNames,
     totalStudents,
-    totalSections,
+    totalSections: sections.length,
     totalMarks,
     studentWhere,
     exportMeta: {
@@ -111,6 +121,7 @@ export async function getAdvancedAnalyticsDetailData(): Promise<{
     activeWorkspace,
     assessments,
     exportMeta,
+    sections,
     studentWhere,
   } = await loadAdvancedAnalyticsBase()
 
@@ -185,29 +196,6 @@ export async function getAdvancedAnalyticsDetailData(): Promise<{
         }))
       )
 
-  const assessmentMap = new Map<string, AssessmentMeta>()
-  const sectionMap = new Map<string, SectionMeta>()
-
-  rawMarks.forEach((mark) => {
-    if (!assessmentMap.has(mark.assessmentId)) {
-      assessmentMap.set(mark.assessmentId, {
-        id: mark.assessmentId,
-        code: mark.assessmentCode,
-        name: mark.assessmentName,
-        category: mark.assessmentCategory,
-        maxMarks: mark.assessmentMax,
-        weightage: mark.assessmentWeightage,
-      })
-    }
-
-    if (!sectionMap.has(mark.sectionId)) {
-      sectionMap.set(mark.sectionId, {
-        id: mark.sectionId,
-        name: mark.sectionName,
-      })
-    }
-  })
-
   return {
     rawMarks,
     assessments: assessments.map((assessment) => ({
@@ -218,7 +206,10 @@ export async function getAdvancedAnalyticsDetailData(): Promise<{
       maxMarks: assessment.maxMarks,
       weightage: assessment.weightage,
     })),
-    sections: [...sectionMap.values()],
+    sections: sections.map((section) => ({
+      id: section.id,
+      name: formatCompactProgramSectionName(section),
+    })),
     exportMeta,
   }
 }

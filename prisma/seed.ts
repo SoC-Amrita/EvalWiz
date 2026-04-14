@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { AssessmentComponentType, PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import { randomBytes } from 'node:crypto'
 
@@ -176,14 +176,22 @@ async function main() {
   }
 
   // Create Assessments
-  const assessments = [
+  const assessments: Array<{
+    name: string
+    code: string
+    maxMarks: number
+    weightage: number
+    category: string
+    componentType: AssessmentComponentType
+    displayOrder: number
+  }> = [
     {
       name: 'Midterm Exam',
       code: 'MIDTERM',
       maxMarks: 50,
       weightage: 20,
       category: 'MID_TERM',
-      componentType: 'INTERNAL',
+      componentType: AssessmentComponentType.INTERNAL,
       displayOrder: 1
     },
     {
@@ -192,7 +200,7 @@ async function main() {
       maxMarks: 10,
       weightage: 5,
       category: 'CA_REVIEW',
-      componentType: 'INTERNAL',
+      componentType: AssessmentComponentType.INTERNAL,
       displayOrder: 2
     },
     {
@@ -201,7 +209,7 @@ async function main() {
       maxMarks: 100,
       weightage: 50,
       category: 'END_SEMESTER',
-      componentType: 'EXTERNAL',
+      componentType: AssessmentComponentType.EXTERNAL,
       displayOrder: 3
     }
   ]

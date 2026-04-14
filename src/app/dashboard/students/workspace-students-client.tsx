@@ -157,11 +157,7 @@ export function WorkspaceStudentsClient({
     [assessments]
   )
 
-  const filteredStudents = useMemo(() => {
-    return students.filter((student) => {
-      return roleView !== "mentor" || selectedSectionId === "ALL" || student.section.id === selectedSectionId
-    })
-  }, [roleView, selectedSectionId, students])
+  const filteredStudents = students
 
   const selectedAssessment =
     assessmentFilter === "ALL"

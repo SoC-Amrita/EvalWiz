@@ -104,6 +104,7 @@ export async function bulkUploadMarks(
   let successCount = 0
   let errorCount = 0
   const errors: string[] = []
+  const validRows = new Map<string, { studentId: string; marks: number }>()
 
   for (const row of data) {
     try {
@@ -120,18 +121,37 @@ export async function bulkUploadMarks(
         continue
       }
 
-      await prisma.mark.upsert({
-        where: { studentId_assessmentId: { studentId: studId, assessmentId } },
-        update: { marks: row.marks },
-        create: { studentId: studId, assessmentId, marks: row.marks }
+      validRows.set(studId, {
+        studentId: studId,
+        marks: row.marks,
       })
-
-      successCount++
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unexpected upload failure"
       errors.push(`Row ${row.rollNo}: ${message}`)
       errorCount++
     }
+  }
+
+  if (validRows.size > 0) {
+    const rowsToWrite = [...validRows.values()]
+
+    await prisma.$transaction([
+      prisma.mark.deleteMany({
+        where: {
+          assessmentId,
+          studentId: { in: rowsToWrite.map((row) => row.studentId) },
+        },
+      }),
+      prisma.mark.createMany({
+        data: rowsToWrite.map((row) => ({
+          studentId: row.studentId,
+          assessmentId,
+          marks: row.marks,
+        })),
+      }),
+    ])
+
+    successCount = rowsToWrite.length
   }
 
   revalidatePath("/dashboard/marks")

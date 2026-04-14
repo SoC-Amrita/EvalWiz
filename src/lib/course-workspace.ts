@@ -1,4 +1,5 @@
 import { cookies } from "next/headers"
+import { cache } from "react"
 
 import prisma from "@/lib/db"
 import { inferSectionCodeFromLabel } from "@/lib/roll-number"
@@ -38,6 +39,40 @@ const ACTIVE_COURSE_COOKIE = "active-course-key"
 const ACTIVE_ROLE_COOKIE = "active-role-view"
 const ADMIN_CONSOLE_MODE_COOKIE = "admin-console-mode"
 const EMPTY_WORKSPACE_KEY = "__empty_workspace__"
+const EMPTY_SECTION_IDS = ["__no_section__"]
+const EMPTY_STUDENT_IDS = ["__no_student__"]
+
+const workspaceOfferingSelect = {
+  id: true,
+  term: true,
+  academicYear: true,
+  semester: true,
+  year: true,
+  evaluationPattern: true,
+  courseType: true,
+  isElective: true,
+  isActive: true,
+  subject: {
+    select: {
+      id: true,
+      code: true,
+      title: true,
+      program: true,
+    },
+  },
+  classAssignments: {
+    select: {
+      section: {
+        select: {
+          id: true,
+          name: true,
+          admissionYear: true,
+          sectionCode: true,
+        },
+      },
+    },
+  },
+} as const
 
 function addRoleView(workspace: CourseWorkspace, roleView: WorkspaceRoleView) {
   if (!workspace.availableRoleViews.includes(roleView)) {
@@ -151,16 +186,30 @@ export function buildWorkspaceSectionWhere(workspace: CourseWorkspace) {
   }
 }
 
+const getFacultySectionIdsForWorkspaceCached = cache(async (userId: string, offeringId: string) => {
+  const assignments = await prisma.courseOfferingClass.findMany({
+    where: {
+      offeringId,
+      faculty: { userId },
+    },
+    select: { sectionId: true },
+  })
+
+  return assignments.map((assignment) => assignment.sectionId)
+})
+
 export async function getAllowedStudentIdsForWorkspace(user: WorkspaceUser, workspace: CourseWorkspace, roleView: WorkspaceRoleView) {
   if (!workspace.offeringId) {
     return []
   }
 
+  const allowedSectionIds = await getAllowedSectionIdsForWorkspace(user, workspace, roleView)
+  const scopedSectionIds = allowedSectionIds.length > 0 ? allowedSectionIds : EMPTY_SECTION_IDS
+
   if (!workspace.isElective) {
-    const allowedSectionIds = await getAllowedSectionIdsForWorkspace(user, workspace, roleView)
     const students = await prisma.student.findMany({
       where: {
-        sectionId: { in: allowedSectionIds.length > 0 ? allowedSectionIds : ["__no_section__"] },
+        sectionId: { in: scopedSectionIds },
       },
       select: { id: true },
     })
@@ -168,11 +217,10 @@ export async function getAllowedStudentIdsForWorkspace(user: WorkspaceUser, work
     return students.map((student) => student.id)
   }
 
-  const allowedSectionIds = await getAllowedSectionIdsForWorkspace(user, workspace, roleView)
   const enrollments = await prisma.courseOfferingEnrollment.findMany({
     where: {
       offeringId: workspace.offeringId,
-      sectionId: { in: allowedSectionIds.length > 0 ? allowedSectionIds : ["__no_section__"] },
+      sectionId: { in: scopedSectionIds },
     },
     select: { studentId: true },
   })
@@ -189,15 +237,7 @@ export async function getAllowedSectionIdsForWorkspace(user: WorkspaceUser, work
     return workspace.sectionIds
   }
 
-  const assignments = await prisma.courseOfferingClass.findMany({
-    where: {
-      offeringId: workspace.offeringId,
-      faculty: { userId: user.id },
-    },
-    select: { sectionId: true },
-  })
-
-  return assignments.map((assignment) => assignment.sectionId)
+  return getFacultySectionIdsForWorkspaceCached(user.id, workspace.offeringId)
 }
 
 export async function buildScopedSectionWhere(user: WorkspaceUser, workspace: CourseWorkspace, roleView: WorkspaceRoleView) {
@@ -207,28 +247,51 @@ export async function buildScopedSectionWhere(user: WorkspaceUser, workspace: Co
   }
 }
 
-export async function buildScopedStudentWhere(user: WorkspaceUser, workspace: CourseWorkspace, roleView: WorkspaceRoleView) {
-  const allowedStudentIds = await getAllowedStudentIdsForWorkspace(user, workspace, roleView)
+export async function buildScopedStudentWhere(
+  user: WorkspaceUser,
+  workspace: CourseWorkspace,
+  roleView: WorkspaceRoleView,
+  options?: {
+    excludeFromAnalytics?: boolean
+  }
+) {
+  if (!workspace.offeringId) {
+    return {
+      id: { in: EMPTY_STUDENT_IDS },
+      ...(options?.excludeFromAnalytics ? { excludeFromAnalytics: false } : {}),
+    }
+  }
+
+  const allowedSectionIds = await getAllowedSectionIdsForWorkspace(user, workspace, roleView)
+  const scopedSectionIds = allowedSectionIds.length > 0 ? allowedSectionIds : EMPTY_SECTION_IDS
+
   return {
-    id: { in: allowedStudentIds.length > 0 ? allowedStudentIds : ["__no_student__"] },
+    ...(workspace.isElective
+      ? {
+          offeringEnrollments: {
+            some: {
+              offeringId: workspace.offeringId,
+              sectionId: { in: scopedSectionIds },
+            },
+          },
+        }
+      : {
+          sectionId: { in: scopedSectionIds },
+        }),
+    ...(options?.excludeFromAnalytics ? { excludeFromAnalytics: false } : {}),
   }
 }
 
-export async function listAccessibleCourseWorkspaces(user: WorkspaceUser): Promise<CourseWorkspace[]> {
+const listAccessibleCourseWorkspacesCached = cache(
+  async (userId: string, role: string, isAdmin: boolean): Promise<CourseWorkspace[]> => {
+    const user = { id: userId, role, isAdmin }
   const [adminOfferings, mentorOfferings, facultyOfferings] = await Promise.all([
     isAdminRole(user)
       ? prisma.courseOffering.findMany({
           where: {
             isActive: true,
           },
-          include: {
-            subject: true,
-            classAssignments: {
-              include: {
-                section: true,
-              },
-            },
-          },
+          select: workspaceOfferingSelect,
           orderBy: [
             { isActive: "desc" },
             { academicYear: "desc" },
@@ -244,14 +307,7 @@ export async function listAccessibleCourseWorkspaces(user: WorkspaceUser): Promi
           some: { userId: user.id },
         },
       },
-      include: {
-        subject: true,
-        classAssignments: {
-          include: {
-            section: true,
-          },
-        },
-      },
+      select: workspaceOfferingSelect,
       orderBy: [
         { isActive: "desc" },
         { academicYear: "desc" },
@@ -268,14 +324,7 @@ export async function listAccessibleCourseWorkspaces(user: WorkspaceUser): Promi
           },
         },
       },
-      include: {
-        subject: true,
-        classAssignments: {
-          include: {
-            section: true,
-          },
-        },
-      },
+      select: workspaceOfferingSelect,
       orderBy: [
         { isActive: "desc" },
         { academicYear: "desc" },
@@ -321,14 +370,24 @@ export async function listAccessibleCourseWorkspaces(user: WorkspaceUser): Promi
         left.subjectCode.localeCompare(right.subjectCode)
       )
     })
+})
+
+export async function listAccessibleCourseWorkspaces(user: WorkspaceUser): Promise<CourseWorkspace[]> {
+  return listAccessibleCourseWorkspacesCached(user.id, user.role, user.isAdmin)
 }
+
+const getWorkspaceCookiePreferences = cache(async () => {
+  const cookieStore = await cookies()
+  return {
+    requestedCourseKey: cookieStore.get(ACTIVE_COURSE_COOKIE)?.value,
+    requestedRoleView: cookieStore.get(ACTIVE_ROLE_COOKIE)?.value as WorkspaceRoleView | undefined,
+    requestedAdminConsoleMode: cookieStore.get(ADMIN_CONSOLE_MODE_COOKIE)?.value,
+  }
+})
 
 export async function getActiveWorkspaceState(user: WorkspaceUser) {
   const workspaces = await listAccessibleCourseWorkspaces(user)
-  const cookieStore = await cookies()
-  const requestedCourseKey = cookieStore.get(ACTIVE_COURSE_COOKIE)?.value
-  const requestedRoleView = cookieStore.get(ACTIVE_ROLE_COOKIE)?.value as WorkspaceRoleView | undefined
-  const requestedAdminConsoleMode = cookieStore.get(ADMIN_CONSOLE_MODE_COOKIE)?.value
+  const { requestedCourseKey, requestedRoleView, requestedAdminConsoleMode } = await getWorkspaceCookiePreferences()
 
   const activeWorkspace = workspaces.find((workspace) => workspace.key === requestedCourseKey) ?? workspaces[0]
   const isAdminConsole = user.isAdmin && requestedAdminConsoleMode !== "workspace"

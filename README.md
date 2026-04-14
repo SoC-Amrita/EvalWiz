@@ -2,7 +2,7 @@
 
 EvalWiz is a personal attempt to build the academic portal I always wished existed around me. It started from a very familiar frustration with university systems that feel old, rigid, and strangely annoyed that users keep showing up. I wanted something that feels calm, intentional, and actually useful to administrators, mentors, faculty, and eventually students too. This repo is basically the running logbook of that attempt.
 
-Right now this project is a course operations and evaluation platform. It handles academic setup, course offerings, reusable classes, student registry management, mentor and faculty workflows, marks entry, reports, analytics, advanced analytics, exports, theme customization, and a few small surprises tucked into the interface for people who click around a little too curiously. Even though it is still a local first project, the codebase is already shaped around workflows that matter in a real institution.
+Right now this project is a course operations and evaluation platform. It handles academic setup, course offerings, reusable classes, student registry management, mentor and faculty workflows, marks entry, reports, analytics, advanced analytics, exports, theme customization, and a few small surprises tucked into the interface for people who click around a little too curiously. The current setup uses Supabase-hosted Postgres while keeping the app itself small and local-friendly for development.
 
 ## Project Spirit
 
@@ -18,7 +18,7 @@ The current dashboard covers academic setup, users, students, sections, assessme
 
 ### Technology Stack
 
-The app is built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, Prisma, SQLite for the local data store, and NextAuth version 5 beta for authentication. Charts are rendered with Recharts. PDF generation uses html to image and jsPDF. Spreadsheet export uses xlsx and exceljs. State for small client side flows uses Zustand where that helps keep components tidy.
+The app is built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, Prisma, Supabase Postgres, and NextAuth version 5 beta for authentication. Charts are rendered with Recharts. PDF generation uses html to image and jsPDF. Spreadsheet export uses xlsx and exceljs. State for small client side flows uses Zustand where that helps keep components tidy.
 
 The app uses the App Router. Most domain logic lives in server rendered pages, server actions, and shared helpers inside `src/lib`. The current setup is intentionally compact because this is still a single app, but the data model and workflow separation already lean toward a more modular future architecture. In other words, it is still one machine, but I have been trying to teach it some manners.
 
@@ -28,7 +28,7 @@ The main application lives under `src/app`. Login lives in `src/app/login`. The 
 
 ### Database Shape
 
-The Prisma schema lives in `prisma/schema.prisma` and currently targets SQLite through `dev.db`. The main models are `User`, `Faculty`, `Subject`, `Section`, `Student`, `Assessment`, `Mark`, `AuditLog`, `CourseOffering`, `CourseOfferingClass`, `CourseOfferingMentor`, and `CourseOfferingEnrollment`.
+The Prisma schema lives in `prisma/schema.prisma` and targets PostgreSQL. In development and deployment, this project is intended to run against a Supabase Postgres database using `DATABASE_URL` for the pooled runtime connection and `DIRECT_URL` for Prisma CLI operations. The main models are `User`, `Faculty`, `Subject`, `Section`, `Student`, `ArchivedStudent`, `StudentDeletionRequest`, `Assessment`, `Mark`, `AuditLog`, `CourseOffering`, `CourseOfferingClass`, `CourseOfferingMentor`, and `CourseOfferingEnrollment`.
 
 That split is important. Subjects are reusable academic entities. Course offerings are term specific instances of subjects. Sections represent reusable classes or class like roster groups. Students live globally. Marks belong to students and assessments. Mentor assignment is offering specific. Faculty assignment to sections is offering specific. Electives are modeled differently from regular courses through offering scoped enrollment rather than purely home class membership.
 
@@ -48,70 +48,83 @@ Typography mixes a stronger serif academic tone with a cleaner sans serif interf
 
 ## Local Development
 
-This project is currently built to run locally.
+This project is built to run locally against a Supabase Postgres database.
 
 ### Setup
 
-Install dependencies with
+1. Install dependencies
 
 ```bash
 npm install
 ```
 
-Push the local Prisma schema with
+2. Copy the safe environment template and fill in your real values
 
 ```bash
-npx prisma db push
+cp .env.example .env
 ```
 
-Seed the database with
+3. Push the Prisma schema to your configured Postgres database
 
 ```bash
-npx tsx prisma/seed.ts
+npm run db:push
 ```
 
-Run the development server with
+4. Seed the database with the demo data
+
+```bash
+npm run db:seed
+```
+
+5. Run the development server
 
 ```bash
 npm run dev
 ```
 
-Build a production bundle locally with
+6. Build a production bundle locally
 
 ```bash
 npm run build
 ```
 
-Run the production build with
+7. Run the production build
 
 ```bash
 npm run start
 ```
 
-The default local database file is `prisma/dev.db`. The seed script creates an admin user, faculty accounts, mentors, reusable classes, a course offering, sample students, and sample assessments with marks.
+The seed script creates an admin user, faculty accounts, mentors, reusable classes, a course offering, sample students, and sample assessments with marks.
 
-### Seeded Credentials
+### Environment Variables
 
-Admin login
+Use `.env.example` as the starting point. The important values are:
 
-```text
-admin@amrita.edu
-admin123
+- `DATABASE_URL`: the Supabase pooled Postgres connection string used by the running app
+- `DIRECT_URL`: the direct Postgres connection string used by Prisma CLI operations
+- `AUTH_SECRET`: the NextAuth secret for your local or deployed environment
+- `AUTH_URL`: the base URL of the running app
+
+For Supabase, a typical setup looks like this:
+
+```env
+DATABASE_URL="postgresql://postgres.<project-ref>:<password>@<region>.pooler.supabase.com:6543/postgres?pgbouncer=true"
+DIRECT_URL="postgresql://postgres:<password>@db.<project-ref>.supabase.co:5432/postgres"
+AUTH_SECRET="replace-with-a-long-random-secret"
+AUTH_URL="http://localhost:3000"
 ```
 
-Mentor login
+Important:
 
-```text
-mentor1@amrita.edu
-faculty123
-```
+- Do not commit `.env`
+- Do not commit real database passwords, API keys, or auth secrets
+- Rotate any shared credentials before making the repo public
 
-Faculty login
+### Seeded Accounts
 
-```text
-fac1@amrita.edu
-faculty123
-```
+The seed script creates demo accounts such as `admin@amrita.edu`, `mentor1@amrita.edu`, and `fac1@amrita.edu`.
+
+If you want predictable local credentials, set `SEED_ADMIN_PASSWORD` and `SEED_FACULTY_PASSWORD` before running `npm run db:seed`. If you leave them unset, the seed script generates strong random passwords and prints them to the terminal once at seed time.
 
 ## Testing
 
@@ -154,6 +167,14 @@ Some deeper workflow permutations inside academic setup are still not exhaustive
 ## Current Workflow Model
 
 Admin starts from a global console and only drops into course context intentionally. Mentors see course level information with section aware filtering where needed. Faculty see class level views. Students are global records with home class identity, while elective enrollments can temporarily bring students from different home classes into a single offering. Marks entry, reports, analytics, and advanced analytics all use the active workspace as their scope boundary.
+
+## Public Repo Notes
+
+If this repository becomes public, keep these boundaries intact:
+
+- Never commit `.env`, production connection strings, service-role keys, or auth secrets
+- Set explicit local seed passwords through environment variables if you need repeatable demo logins
+- Keep generated migration scratch files, temporary exports, and local runtime artifacts out of version control
 
 ## Exports And Reports
 

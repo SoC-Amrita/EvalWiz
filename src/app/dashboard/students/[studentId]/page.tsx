@@ -8,6 +8,12 @@ import { redirect } from "next/navigation"
 import { StudentRecordClient } from "../record-client"
 import { WorkspaceStudentRecordClient } from "../workspace-record-client"
 
+const prismaWithStudentManagement = prisma as typeof prisma & {
+  studentDeletionRequest?: {
+    findFirst: typeof prisma.auditLog.findFirst
+  }
+}
+
 export default async function StudentRecordPage({
   params,
 }: {
@@ -27,7 +33,7 @@ export default async function StudentRecordPage({
     requireRealWorkspace(activeWorkspace)
 
     const allowedSectionIdList = [...allowedSectionIds]
-    const [student, assessments] = await Promise.all([
+    const [student, assessments, pendingDeletionRequest] = await Promise.all([
       activeWorkspace.isElective
         ? prisma.courseOfferingEnrollment.findFirst({
             where: {
@@ -75,6 +81,15 @@ export default async function StudentRecordPage({
         },
         orderBy: { displayOrder: "asc" },
       }),
+      prismaWithStudentManagement.studentDeletionRequest
+        ? prismaWithStudentManagement.studentDeletionRequest.findFirst({
+            where: {
+              studentId,
+              status: "PENDING",
+            },
+            select: { id: true },
+          })
+        : Promise.resolve(null),
     ])
 
     if (!student) {
@@ -90,6 +105,8 @@ export default async function StudentRecordPage({
           rollNo: student.rollNo,
           name: student.name,
           sectionName: student.section.name,
+          excludeFromAnalytics: student.excludeFromAnalytics,
+          pendingDeletionRequest: Boolean(pendingDeletionRequest),
         }}
         roleView={scopedRoleView}
         workspaceLabel={formatWorkspaceCode(activeWorkspace)}
@@ -204,16 +221,17 @@ export default async function StudentRecordPage({
     })
 
   return (
-    <StudentRecordClient
-      student={{
-        id: student.id,
-        rollNo: student.rollNo,
-        name: student.name,
-        section: {
-          id: student.section.id,
-          name: student.section.name,
-        },
-      }}
+      <StudentRecordClient
+        student={{
+          id: student.id,
+          rollNo: student.rollNo,
+          name: student.name,
+          excludeFromAnalytics: student.excludeFromAnalytics,
+          section: {
+            id: student.section.id,
+            name: student.section.name,
+          },
+        }}
       sections={sections}
       subjectGroups={subjectGroups}
     />

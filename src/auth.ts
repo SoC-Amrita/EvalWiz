@@ -3,6 +3,12 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import prisma from "@/lib/db"
 
+const authSecret = process.env.AUTH_SECRET
+
+if (!authSecret && process.env.NODE_ENV !== "test") {
+  throw new Error("AUTH_SECRET is required")
+}
+
 declare module "next-auth" {
   interface Session {
     user: {
@@ -37,7 +43,7 @@ declare module "@auth/core/jwt" {
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  secret: process.env.AUTH_SECRET || "fallback-secret-for-local-development",
+  secret: authSecret,
   trustHost: true,
   providers: [
     CredentialsProvider({

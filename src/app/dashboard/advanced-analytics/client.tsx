@@ -19,7 +19,7 @@ import {
 } from "recharts"
 import { Download, Filter, RotateCcw } from "lucide-react"
 
-import { AdvancedAnalyticsExportMeta, AssessmentMeta, RawMark, SectionMeta } from "./page"
+import { AdvancedAnalyticsExportMeta, AssessmentMeta, RawMark, SectionMeta } from "./types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {

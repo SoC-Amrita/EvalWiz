@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client"
 import bcrypt from "bcryptjs"
+import { randomBytes } from "node:crypto"
 
 const prisma = new PrismaClient()
 
@@ -10,6 +11,9 @@ type CanonicalUser = {
   lastName: string
   role: "MENTOR" | "FACULTY"
   isAdmin: boolean
+}
+
+type CanonicalUserWithPassword = CanonicalUser & {
   password: string
 }
 
@@ -21,7 +25,6 @@ const CANONICAL_USERS: CanonicalUser[] = [
     lastName: "Raman",
     role: "MENTOR",
     isAdmin: true,
-    password: "admin123",
   },
   {
     email: "mentor1@amrita.edu",
@@ -30,7 +33,6 @@ const CANONICAL_USERS: CanonicalUser[] = [
     lastName: "P",
     role: "MENTOR",
     isAdmin: false,
-    password: "admin123",
   },
   {
     email: "mentor2@amrita.edu",
@@ -39,7 +41,6 @@ const CANONICAL_USERS: CanonicalUser[] = [
     lastName: "Priya",
     role: "MENTOR",
     isAdmin: false,
-    password: "admin123",
   },
   {
     email: "fac1@amrita.edu",
@@ -48,7 +49,6 @@ const CANONICAL_USERS: CanonicalUser[] = [
     lastName: "Radhakrishnan",
     role: "FACULTY",
     isAdmin: false,
-    password: "faculty123",
   },
   {
     email: "fac2@amrita.edu",
@@ -57,7 +57,6 @@ const CANONICAL_USERS: CanonicalUser[] = [
     lastName: "Padman",
     role: "FACULTY",
     isAdmin: false,
-    password: "faculty123",
   },
   {
     email: "fac3@amrita.edu",
@@ -66,7 +65,6 @@ const CANONICAL_USERS: CanonicalUser[] = [
     lastName: "M",
     role: "FACULTY",
     isAdmin: false,
-    password: "faculty123",
   },
   {
     email: "fac4@amrita.edu",
@@ -75,7 +73,6 @@ const CANONICAL_USERS: CanonicalUser[] = [
     lastName: "Kumar",
     role: "FACULTY",
     isAdmin: false,
-    password: "faculty123",
   },
   {
     email: "fac5@amrita.edu",
@@ -84,7 +81,6 @@ const CANONICAL_USERS: CanonicalUser[] = [
     lastName: "Nair",
     role: "FACULTY",
     isAdmin: false,
-    password: "faculty123",
   },
   {
     email: "fac6@amrita.edu",
@@ -93,9 +89,12 @@ const CANONICAL_USERS: CanonicalUser[] = [
     lastName: "Menon",
     role: "FACULTY",
     isAdmin: false,
-    password: "faculty123",
   },
 ]
+
+function resolveScriptPassword(envVar: string) {
+  return process.env[envVar]?.trim() || randomBytes(12).toString("base64url")
+}
 
 function buildName(title: string, firstName: string, lastName: string) {
   return `${title} ${firstName} ${lastName}`.replace(/\s+/g, " ").trim()
@@ -114,7 +113,7 @@ function inferNameFields(name: string) {
   }
 }
 
-async function upsertCanonicalUser(user: CanonicalUser) {
+async function upsertCanonicalUser(user: CanonicalUserWithPassword) {
   const passwordHash = await bcrypt.hash(user.password, 10)
   const name = buildName(user.title, user.firstName, user.lastName)
 
@@ -208,8 +207,20 @@ async function normalizeRemainingUsers() {
 }
 
 async function main() {
+  const adminPassword = resolveScriptPassword("BACKFILL_ADMIN_PASSWORD")
+  const mentorPassword = resolveScriptPassword("BACKFILL_MENTOR_PASSWORD")
+  const facultyPassword = resolveScriptPassword("BACKFILL_FACULTY_PASSWORD")
+
   for (const user of CANONICAL_USERS) {
-    await upsertCanonicalUser(user)
+    await upsertCanonicalUser({
+      ...user,
+      password:
+        user.isAdmin
+          ? adminPassword
+          : user.role === "MENTOR"
+            ? mentorPassword
+            : facultyPassword,
+    })
   }
 
   await normalizeRemainingUsers()
@@ -225,6 +236,9 @@ async function main() {
   })
 
   console.table(summary)
+  console.log(`Backfill admin password: ${adminPassword}`)
+  console.log(`Backfill mentor password: ${mentorPassword}`)
+  console.log(`Backfill faculty password: ${facultyPassword}`)
 }
 
 main()

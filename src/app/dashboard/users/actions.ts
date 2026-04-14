@@ -28,8 +28,13 @@ export async function createUserAccount(data: {
     throw new Error("A user with this email already exists")
   }
 
-  const password =
-    data.password?.trim() || (data.isAdmin ? "admin123" : "faculty123")
+  const password = data.password?.trim()
+  if (!password) {
+    throw new Error("Password is required")
+  }
+  if (password.length < 8) {
+    throw new Error("Password must be at least 8 characters long")
+  }
   const hashedPassword = await bcrypt.hash(password, 10)
   const nameFields = buildNameFields(data)
 
@@ -114,8 +119,13 @@ export async function resetUserPassword(userId: string, password?: string) {
     throw new Error("User not found")
   }
 
-  const nextPassword =
-    password?.trim() || (user.isAdmin ? "admin123" : "faculty123")
+  const nextPassword = password?.trim()
+  if (!nextPassword) {
+    throw new Error("New password is required")
+  }
+  if (nextPassword.length < 8) {
+    throw new Error("New password must be at least 8 characters long")
+  }
 
   await prisma.user.update({
     where: { id: userId },

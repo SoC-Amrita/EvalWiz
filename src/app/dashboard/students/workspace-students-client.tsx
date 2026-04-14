@@ -1,10 +1,12 @@
 "use client"
 
-import { useDeferredValue, useMemo, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { ChevronRight, Search, Sigma, Users } from "lucide-react"
+import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import {
@@ -15,8 +17,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { getErrorMessage } from "@/lib/client-errors"
 import type { WorkspaceRoleView } from "@/lib/course-workspace"
 import type { AssessmentFamily, CASubcomponent } from "@/lib/assessment-structure"
+import { setStudentAnalyticsExclusion } from "./actions"
 
 type Section = {
   id: string
@@ -30,6 +34,7 @@ type Student = {
   id: string
   rollNo: string
   name: string
+  excludeFromAnalytics: boolean
   section: Section
   marks: Array<{
     assessmentId: string
@@ -52,10 +57,6 @@ type Assessment = {
   }
 }
 
-function normalizeSearchValue(value: string) {
-  return value.toLowerCase().replace(/\s+/g, "")
-}
-
 function formatCompactSectionLabel(section: Section) {
   const semester = section.semester?.trim() || null
   const programCode = section.programCode?.trim().toUpperCase() || null
@@ -73,17 +74,65 @@ export function WorkspaceStudentsClient({
   sections,
   assessments,
   roleView,
+  searchQuery,
+  currentPage,
+  pageCount,
+  totalCount,
+  selectedSectionId,
+  pendingDeletionStudentIds,
 }: {
   initialData: Student[]
   sections: Section[]
   assessments: Assessment[]
   roleView: WorkspaceRoleView
+  searchQuery: string
+  currentPage: number
+  pageCount: number
+  totalCount: number
+  selectedSectionId: string
+  pendingDeletionStudentIds: string[]
 }) {
   const router = useRouter()
-  const [search, setSearch] = useState("")
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const [students, setStudents] = useState(initialData)
+  const [search, setSearch] = useState(searchQuery)
   const deferredSearch = useDeferredValue(search)
-  const [sectionFilter, setSectionFilter] = useState("ALL")
   const [assessmentFilter, setAssessmentFilter] = useState("ALL")
+  const [updatingStudentIds, setUpdatingStudentIds] = useState<Set<string>>(new Set())
+  const pendingDeletionSet = useMemo(() => new Set(pendingDeletionStudentIds), [pendingDeletionStudentIds])
+
+  useEffect(() => {
+    setStudents(initialData)
+  }, [initialData])
+
+  useEffect(() => {
+    setSearch(searchQuery)
+  }, [searchQuery])
+
+  const navigateWithParams = useCallback((updates: Record<string, string | null>) => {
+    const params = new URLSearchParams(searchParams.toString())
+
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value && value.trim().length > 0) {
+        params.set(key, value)
+      } else {
+        params.delete(key)
+      }
+    })
+
+    const queryString = params.toString()
+    router.replace(queryString ? `${pathname}?${queryString}` : pathname)
+  }, [pathname, router, searchParams])
+
+  useEffect(() => {
+    const nextQuery = deferredSearch.trim()
+    if (nextQuery === searchQuery) return
+    navigateWithParams({
+      q: nextQuery || null,
+      page: null,
+    })
+  }, [deferredSearch, navigateWithParams, searchQuery])
 
   const sectionOptions = useMemo(
     () =>
@@ -109,20 +158,10 @@ export function WorkspaceStudentsClient({
   )
 
   const filteredStudents = useMemo(() => {
-    const query = normalizeSearchValue(deferredSearch.trim())
-    return initialData.filter((student) => {
-      const matchesSearch =
-        !query ||
-        normalizeSearchValue(student.rollNo).includes(query) ||
-        normalizeSearchValue(student.name).includes(query) ||
-        normalizeSearchValue(student.section.name).includes(query) ||
-        normalizeSearchValue(formatCompactSectionLabel(student.section)).includes(query)
-
-      const matchesSection = roleView !== "mentor" || sectionFilter === "ALL" || student.section.id === sectionFilter
-
-      return matchesSearch && matchesSection
+    return students.filter((student) => {
+      return roleView !== "mentor" || selectedSectionId === "ALL" || student.section.id === selectedSectionId
     })
-  }, [deferredSearch, initialData, roleView, sectionFilter])
+  }, [roleView, selectedSectionId, students])
 
   const selectedAssessment =
     assessmentFilter === "ALL"
@@ -179,6 +218,38 @@ export function WorkspaceStudentsClient({
     }
   }, [filteredStudentRows.length, selectedAssessment, selectedAssessmentValues])
 
+  const handleSetAnalyticsEnabled = async (studentId: string, enabled: boolean) => {
+    if (!enabled) {
+      const confirmed = window.confirm(
+        "Exclude this student from analytics? The student will be removed from analytics and report calculations globally."
+      )
+      if (!confirmed) return
+    }
+
+    const previousStudents = students
+    setStudents((current) =>
+      current.map((student) =>
+        student.id === studentId ? { ...student, excludeFromAnalytics: !enabled } : student
+      )
+    )
+    setUpdatingStudentIds((current) => new Set(current).add(studentId))
+
+    try {
+      await setStudentAnalyticsExclusion(studentId, !enabled)
+      toast.success(enabled ? "Student included in analytics" : "Student excluded from analytics")
+      router.refresh()
+    } catch (error) {
+      setStudents(previousStudents)
+      toast.error(getErrorMessage(error, "Failed to update analytics exclusion"))
+    } finally {
+      setUpdatingStudentIds((current) => {
+        const next = new Set(current)
+        next.delete(studentId)
+        return next
+      })
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/60">
@@ -208,9 +279,9 @@ export function WorkspaceStudentsClient({
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={() => setSectionFilter("ALL")}
+                  onClick={() => navigateWithParams({ section: null, page: null })}
                   className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
-                    sectionFilter === "ALL"
+                    selectedSectionId === "ALL"
                       ? "border-indigo-600 bg-indigo-600 text-white"
                       : "border-slate-200 bg-white text-slate-700 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/40 dark:hover:text-indigo-300"
                   }`}
@@ -221,9 +292,9 @@ export function WorkspaceStudentsClient({
                   <button
                     key={section.id}
                     type="button"
-                    onClick={() => setSectionFilter(section.id)}
+                    onClick={() => navigateWithParams({ section: section.id, page: null })}
                     className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
-                      sectionFilter === section.id
+                      selectedSectionId === section.id
                         ? "border-indigo-600 bg-indigo-600 text-white"
                         : "border-slate-200 bg-white text-slate-700 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/40 dark:hover:text-indigo-300"
                     }`}
@@ -305,20 +376,24 @@ export function WorkspaceStudentsClient({
 
       <div className="flex items-center justify-between gap-3">
         <Badge variant="outline" className="chip-soft-primary px-3 py-1 font-mono text-xs whitespace-nowrap">
-          {filteredStudents.length} / {initialData.length}
+          {initialData.length} shown
         </Badge>
+        <div className="text-xs text-slate-500">
+          {totalCount.toLocaleString()} total students in this result set
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <ScrollArea className="h-[calc(100vh-300px)]">
           <Table>
             <TableHeader className="sticky top-0 z-10 bg-slate-50 shadow-sm dark:bg-slate-900/50">
-              <TableRow>
-                <TableHead>Roll Number</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Section</TableHead>
-                {selectedAssessment ? (
-                  <TableHead>
+                <TableRow>
+                  <TableHead>Roll Number</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Section</TableHead>
+                  {roleView === "mentor" ? <TableHead>Analytics</TableHead> : null}
+                  {selectedAssessment ? (
+                    <TableHead>
                     <div className="flex flex-col">
                       <span>{selectedAssessment.name}</span>
                       <span className="text-[11px] font-normal text-slate-400">
@@ -333,8 +408,8 @@ export function WorkspaceStudentsClient({
             <TableBody>
               {filteredStudentRows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={selectedAssessment ? 5 : 4} className="h-24 text-center text-slate-500">
-                    {initialData.length === 0 ? "No students are available in this scope yet." : "No students match your search."}
+                  <TableCell colSpan={selectedAssessment ? (roleView === "mentor" ? 6 : 5) : roleView === "mentor" ? 5 : 4} className="h-24 text-center text-slate-500">
+                    {totalCount === 0 ? "No students are available in this scope yet." : "No students match your search."}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -348,13 +423,39 @@ export function WorkspaceStudentsClient({
                       {student.rollNo}
                     </TableCell>
                     <TableCell className="font-medium text-slate-700 dark:text-slate-300">
-                      {student.name}
+                      <div className="flex flex-col items-start gap-1">
+                        <span>{student.name}</span>
+                        {student.excludeFromAnalytics ? (
+                          <Badge variant="secondary" className="bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200">
+                            Analytics excluded
+                          </Badge>
+                        ) : null}
+                        {pendingDeletionSet.has(student.id) ? (
+                          <Badge variant="secondary" className="bg-rose-100 text-rose-900 dark:bg-rose-950/60 dark:text-rose-200">
+                            Deletion request pending
+                          </Badge>
+                        ) : null}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="chip-soft-neutral">
                         {formatCompactSectionLabel(student.section)}
                       </Badge>
                     </TableCell>
+                    {roleView === "mentor" ? (
+                      <TableCell onClick={(event) => event.stopPropagation()}>
+                        <label className="flex items-center gap-3 text-xs font-medium text-slate-700 dark:text-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={!student.excludeFromAnalytics}
+                            disabled={updatingStudentIds.has(student.id)}
+                            onChange={(event) => void handleSetAnalyticsEnabled(student.id, event.target.checked)}
+                            className="h-4 w-4 rounded border-slate-300 accent-emerald-600"
+                          />
+                          Include
+                        </label>
+                      </TableCell>
+                    ) : null}
                     {selectedAssessment ? (
                       <TableCell className="font-mono text-slate-700 dark:text-slate-300">
                         {student.selectedMark !== null ? student.selectedMark.toFixed(1) : "—"}
@@ -369,6 +470,31 @@ export function WorkspaceStudentsClient({
             </TableBody>
           </Table>
         </ScrollArea>
+      </div>
+
+      <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/60 sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-sm text-slate-600 dark:text-slate-300">
+          Page <span className="font-semibold text-slate-900 dark:text-slate-100">{currentPage}</span> of{" "}
+          <span className="font-semibold text-slate-900 dark:text-slate-100">{pageCount}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={currentPage <= 1}
+            onClick={() => navigateWithParams({ page: String(currentPage - 1) })}
+          >
+            Previous
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={currentPage >= pageCount}
+            onClick={() => navigateWithParams({ page: String(currentPage + 1) })}
+          >
+            Next
+          </Button>
+        </div>
       </div>
     </div>
   )

@@ -1,9 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 const originalNodeEnv = process.env.NODE_ENV
+const writableEnv = process.env as { NODE_ENV?: string }
 
 afterEach(() => {
-  process.env.NODE_ENV = originalNodeEnv
+  writableEnv.NODE_ENV = originalNodeEnv
   delete (globalThis as { prisma?: unknown }).prisma
   vi.resetModules()
   vi.restoreAllMocks()
@@ -11,7 +12,7 @@ afterEach(() => {
 
 describe("db", () => {
   it("creates and caches the prisma client on globalThis in development", async () => {
-    process.env.NODE_ENV = "development"
+    writableEnv.NODE_ENV = "development"
     const prismaInstance = { tag: "prisma-dev" }
     const PrismaClient = vi.fn(class MockPrismaClient {
       constructor() {
@@ -31,7 +32,7 @@ describe("db", () => {
   })
 
   it("reuses an existing global prisma client without constructing a new one", async () => {
-    process.env.NODE_ENV = "development"
+    writableEnv.NODE_ENV = "development"
     const existing = { tag: "existing-prisma" }
     ;(globalThis as { prisma?: unknown }).prisma = existing
     const PrismaClient = vi.fn(class MockPrismaClient {
@@ -51,7 +52,7 @@ describe("db", () => {
   })
 
   it("does not cache prisma on globalThis in production", async () => {
-    process.env.NODE_ENV = "production"
+    writableEnv.NODE_ENV = "production"
     const prismaInstance = { tag: "prisma-prod" }
     const PrismaClient = vi.fn(class MockPrismaClient {
       constructor() {

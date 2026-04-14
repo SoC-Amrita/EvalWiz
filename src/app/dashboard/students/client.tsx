@@ -1,7 +1,7 @@
 "use client"
 
-import { useRouter } from "next/navigation"
-import React, { useDeferredValue, useState, useRef, useMemo } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react"
 import Papa from "papaparse"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,11 +15,19 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog"
-import { Upload, Download, AlertCircle, CheckCircle, Search, ChevronRight, Pencil, Trash2 } from "lucide-react"
-import { createStudentRecord, deleteStudentRecord, updateStudentRecord, uploadStudents } from "./actions"
+import { Upload, Download, AlertCircle, CheckCircle, Search, ChevronRight, Pencil, RotateCcw, ShieldCheck, ShieldX, Trash2 } from "lucide-react"
+import {
+  approveStudentDeletionRequest,
+  createStudentRecord,
+  deleteStudentRecord,
+  rejectStudentDeletionRequest,
+  restoreArchivedStudent,
+  updateStudentRecord,
+  uploadStudents,
+} from "./actions"
 import { toast } from "sonner"
 import { getErrorMessage } from "@/lib/client-errors"
-import { getProgramNameFromCode, getSchoolNameFromCode, parseStudentRollNumber } from "@/lib/roll-number"
+import { parseStudentRollNumber } from "@/lib/roll-number"
 
 type Section = { id: string; name: string }
 type StudentSection = Section & {
@@ -32,24 +40,33 @@ type Student = {
   id: string
   rollNo: string
   name: string
+  excludeFromAnalytics: boolean
   section: StudentSection
+}
+
+type PendingDeletionRequest = {
+  id: string
+  studentId: string | null
+  studentRollNo: string
+  studentName: string
+  sectionName: string
+  requestedByName: string
+  requestedByUserId: string
+  reason: string | null
+  createdAt: Date
+}
+
+type ArchivedStudent = {
+  id: string
+  rollNo: string
+  name: string
+  sectionName: string
+  archivedAt: Date
+  archiveReason: string
 }
 
 type CsvRow = { rollNo: string; name: string; sectionName?: string }
 type CsvImportRow = { rollNo?: unknown; name?: unknown; sectionName?: unknown }
-
-type StudentFilterMeta = {
-  schoolCode: string
-  schoolName: string
-  programCode: string
-  programName: string
-  batchYear: string
-  sectionCode: string
-}
-
-function normalizeSearchValue(value: string) {
-  return value.toLowerCase().replace(/\s+/g, "")
-}
 
 function formatCompactSectionLabel(student: Student) {
   const parsedRoll = parseStudentRollNumber(student.rollNo)
@@ -71,13 +88,27 @@ export function StudentsClient({
   sections,
   canManageAllSections,
   isElectiveOffering,
+  searchQuery,
+  currentPage,
+  pageCount,
+  totalCount,
+  pendingDeletionRequests,
+  archivedStudents,
 }: {
   initialData: Student[]
   sections: Section[]
   canManageAllSections: boolean
   isElectiveOffering: boolean
+  searchQuery: string
+  currentPage: number
+  pageCount: number
+  totalCount: number
+  pendingDeletionRequests: PendingDeletionRequest[]
+  archivedStudents: ArchivedStudent[]
 }) {
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [open, setOpen] = useState(false)
   const [addStudentOpen, setAddStudentOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -87,80 +118,59 @@ export function StudentsClient({
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Filter / search state
-  const [search, setSearch] = useState("")
+  const [search, setSearch] = useState(searchQuery)
   const deferredSearch = useDeferredValue(search)
-  const [schoolFilter, setSchoolFilter] = useState<string>("ALL")
-  const [programFilter, setProgramFilter] = useState<string>("ALL")
-  const [batchFilter, setBatchFilter] = useState<string>("ALL")
-  const [sectionCodeFilter, setSectionCodeFilter] = useState<string>("ALL")
   const [editingStudent, setEditingStudent] = useState<Student | null>(null)
   const [deletingStudent, setDeletingStudent] = useState<Student | null>(null)
+  const pendingDeletionStudentIds = useMemo(
+    () => new Set(pendingDeletionRequests.map((request) => request.studentId).filter((studentId): studentId is string => Boolean(studentId))),
+    [pendingDeletionRequests]
+  )
 
-  const studentsWithMeta = useMemo(() => {
-    return initialData.map((student) => {
-      const parsed = parseStudentRollNumber(student.rollNo)
-      const filterMeta: StudentFilterMeta | null = parsed
-        ? {
-            schoolCode: parsed.schoolCode,
-            schoolName: getSchoolNameFromCode(parsed.schoolCode) ?? parsed.schoolCode,
-            programCode: parsed.programCode,
-            programName: getProgramNameFromCode(parsed.programCode) ?? parsed.programCode,
-            batchYear: parsed.admissionYear,
-            sectionCode: parsed.sectionCode,
-          }
-        : null
+  const handleEditAnalyticsIncludedChange = (checked: boolean) => {
+    if (!checked) {
+      const confirmed = window.confirm(
+        "Exclude this student from analytics? The student will be removed from analytics and report calculations globally."
+      )
+      if (!confirmed) return
+    }
 
-      return {
-        ...student,
-        filterMeta,
+    setEditingStudent((current) =>
+      current ? { ...current, excludeFromAnalytics: !checked } : current
+    )
+  }
+
+  useEffect(() => {
+    setSearch(searchQuery)
+  }, [searchQuery])
+
+  const navigateWithParams = useCallback((updates: Record<string, string | null>) => {
+    const params = new URLSearchParams(searchParams.toString())
+
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value && value.trim().length > 0) {
+        params.set(key, value)
+      } else {
+        params.delete(key)
       }
     })
-  }, [initialData])
 
-  const filterOptions = useMemo(() => {
-    const schools = new Map<string, string>()
-    const programs = new Map<string, string>()
-    const batches = new Set<string>()
-    const sections = new Set<string>()
+    const queryString = params.toString()
+    router.replace(queryString ? `${pathname}?${queryString}` : pathname)
+  }, [pathname, router, searchParams])
 
-    for (const student of studentsWithMeta) {
-      if (!student.filterMeta) continue
-      schools.set(student.filterMeta.schoolCode, student.filterMeta.schoolName)
-      programs.set(student.filterMeta.programCode, student.filterMeta.programName)
-      batches.add(student.filterMeta.batchYear)
-      sections.add(student.filterMeta.sectionCode)
-    }
-
-    return {
-      schools: [...schools.entries()].sort((left, right) => left[1].localeCompare(right[1])),
-      programs: [...programs.entries()].sort((left, right) => left[0].localeCompare(right[0])),
-      batches: [...batches].sort((left, right) => right.localeCompare(left)),
-      sections: [...sections].sort((left, right) => left.localeCompare(right)),
-    }
-  }, [studentsWithMeta])
-
-  // Filtered data
-  const filtered = useMemo(() => {
-    const query = normalizeSearchValue(deferredSearch.trim())
-    return studentsWithMeta.filter((student) => {
-      const matchSchool = schoolFilter === "ALL" || student.filterMeta?.schoolCode === schoolFilter
-      const matchProgram = programFilter === "ALL" || student.filterMeta?.programCode === programFilter
-      const matchBatch = batchFilter === "ALL" || student.filterMeta?.batchYear === batchFilter
-      const matchSectionCode = sectionCodeFilter === "ALL" || student.filterMeta?.sectionCode === sectionCodeFilter
-      const matchSearch =
-        !query ||
-        normalizeSearchValue(student.name).includes(query) ||
-        normalizeSearchValue(student.rollNo).includes(query) ||
-        normalizeSearchValue(student.section.name).includes(query) ||
-        normalizeSearchValue(student.filterMeta?.programCode ?? "").includes(query) ||
-        normalizeSearchValue(student.filterMeta?.programName ?? "").includes(query) ||
-        normalizeSearchValue(student.filterMeta?.schoolCode ?? "").includes(query) ||
-        normalizeSearchValue(student.filterMeta?.schoolName ?? "").includes(query) ||
-        normalizeSearchValue(student.filterMeta?.batchYear ?? "").includes(query) ||
-        normalizeSearchValue(student.filterMeta?.sectionCode ?? "").includes(query)
-      return matchSchool && matchProgram && matchBatch && matchSectionCode && matchSearch
+  useEffect(() => {
+    const nextQuery = deferredSearch.trim()
+    if (nextQuery === searchQuery) return
+    navigateWithParams({
+      q: nextQuery || null,
+      page: null,
     })
-  }, [batchFilter, deferredSearch, programFilter, schoolFilter, sectionCodeFilter, studentsWithMeta])
+  }, [deferredSearch, navigateWithParams, searchQuery])
+
+  const pageSummary = totalCount === 0
+    ? "No students found"
+    : `Showing ${initialData.length} of ${totalCount} students`
 
   // CSV processing
   const processFile = (file: File) => {
@@ -258,6 +268,7 @@ export function StudentsClient({
         rollNo: String(formData.get("rollNo") ?? ""),
         name: String(formData.get("name") ?? ""),
         sectionId: String(formData.get("sectionId") ?? ""),
+        excludeFromAnalytics: formData.get("excludeFromAnalytics") === "on",
       })
       router.refresh()
       toast.success("Student updated")
@@ -276,10 +287,55 @@ export function StudentsClient({
     try {
       await deleteStudentRecord(deletingStudent.id)
       router.refresh()
-      toast.success("Student removed")
+      toast.success("Student archived and removed from active records")
       setDeletingStudent(null)
     } catch (error) {
       toast.error(getErrorMessage(error, "Failed to delete student"))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleApproveDeletionRequest = async (requestId: string) => {
+    if (!window.confirm("Approve this deletion request and archive-delete the student?")) return
+
+    setLoading(true)
+    try {
+      await approveStudentDeletionRequest(requestId)
+      router.refresh()
+      toast.success("Deletion request approved")
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to approve deletion request"))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRejectDeletionRequest = async (requestId: string) => {
+    if (!window.confirm("Reject this deletion request?")) return
+
+    setLoading(true)
+    try {
+      await rejectStudentDeletionRequest(requestId)
+      router.refresh()
+      toast.success("Deletion request rejected")
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to reject deletion request"))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRestoreArchivedStudent = async (archivedStudentId: string) => {
+    if (!window.confirm("Restore this archived student and their associated records?")) return
+
+    setLoading(true)
+    try {
+      await restoreArchivedStudent(archivedStudentId)
+      router.refresh()
+      toast.success("Student restored")
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to restore archived student"))
     } finally {
       setLoading(false)
     }
@@ -309,7 +365,7 @@ export function StudentsClient({
           <div className="mb-3">
             <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">Global Search</div>
             <div className="text-xs text-slate-500 dark:text-slate-400">
-              Search the full student master list by roll number or name, then narrow further using filters if needed.
+              Search the student master list by roll number or name. Results are fetched page by page from the server.
             </div>
           </div>
           <div className="relative">
@@ -324,75 +380,25 @@ export function StudentsClient({
         </div>
 
         <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-            <select
-              value={schoolFilter}
-              onChange={(event) => setSchoolFilter(event.target.value)}
-              className="h-10 min-w-0 rounded-md border border-slate-300 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900"
-            >
-              <option value="ALL">All schools</option>
-              {filterOptions.schools.map(([code, name]) => (
-                <option key={code} value={code}>
-                  {code} · {name}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={programFilter}
-              onChange={(event) => setProgramFilter(event.target.value)}
-              className="h-10 min-w-0 rounded-md border border-slate-300 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900"
-            >
-              <option value="ALL">All programs</option>
-              {filterOptions.programs.map(([code, name]) => (
-                <option key={code} value={code}>
-                  {code} · {name}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={batchFilter}
-              onChange={(event) => setBatchFilter(event.target.value)}
-              className="h-10 min-w-0 rounded-md border border-slate-300 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900"
-            >
-              <option value="ALL">All batches</option>
-              {filterOptions.batches.map((batch) => (
-                <option key={batch} value={batch}>
-                  {batch} Batch
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={sectionCodeFilter}
-              onChange={(event) => setSectionCodeFilter(event.target.value)}
-              className="h-10 min-w-0 rounded-md border border-slate-300 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900"
-            >
-              <option value="ALL">All sections</option>
-              {filterOptions.sections.map((sectionCode) => (
-                <option key={sectionCode} value={sectionCode}>
-                  Section {sectionCode}
-                </option>
-              ))}
-            </select>
+          <div className="rounded-lg border border-dashed border-slate-200 px-4 py-3 text-sm text-slate-600 dark:border-slate-800 dark:text-slate-300">
+            {pageSummary}
+            <div className="mt-1 text-xs text-slate-500">
+              Page {currentPage} of {pageCount}
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 xl:justify-end">
             <Badge variant="outline" className="chip-soft-primary px-3 py-1 font-mono text-xs whitespace-nowrap">
-              {filtered.length} / {initialData.length}
+              {initialData.length} shown
             </Badge>
             <Button
               variant="outline"
               onClick={() => {
                 setSearch("")
-                setSchoolFilter("ALL")
-                setProgramFilter("ALL")
-                setBatchFilter("ALL")
-                setSectionCodeFilter("ALL")
+                navigateWithParams({ q: null, page: null })
               }}
             >
-              Reset Filters
+              Reset Search
             </Button>
             <Button variant="outline" onClick={downloadTemplate}>
               <Download className="w-4 h-4 mr-2 text-slate-500" />
@@ -539,6 +545,119 @@ export function StudentsClient({
         </div>
       </div>
 
+      {(pendingDeletionRequests.length > 0 || archivedStudents.length > 0) ? (
+        <div className="grid gap-4 xl:grid-cols-2">
+          <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-4 dark:border-amber-900/60 dark:bg-amber-950/20">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-semibold text-amber-950 dark:text-amber-100">Pending Deletion Requests</div>
+                <div className="text-xs text-amber-800/80 dark:text-amber-200/80">
+                  Mentor-submitted requests that require admin approval before a student is archived and removed.
+                </div>
+              </div>
+              <Badge variant="outline" className="border-amber-300 bg-white/70 font-mono text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
+                {pendingDeletionRequests.length}
+              </Badge>
+            </div>
+
+            {pendingDeletionRequests.length === 0 ? (
+              <div className="mt-4 rounded-lg border border-dashed border-amber-300/70 px-4 py-6 text-sm text-amber-800 dark:border-amber-800/80 dark:text-amber-200">
+                No pending deletion requests.
+              </div>
+            ) : (
+              <div className="mt-4 space-y-3">
+                {pendingDeletionRequests.map((request) => (
+                  <div key={request.id} className="rounded-lg border border-amber-200 bg-white/85 p-3 dark:border-amber-900/60 dark:bg-slate-950/40">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <div className="font-semibold text-slate-900 dark:text-slate-100">{request.studentName}</div>
+                        <div className="font-mono text-xs text-slate-500">{request.studentRollNo}</div>
+                        <div className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                          {request.sectionName} · requested by {request.requestedByName}
+                        </div>
+                        {request.reason ? (
+                          <div className="mt-2 text-xs text-slate-600 dark:text-slate-300">
+                            Reason: {request.reason}
+                          </div>
+                        ) : null}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={loading}
+                          onClick={() => void handleRejectDeletionRequest(request.id)}
+                        >
+                          <ShieldX className="mr-2 h-4 w-4" />
+                          Reject
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={loading}
+                          onClick={() => void handleApproveDeletionRequest(request.id)}
+                          className="bg-amber-600 hover:bg-amber-700 text-white"
+                        >
+                          <ShieldCheck className="mr-2 h-4 w-4" />
+                          Approve
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">Archived Students</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">
+                  Admin can restore archived students and bring their active records back.
+                </div>
+              </div>
+              <Badge variant="outline" className="chip-soft-primary px-3 py-1 font-mono text-xs whitespace-nowrap">
+                {archivedStudents.length}
+              </Badge>
+            </div>
+
+            {archivedStudents.length === 0 ? (
+              <div className="mt-4 rounded-lg border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500 dark:border-slate-800">
+                No archived students available for restore.
+              </div>
+            ) : (
+              <div className="mt-4 space-y-3">
+                {archivedStudents.map((student) => (
+                  <div key={student.id} className="rounded-lg border border-slate-200 bg-white/90 p-3 dark:border-slate-800 dark:bg-slate-950/40">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <div className="font-semibold text-slate-900 dark:text-slate-100">{student.name}</div>
+                        <div className="font-mono text-xs text-slate-500">{student.rollNo}</div>
+                        <div className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                          {student.sectionName} · reason: {student.archiveReason}
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={loading}
+                        onClick={() => void handleRestoreArchivedStudent(student.id)}
+                      >
+                        <RotateCcw className="mr-2 h-4 w-4" />
+                        Restore
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
+
       {/* ── Table ── */}
       <div className="border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
         <ScrollArea className="h-[calc(100vh-280px)]">
@@ -552,21 +671,41 @@ export function StudentsClient({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.length === 0 ? (
+              {initialData.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="h-24 text-center text-slate-500">
-                    {initialData.length === 0 ? "No students found. Import a CSV to get started." : "No students match your search."}
+                    {totalCount === 0 ? "No students found. Import a CSV to get started." : "No students match your search."}
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map(s => (
+                initialData.map(s => (
                   <TableRow
                     key={s.id}
                     className="cursor-pointer hover:bg-indigo-50/40 dark:hover:bg-indigo-900/10 transition-colors group"
                     onClick={() => router.push(`/dashboard/students/${s.id}`)}
                   >
                     <TableCell className="font-mono text-indigo-600 dark:text-indigo-400 font-medium">{s.rollNo}</TableCell>
-                    <TableCell className="font-medium text-slate-700 dark:text-slate-300">{s.name}</TableCell>
+                    <TableCell className="font-medium text-slate-700 dark:text-slate-300">
+                      <div className="flex flex-col items-start gap-1">
+                        <span>{s.name}</span>
+                        {s.excludeFromAnalytics ? (
+                          <Badge
+                            variant="secondary"
+                            className="bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200"
+                          >
+                            Analytics excluded
+                          </Badge>
+                        ) : null}
+                        {pendingDeletionStudentIds.has(s.id) ? (
+                          <Badge
+                            variant="secondary"
+                            className="bg-rose-100 text-rose-900 dark:bg-rose-950/60 dark:text-rose-200"
+                          >
+                            Deletion request pending
+                          </Badge>
+                        ) : null}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
                         {formatCompactSectionLabel(s)}
@@ -579,7 +718,7 @@ export function StudentsClient({
                           size="sm"
                           onClick={(event) => {
                             event.stopPropagation()
-                            setEditingStudent(s)
+                            setEditingStudent({ ...s })
                           }}
                         >
                           <Pencil className="h-4 w-4" />
@@ -603,6 +742,31 @@ export function StudentsClient({
             </TableBody>
           </Table>
         </ScrollArea>
+      </div>
+
+      <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/60 sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-sm text-slate-600 dark:text-slate-300">
+          Page <span className="font-semibold text-slate-900 dark:text-slate-100">{currentPage}</span> of{" "}
+          <span className="font-semibold text-slate-900 dark:text-slate-100">{pageCount}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={currentPage <= 1}
+            onClick={() => navigateWithParams({ page: String(currentPage - 1) })}
+          >
+            Previous
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={currentPage >= pageCount}
+            onClick={() => navigateWithParams({ page: String(currentPage + 1) })}
+          >
+            Next
+          </Button>
+        </div>
       </div>
 
       <Dialog open={!!editingStudent} onOpenChange={(open) => !open && setEditingStudent(null)}>
@@ -639,6 +803,30 @@ export function StudentsClient({
                     ))}
                   </select>
                 </div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/60">
+                  <input
+                    type="hidden"
+                    name="excludeFromAnalytics"
+                    value={editingStudent.excludeFromAnalytics ? "on" : "off"}
+                  />
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-medium text-slate-900 dark:text-slate-100">Analytics</div>
+                      <div className="text-xs text-slate-600 dark:text-slate-300">
+                        Keep analytics on for this student by default. Turn it off to exclude the student from all analytics and reports globally.
+                      </div>
+                    </div>
+                    <label className="flex items-center gap-3 text-sm font-medium text-slate-700 dark:text-slate-200">
+                      <input
+                        type="checkbox"
+                        checked={!editingStudent.excludeFromAnalytics}
+                        onChange={(event) => handleEditAnalyticsIncludedChange(event.target.checked)}
+                        className="h-4 w-4 rounded border-slate-300 accent-emerald-600"
+                      />
+                      Include in analytics
+                    </label>
+                  </div>
+                </div>
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setEditingStudent(null)}>
@@ -656,9 +844,9 @@ export function StudentsClient({
       <Dialog open={!!deletingStudent} onOpenChange={(open) => !open && setDeletingStudent(null)}>
         <DialogContent className="sm:max-w-[520px]">
           <DialogHeader>
-            <DialogTitle>Delete Student</DialogTitle>
+            <DialogTitle>Archive & Delete Student</DialogTitle>
             <DialogDescription>
-              This removes the student from the roster and deletes any marks linked to that student record.
+              This archives the student snapshot and removes the active student record, marks, and linked enrollments from all class records and analytics.
             </DialogDescription>
           </DialogHeader>
           {deletingStudent ? (
@@ -667,13 +855,16 @@ export function StudentsClient({
                 <div className="font-semibold">{deletingStudent.name}</div>
                 <div className="text-xs opacity-80">{deletingStudent.rollNo}</div>
                 <div className="mt-2">Class: {deletingStudent.section.name}</div>
+                {deletingStudent.excludeFromAnalytics ? (
+                  <div className="mt-1 text-xs opacity-80">Analytics exclusion is currently enabled for this student.</div>
+                ) : null}
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setDeletingStudent(null)}>
                   Cancel
                 </Button>
                 <Button type="button" variant="destructive" disabled={loading} onClick={handleDeleteStudent}>
-                  {loading ? "Deleting..." : "Delete Student"}
+                  {loading ? "Archiving..." : "Archive & Delete"}
                 </Button>
               </DialogFooter>
             </>

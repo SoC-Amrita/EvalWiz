@@ -94,6 +94,7 @@ export function MarksClient({
   const [students, setStudents] = useState<StudentRow[]>([])
   const [loading, setLoading] = useState(false)
   const [dirtyMarks, setDirtyMarks] = useState<Record<string, string>>({})
+  const [showMissingOnly, setShowMissingOnly] = useState(false)
   
   // CSV State
   const [openCsv, setOpenCsv] = useState(false)
@@ -132,6 +133,28 @@ export function MarksClient({
 
     void loadData()
   }, [activeSection, activeAssessment])
+
+  const getEffectiveMarkValue = (student: StudentRow) => {
+    const dirtyValue = dirtyMarks[student.id]
+    if (dirtyValue !== undefined) {
+      const trimmed = dirtyValue.trim()
+      if (!trimmed) return null
+      const parsed = Number.parseFloat(trimmed)
+      return Number.isNaN(parsed) ? null : parsed
+    }
+
+    return student.mark
+  }
+
+  const missingCount = students.filter((student) => getEffectiveMarkValue(student) === null).length
+  const visibleStudents = showMissingOnly
+    ? students.filter((student) => getEffectiveMarkValue(student) === null)
+    : students
+  const parsedRollNumberSet = new Set(parsedData.map((row) => row.rollNo.trim().toUpperCase()))
+  const missingCsvStudents = students.filter(
+    (student) => !parsedRollNumberSet.has(student.rollNo.trim().toUpperCase())
+  )
+  const hasPartialCsvUpload = parsedData.length > 0 && students.length > 0 && missingCsvStudents.length > 0
 
   const handleMarkChange = (studentId: string, val: string) => {
     setDirtyMarks(prev => ({ ...prev, [studentId]: val }))
@@ -228,6 +251,20 @@ export function MarksClient({
 
   const submitBulkMarks = async () => {
     if (parsedData.length === 0 || !activeSection || !activeAssessment) return
+
+    if (hasPartialCsvUpload) {
+      const confirmationMessage = [
+        `This CSV includes marks for ${parsedData.length} of ${students.length} students in ${activeSectionLabel}.`,
+        `${missingCsvStudents.length} roster record(s) are missing from the file and will be left unchanged.`,
+        "",
+        "Did you mean to update only the uploaded records?",
+      ].join("\n")
+
+      if (!window.confirm(confirmationMessage)) {
+        return
+      }
+    }
+
     setLoading(true)
     try {
       const result = await bulkUploadMarks(activeSection, activeAssessment, parsedData)
@@ -773,6 +810,27 @@ export function MarksClient({
                     </div>
                   )}
 
+                  {hasPartialCsvUpload ? (
+                    <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
+                      <div className="font-medium text-sm">
+                        Partial update detected
+                      </div>
+                      <div className="mt-1 text-xs">
+                        This CSV contains {parsedData.length} record(s) for a roster of {students.length}. {missingCsvStudents.length} student record(s) are missing from the CSV and will remain unchanged unless you upload them too.
+                      </div>
+                      <div className="mt-2 text-xs font-medium">
+                        Missing from CSV: {missingCsvStudents.length}
+                      </div>
+                      <div className="mt-1 text-xs opacity-90">
+                        {missingCsvStudents
+                          .slice(0, 8)
+                          .map((student) => student.rollNo)
+                          .join(", ")}
+                        {missingCsvStudents.length > 8 ? `, +${missingCsvStudents.length - 8} more` : ""}
+                      </div>
+                    </div>
+                  ) : null}
+
                   {parsedData.length > 0 && (
                     <div className="mt-4">
                       <div className="flex items-center mb-2 font-medium text-sm text-emerald-700">
@@ -803,6 +861,11 @@ export function MarksClient({
             {activeAssessmentDetails ? (
               <span className="chip-soft-neutral rounded-full px-2.5 py-1">
                 Component: {formatAssessmentChipLabel(activeAssessmentDetails)}
+              </span>
+            ) : null}
+            {canEdit ? (
+              <span className="chip-soft-neutral rounded-full px-2.5 py-1">
+                Missing: {missingCount}
               </span>
             ) : null}
           </div>
@@ -868,64 +931,94 @@ export function MarksClient({
             Select a section and assessment to begin data entry.
           </div>
         ) : (
-          <ScrollArea className="h-[calc(100vh-320px)]">
-            <Table>
-              <TableHeader className="bg-slate-50 dark:bg-slate-900/50 sticky top-0 z-10 shadow-sm">
-                <TableRow>
-                  <TableHead className="w-[150px]">Roll Number</TableHead>
-                  <TableHead>Student Name</TableHead>
-                  <TableHead className="w-[200px] text-right">
-                    Score (Max {activeAssessmentDetails?.maxMarks})
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {students.map((student) => {
-                  const isDirty = dirtyMarks[student.id] !== undefined
-                  const currentValue = isDirty ? dirtyMarks[student.id] : student.mark ?? ""
-                  
-                  return (
-                    <TableRow key={student.id}>
-                      <TableCell className="font-mono font-medium text-slate-600 dark:text-slate-400">
-                        {student.rollNo}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {student.name}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end space-x-2">
-                          <Input 
-                            type="number"
-                            step="0.5"
-                            className={`w-24 text-right ${isDirty ? 'border-yellow-400 focus-visible:ring-yellow-400' : ''}`}
-                            value={currentValue}
-                            onChange={(e) => handleMarkChange(student.id, e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && isDirty) {
-                                handleSaveIndividual(student.id)
-                              }
-                            }}
-                          />
-                          {isDirty ? (
-                            <Button 
-                              size="icon" 
-                              variant="ghost" 
-                              className="h-9 w-9 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
-                              onClick={() => handleSaveIndividual(student.id)}
-                            >
-                              <Save className="w-4 h-4" />
-                            </Button>
-                          ) : (
-                            <div className="w-9 h-9" /> // spacer to prevent layout shift
-                          )}
-                        </div>
+          <>
+            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+              <div>
+                <div className="text-sm font-semibold text-slate-900 dark:text-white">Marks Entry Roster</div>
+                <div className="text-xs text-slate-500">
+                  {showMissingOnly
+                    ? `Showing ${visibleStudents.length} students with missing marks.`
+                    : `Showing all ${students.length} students in the selected roster.`}
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant={showMissingOnly ? "default" : "outline"}
+                onClick={() => setShowMissingOnly((current) => !current)}
+                className={showMissingOnly ? "bg-indigo-600 hover:bg-indigo-700 text-white" : ""}
+              >
+                {showMissingOnly ? "Show All Records" : "Show Missing Only"}
+              </Button>
+            </div>
+            <ScrollArea className="h-[calc(100vh-360px)]">
+              <Table>
+                <TableHeader className="bg-slate-50 dark:bg-slate-900/50 sticky top-0 z-10 shadow-sm">
+                  <TableRow>
+                    <TableHead className="w-[150px]">Roll Number</TableHead>
+                    <TableHead>Student Name</TableHead>
+                    <TableHead className="w-[200px] text-right">
+                      Score (Max {activeAssessmentDetails?.maxMarks})
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {visibleStudents.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={3} className="h-24 text-center text-slate-500">
+                        {showMissingOnly
+                          ? "No missing records remain for this component."
+                          : "No students found for the selected roster."}
                       </TableCell>
                     </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </ScrollArea>
+                  ) : (
+                    visibleStudents.map((student) => {
+                      const isDirty = dirtyMarks[student.id] !== undefined
+                      const currentValue = isDirty ? dirtyMarks[student.id] : student.mark ?? ""
+
+                      return (
+                        <TableRow key={student.id}>
+                          <TableCell className="font-mono font-medium text-slate-600 dark:text-slate-400">
+                            {student.rollNo}
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {student.name}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end space-x-2">
+                              <Input 
+                                type="number"
+                                step="0.5"
+                                className={`w-24 text-right ${isDirty ? 'border-yellow-400 focus-visible:ring-yellow-400' : ''}`}
+                                value={currentValue}
+                                onChange={(e) => handleMarkChange(student.id, e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && isDirty) {
+                                    handleSaveIndividual(student.id)
+                                  }
+                                }}
+                              />
+                              {isDirty ? (
+                                <Button 
+                                  size="icon" 
+                                  variant="ghost" 
+                                  className="h-9 w-9 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                                  onClick={() => handleSaveIndividual(student.id)}
+                                >
+                                  <Save className="w-4 h-4" />
+                                </Button>
+                              ) : (
+                                <div className="w-9 h-9" />
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          </>
         )}
       </div>
     </>

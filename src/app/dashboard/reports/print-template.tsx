@@ -2,7 +2,7 @@
 
 import React from "react"
 import { REPORT_METRICS, type ReportMetricKey } from "@/lib/assessment-structure"
-import { ReportMeta, SectionReportData } from "./page"
+import { ReportMeta, SectionReportData } from "./types"
 
 /** Stat row in the print template */
 function StatBlock({ label, value }: { label: string; value: string }) {

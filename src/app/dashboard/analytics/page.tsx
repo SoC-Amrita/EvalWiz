@@ -11,7 +11,9 @@ export default async function AnalyticsPage() {
   if (!user) redirect("/login")
 
   const { activeWorkspace, activeRoleView } = await getActiveWorkspaceState(user)
-  const studentWhere = await buildScopedStudentWhere(user, activeWorkspace, activeRoleView)
+  const studentWhere = await buildScopedStudentWhere(user, activeWorkspace, activeRoleView, {
+    excludeFromAnalytics: true,
+  })
 
   const assessments = await prisma.assessment.findMany({
     where: { isActive: true, offeringId: activeWorkspace.offeringId },

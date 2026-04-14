@@ -187,6 +187,7 @@ model CourseOffering {
   courseType        String
   isElective        Boolean   @default(false)
   isActive          Boolean   @default(true)
+  gradeRulesConfig  String?
   assessments       Assessment[]
   classAssignments  CourseOfferingClass[]
   enrollments       CourseOfferingEnrollment[]

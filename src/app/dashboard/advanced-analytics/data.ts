@@ -1,5 +1,6 @@
 import { buildScopedSectionWhere, buildScopedStudentWhere } from "@/lib/course-workspace"
 import prisma from "@/lib/db"
+import { parseGradeRuleConfig } from "@/lib/grade-rules"
 import { requireAuthenticatedWorkspaceState, requireRealWorkspace } from "@/lib/workspace-guards"
 import { formatCompactProgramSectionName } from "@/lib/workspace-labels"
 
@@ -8,6 +9,7 @@ import type {
   AssessmentMeta,
   RawMark,
   SectionMeta,
+  AdvancedAnalyticsGradeRuleAccess,
 } from "./types"
 
 async function loadAdvancedAnalyticsBase() {
@@ -19,7 +21,7 @@ async function loadAdvancedAnalyticsBase() {
   })
   const sectionWhere = await buildScopedSectionWhere(user, activeWorkspace, activeRoleView)
 
-  const [assessments, sections, mentorAssignments, totalStudents, totalMarks] = await Promise.all([
+  const [assessments, sections, mentorAssignments, totalStudents, totalMarks, offeringConfigRows] = await Promise.all([
     prisma.assessment.findMany({
       where: { isActive: true, offeringId: activeWorkspace.offeringId },
       orderBy: { displayOrder: "asc" },
@@ -58,7 +60,15 @@ async function loadAdvancedAnalyticsBase() {
         assessment: { offeringId: activeWorkspace.offeringId },
       },
     }),
+    prisma.$queryRaw<Array<{ gradeRulesConfig: string | null }>>`
+      SELECT "gradeRulesConfig"
+      FROM "CourseOffering"
+      WHERE "id" = ${activeWorkspace.offeringId}
+      LIMIT 1
+    `,
   ])
+
+  const offeringConfig = offeringConfigRows[0] ?? null
 
   const mentorNames = mentorAssignments
     .map((mentor) => mentor.user.name)
@@ -69,9 +79,15 @@ async function loadAdvancedAnalyticsBase() {
     assessments,
     sections,
     mentorNames,
+    activeRoleView,
     totalStudents,
     totalSections: sections.length,
     totalMarks,
+    gradeRuleAccess: {
+      activeRoleView,
+      canEditGradeRules: activeRoleView === "mentor",
+      gradeRuleConfig: parseGradeRuleConfig(offeringConfig?.gradeRulesConfig),
+    } satisfies AdvancedAnalyticsGradeRuleAccess,
     studentWhere,
     exportMeta: {
       department: "Department of Computer Science & Engineering",
@@ -99,6 +115,7 @@ export async function getAdvancedAnalyticsSummaryData(): Promise<AdvancedAnalyti
     totalSections,
     totalMarks,
     exportMeta,
+    gradeRuleAccess,
   } = await loadAdvancedAnalyticsBase()
 
   return {
@@ -108,6 +125,7 @@ export async function getAdvancedAnalyticsSummaryData(): Promise<AdvancedAnalyti
     totalMarks,
     mentorNames,
     exportMeta,
+    ...gradeRuleAccess,
   }
 }
 
@@ -116,11 +134,12 @@ export async function getAdvancedAnalyticsDetailData(): Promise<{
   assessments: AssessmentMeta[]
   sections: SectionMeta[]
   exportMeta: AdvancedAnalyticsSummary["exportMeta"]
-}> {
+} & AdvancedAnalyticsGradeRuleAccess> {
   const {
     activeWorkspace,
     assessments,
     exportMeta,
+    gradeRuleAccess,
     sections,
     studentWhere,
   } = await loadAdvancedAnalyticsBase()
@@ -211,5 +230,6 @@ export async function getAdvancedAnalyticsDetailData(): Promise<{
       name: formatCompactProgramSectionName(section),
     })),
     exportMeta,
+    ...gradeRuleAccess,
   }
 }

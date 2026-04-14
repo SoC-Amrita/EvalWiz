@@ -1,3 +1,5 @@
+import type { GradeRuleConfig } from "@/lib/grade-rules"
+
 export type RawMark = {
   studentId: string
   rollNo: string
@@ -46,4 +48,10 @@ export type AdvancedAnalyticsSummary = {
   totalMarks: number
   mentorNames: string[]
   exportMeta: AdvancedAnalyticsExportMeta
+}
+
+export type AdvancedAnalyticsGradeRuleAccess = {
+  activeRoleView: "administrator" | "mentor" | "faculty"
+  canEditGradeRules: boolean
+  gradeRuleConfig: GradeRuleConfig
 }

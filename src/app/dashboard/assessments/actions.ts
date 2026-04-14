@@ -4,6 +4,18 @@ import prisma from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { requireRealWorkspace, requireWorkspaceManagerState } from "@/lib/workspace-guards"
 
+const ASSESSMENT_COMPONENT_TYPES = ["INTERNAL", "EXTERNAL"] as const
+
+type AssessmentComponentType = (typeof ASSESSMENT_COMPONENT_TYPES)[number]
+
+function parseComponentType(value: string): AssessmentComponentType {
+  if ((ASSESSMENT_COMPONENT_TYPES as readonly string[]).includes(value)) {
+    return value as AssessmentComponentType
+  }
+
+  throw new Error("Assessment type must be INTERNAL or EXTERNAL")
+}
+
 export async function createAssessment(data: {
   name: string
   code: string
@@ -22,6 +34,7 @@ export async function createAssessment(data: {
   await prisma.assessment.create({
     data: {
       ...data,
+      componentType: parseComponentType(data.componentType),
       offeringId: activeWorkspace.offeringId,
     }
   })
@@ -68,7 +81,7 @@ export async function updateAssessment(data: {
       maxMarks: data.maxMarks,
       weightage: data.weightage,
       category: data.category,
-      componentType: data.componentType,
+      componentType: parseComponentType(data.componentType),
       includeInAgg: data.includeInAgg,
       displayOrder: data.displayOrder,
     },

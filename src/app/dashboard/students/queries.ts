@@ -1,5 +1,9 @@
 import prisma from "@/lib/db"
-import { buildScopedStudentWhere, type CourseWorkspace, type WorkspaceRoleView } from "@/lib/course-workspace"
+import {
+  getAllowedSectionIdsForWorkspace,
+  type CourseWorkspace,
+  type WorkspaceRoleView,
+} from "@/lib/course-workspace"
 
 const STUDENT_PAGE_SIZE = 50
 
@@ -111,30 +115,33 @@ export async function getWorkspaceStudentsPage(input: {
   sectionId: string | null
   assessmentIds: string[]
 }) {
-  const scopedWhere = await buildScopedStudentWhere(input.user, input.workspace, input.roleView)
+  const allowedSectionIds = await getAllowedSectionIdsForWorkspace(
+    input.user,
+    input.workspace,
+    input.roleView
+  )
   const searchClause = buildStudentSearchClause(input.query)
-
-  const sectionScope =
+  const scopedSectionIds = (
     input.sectionId && input.sectionId !== "ALL"
-      ? input.workspace.isElective
-        ? {
-            offeringEnrollments: {
-              some: {
-                offeringId: input.workspace.offeringId,
-                sectionId: input.sectionId,
-              },
-            },
-          }
-        : {
-            sectionId: input.sectionId,
-          }
-      : undefined
+      ? allowedSectionIds.filter((sectionId) => sectionId === input.sectionId)
+      : allowedSectionIds
+  )
+  const safeSectionIds = scopedSectionIds.length > 0 ? scopedSectionIds : ["__no_section__"]
 
-  const where = {
-    ...scopedWhere,
-    ...(sectionScope ?? {}),
-    ...(searchClause ?? {}),
-  }
+  const where = input.workspace.isElective
+    ? {
+        offeringEnrollments: {
+          some: {
+            offeringId: input.workspace.offeringId,
+            sectionId: { in: safeSectionIds },
+          },
+        },
+        ...(searchClause ?? {}),
+      }
+    : {
+        sectionId: { in: safeSectionIds },
+        ...(searchClause ?? {}),
+      }
 
   const totalCount = await prisma.student.count({ where })
   const pageCount = Math.max(1, Math.ceil(totalCount / STUDENT_PAGE_SIZE))

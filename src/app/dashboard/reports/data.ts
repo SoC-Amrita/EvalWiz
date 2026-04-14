@@ -3,6 +3,7 @@ import {
   buildWeightedStudentTotals,
   computeMetricStats,
   getAssessmentWeightConfig,
+  type AssessmentLike,
   type ReportMetricKey,
 } from "@/lib/assessment-structure"
 import { buildScopedSectionWhere, buildScopedStudentWhere } from "@/lib/course-workspace"
@@ -17,6 +18,37 @@ import type {
   SectionReportData,
 } from "./types"
 
+type ReportAssessment = AssessmentLike & {
+  id: string
+}
+
+type RawReportStudent = {
+  id: string
+  sectionId: string
+  rollNo: string | null
+  name: string | null
+}
+
+type RawReportMark = {
+  studentId: string
+  assessmentId: string
+  marks: number
+}
+
+type ReportSection = {
+  id: string
+  name: string
+  semester: string | null
+  programCode: string | null
+  sectionCode: string | null
+}
+
+type ReportStudentEntry = {
+  studentId: string
+  rollNo: string | null
+  name: string | null
+}
+
 type SectionSummary = {
   sectionId: string
   sectionName: string
@@ -29,17 +61,116 @@ type SectionSummary = {
   studentMarks: Array<Array<{
     assessmentId: string
     marks: number
-    assessment: {
-      code: string
-      name: string
-      category: string
-      weightage: number
-      maxMarks: number
-    }
+    assessment: ReportAssessment
   }>>
 }
 
-async function loadReportsWorkspaceData() {
+type ReportWorkspaceDataset = {
+  activeRoleView: "administrator" | "mentor" | "faculty"
+  activeWorkspace: Awaited<ReturnType<typeof requireAuthenticatedWorkspaceState>>["activeWorkspace"]
+  assessments: ReportAssessment[]
+  sections: ReportSection[]
+  mentorNameList: string[]
+  courseTeamNames: string[]
+  sectionSummaries: SectionSummary[]
+}
+
+function buildSectionSummaryRows(
+  sections: ReportSection[],
+  facultyBySectionId: Map<string, string>,
+  studentsBySectionId: Map<string, ReportStudentEntry[]>,
+  marksByStudentId: Map<string, RawReportMark[]>,
+  assessmentsById: Map<string, ReportAssessment>
+) {
+  return sections.map((section) => {
+    const studentEntries = studentsBySectionId.get(section.id) ?? []
+
+    return {
+      sectionId: section.id,
+      sectionName: formatDetailedCompactSectionName(section),
+      facultyName: facultyBySectionId.get(section.id) ?? "Unassigned",
+      studentRecords: studentEntries.map((student) => ({
+        id: student.studentId,
+        rollNo: student.rollNo ?? "—",
+        name: student.name ?? "Student",
+      })),
+      studentMarks: studentEntries.map((student) =>
+        (marksByStudentId.get(student.studentId) ?? [])
+          .map((mark) => {
+            const assessment = assessmentsById.get(mark.assessmentId)
+            return assessment
+              ? {
+                  assessmentId: mark.assessmentId,
+                  marks: mark.marks,
+                  assessment,
+                }
+              : null
+          })
+          .filter(
+            (
+              mark
+            ): mark is {
+              assessmentId: string
+              marks: number
+              assessment: ReportAssessment
+            } => Boolean(mark)
+          )
+      ),
+    }
+  })
+}
+
+function buildReportRow(
+  studentMarks: SectionSummary["studentMarks"],
+  weightConfig: ReturnType<typeof getAssessmentWeightConfig>,
+  info: Pick<SectionSummary, "sectionId" | "sectionName" | "facultyName">
+): SectionReportData {
+  const studentMetrics = studentMarks.map((marks) => buildWeightedStudentTotals(marks))
+
+  const computeAgg = (key: ReportMetricKey) =>
+    computeMetricStats(
+      studentMetrics.map((student) => student[key]),
+      weightConfig[key]
+    )
+
+  return {
+    sectionId: info.sectionId,
+    sectionName: info.sectionName,
+    facultyName: info.facultyName,
+    totalStudents: studentMetrics.length,
+    quiz: computeAgg("quiz"),
+    review: computeAgg("review"),
+    ca: computeAgg("ca"),
+    midTerm: computeAgg("midTerm"),
+    caMidTerm: computeAgg("caMidTerm"),
+    endSemester: computeAgg("endSemester"),
+    overall: computeAgg("overall"),
+  }
+}
+
+function buildComponentStats(input: {
+  sectionId: string
+  sectionName: string
+  studentMarks: Array<Array<{ assessmentId: string; marks: number }>>
+  assessmentId: string
+  maxMarks: number
+}) {
+  return {
+    sectionId: input.sectionId,
+    sectionName: input.sectionName,
+    totalStudents: input.studentMarks.length,
+    stats: computeMetricStats(
+      input.studentMarks
+        .map((marks) => marks.find((mark) => mark.assessmentId === input.assessmentId)?.marks)
+        .filter((mark): mark is number => typeof mark === "number"),
+      input.maxMarks
+    ),
+  }
+}
+
+async function loadReportWorkspaceDataset(options?: {
+  includeStudentIdentity?: boolean
+}): Promise<ReportWorkspaceDataset> {
   const { user, activeWorkspace, activeRoleView } = await requireAuthenticatedWorkspaceState()
   requireRealWorkspace(activeWorkspace)
 
@@ -48,44 +179,30 @@ async function loadReportsWorkspaceData() {
     excludeFromAnalytics: true,
   })
 
-  const [assessments, sections, electiveEnrollments, mentorAssignments, classAssignments] = await Promise.all([
+  const [assessments, sections, mentorAssignments, classAssignments] = await Promise.all([
     prisma.assessment.findMany({
       where: { isActive: true, offeringId: activeWorkspace.offeringId },
       orderBy: { displayOrder: "asc" },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        category: true,
+        weightage: true,
+        maxMarks: true,
+      },
     }),
     prisma.section.findMany({
       where: sectionFilter,
-      include: {
-        students: {
-          where: studentFilter,
-          include: {
-            marks: {
-              include: { assessment: true },
-            },
-          },
-        },
-      },
       orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        semester: true,
+        programCode: true,
+        sectionCode: true,
+      },
     }),
-    activeWorkspace.isElective
-      ? prisma.courseOfferingEnrollment.findMany({
-          where: {
-            offeringId: activeWorkspace.offeringId,
-            student: studentFilter,
-          },
-          include: {
-            section: true,
-            student: {
-              include: {
-                marks: {
-                  include: { assessment: true },
-                },
-              },
-            },
-          },
-          orderBy: { student: { rollNo: "asc" } },
-        })
-      : Promise.resolve([]),
     prisma.courseOfferingMentor.findMany({
       where: { offeringId: activeWorkspace.offeringId },
       orderBy: { user: { name: "asc" } },
@@ -97,26 +214,23 @@ async function loadReportsWorkspaceData() {
     }),
     prisma.courseOfferingClass.findMany({
       where: { offeringId: activeWorkspace.offeringId },
-      include: {
-        section: true,
+      select: {
+        sectionId: true,
         faculty: {
-          include: {
-            user: true,
+          select: {
+            user: {
+              select: { name: true },
+            },
           },
         },
       },
-      orderBy: { section: { name: "asc" } },
     }),
   ])
 
-  const activeAssessmentIds = new Set(assessments.map((assessment) => assessment.id))
-  const weightConfig = getAssessmentWeightConfig(assessments)
-  const facultyBySectionId = new Map(
-    classAssignments.map((assignment) => [assignment.sectionId, assignment.faculty?.user.name ?? "Unassigned"])
-  )
   const mentorNameList = mentorAssignments
     .map((mentor) => mentor.user.name)
     .filter((name): name is string => Boolean(name))
+
   const seenCourseTeamNames = new Set<string>()
   const courseTeamNames = classAssignments
     .map((assignment) => assignment.faculty?.user.name)
@@ -127,136 +241,119 @@ async function loadReportsWorkspaceData() {
       return true
     })
 
-  const buildReportRow = ({
-    sectionId,
-    sectionName,
-    facultyName,
-    studentMarks,
-  }: {
-    sectionId: string
-    sectionName: string
-    facultyName: string | null
-    studentMarks: Array<Array<{ marks: number; assessment: { code: string; name: string; category: string; weightage: number; maxMarks: number } }>>
-  }): SectionReportData => {
-    const studentMetrics = studentMarks.map((marks) => buildWeightedStudentTotals(marks))
+  const facultyBySectionId = new Map(
+    classAssignments.map((assignment) => [assignment.sectionId, assignment.faculty?.user.name ?? "Unassigned"])
+  )
 
-    const computeAgg = (key: ReportMetricKey) =>
-      computeMetricStats(
-        studentMetrics.map((student) => student[key]),
-        weightConfig[key]
+  const studentEntries: RawReportStudent[] = activeWorkspace.isElective
+    ? await prisma.courseOfferingEnrollment.findMany({
+        where: {
+          offeringId: activeWorkspace.offeringId,
+          student: studentFilter,
+        },
+        orderBy: [
+          { section: { name: "asc" } },
+          { student: { rollNo: "asc" } },
+        ],
+        select: {
+          sectionId: true,
+          student: {
+            select: {
+              id: true,
+              rollNo: options?.includeStudentIdentity ? true : false,
+              name: options?.includeStudentIdentity ? true : false,
+            },
+          },
+        },
+      }).then((enrollments) =>
+        enrollments.map((enrollment) => ({
+          id: enrollment.student.id,
+          sectionId: enrollment.sectionId,
+          rollNo:
+            "rollNo" in enrollment.student && typeof enrollment.student.rollNo === "string"
+              ? enrollment.student.rollNo
+              : null,
+          name:
+            "name" in enrollment.student && typeof enrollment.student.name === "string"
+              ? enrollment.student.name
+              : null,
+        }))
+      )
+    : await prisma.student.findMany({
+        where: studentFilter,
+        orderBy: [{ section: { name: "asc" } }, { rollNo: "asc" }],
+        select: {
+          id: true,
+          sectionId: true,
+          rollNo: options?.includeStudentIdentity ?? false,
+          name: options?.includeStudentIdentity ?? false,
+        },
+      }).then((students) =>
+        students.map((student) => ({
+          id: student.id,
+          sectionId: student.sectionId,
+          rollNo: "rollNo" in student && typeof student.rollNo === "string" ? student.rollNo : null,
+          name: "name" in student && typeof student.name === "string" ? student.name : null,
+        }))
       )
 
-    return {
-      sectionId,
-      sectionName,
-      facultyName,
-      totalStudents: studentMetrics.length,
-      quiz: computeAgg("quiz"),
-      review: computeAgg("review"),
-      ca: computeAgg("ca"),
-      midTerm: computeAgg("midTerm"),
-      caMidTerm: computeAgg("caMidTerm"),
-      endSemester: computeAgg("endSemester"),
-      overall: computeAgg("overall"),
-    }
-  }
+  const scopedStudentIds = studentEntries.map((student) => student.id)
+  const assessmentIds = assessments.map((assessment) => assessment.id)
+  const rawMarks = scopedStudentIds.length === 0 || assessmentIds.length === 0
+    ? []
+    : await prisma.mark.findMany({
+        where: {
+          studentId: { in: scopedStudentIds },
+          assessmentId: { in: assessmentIds },
+        },
+        select: {
+          studentId: true,
+          assessmentId: true,
+          marks: true,
+        },
+      })
 
-  const buildComponentStats = ({
-    sectionId,
-    sectionName,
-    studentMarks,
-    assessmentId,
-    maxMarks,
-  }: {
-    sectionId: string
-    sectionName: string
-    studentMarks: Array<Array<{ assessmentId: string; marks: number }>>
-    assessmentId: string
-    maxMarks: number
-  }) => ({
-    sectionId,
-    sectionName,
-    totalStudents: studentMarks.length,
-    stats: computeMetricStats(
-      studentMarks
-        .map((marks) => marks.find((mark) => mark.assessmentId === assessmentId)?.marks)
-        .filter((mark): mark is number => typeof mark === "number"),
-      maxMarks
-    ),
+  const assessmentsById = new Map(assessments.map((assessment) => [assessment.id, assessment]))
+  const marksByStudentId = new Map<string, RawReportMark[]>()
+  rawMarks.forEach((mark) => {
+    const existing = marksByStudentId.get(mark.studentId)
+    if (existing) {
+      existing.push(mark)
+    } else {
+      marksByStudentId.set(mark.studentId, [mark])
+    }
   })
 
-  const sectionSummaries: SectionSummary[] = activeWorkspace.isElective
-    ? [...new Map(
-        electiveEnrollments.map((enrollment) => {
-          const groupedEnrollments = electiveEnrollments.filter(
-            (candidate) => candidate.sectionId === enrollment.sectionId
-          )
-          const groupedMarks = groupedEnrollments.map((candidate) =>
-            candidate.student.marks
-              .filter((mark) => activeAssessmentIds.has(mark.assessmentId))
-              .map((mark) => ({
-                assessmentId: mark.assessmentId,
-                marks: mark.marks,
-                assessment: {
-                  code: mark.assessment.code,
-                  name: mark.assessment.name,
-                  category: mark.assessment.category,
-                  weightage: mark.assessment.weightage,
-                  maxMarks: mark.assessment.maxMarks,
-                },
-              }))
-          )
+  const studentsBySectionId = new Map<string, ReportStudentEntry[]>()
+  studentEntries.forEach((student) => {
+    const existing = studentsBySectionId.get(student.sectionId)
+    const entry = {
+      studentId: student.id,
+      rollNo: student.rollNo,
+      name: student.name,
+    }
 
-          return [enrollment.sectionId, {
-            sectionId: enrollment.sectionId,
-            sectionName: formatDetailedCompactSectionName(enrollment.section),
-            facultyName: facultyBySectionId.get(enrollment.sectionId) ?? mentorNameList[0] ?? "Mentor-owned",
-            studentRecords: groupedEnrollments.map((candidate) => ({
-              id: candidate.student.id,
-              rollNo: candidate.student.rollNo,
-              name: candidate.student.name,
-            })),
-            studentMarks: groupedMarks,
-          }]
-        })
-      ).values()]
-    : sections.map((section) => ({
-        sectionId: section.id,
-        sectionName: formatDetailedCompactSectionName(section),
-        facultyName: facultyBySectionId.get(section.id) ?? "Unassigned",
-        studentRecords: section.students.map((student) => ({
-          id: student.id,
-          rollNo: student.rollNo,
-          name: student.name,
-        })),
-        studentMarks: section.students.map((student) =>
-          student.marks
-            .filter((mark) => activeAssessmentIds.has(mark.assessmentId))
-            .map((mark) => ({
-              assessmentId: mark.assessmentId,
-              marks: mark.marks,
-              assessment: {
-                code: mark.assessment.code,
-                name: mark.assessment.name,
-                category: mark.assessment.category,
-                weightage: mark.assessment.weightage,
-                maxMarks: mark.assessment.maxMarks,
-              },
-            }))
-        ),
-      }))
+    if (existing) {
+      existing.push(entry)
+    } else {
+      studentsBySectionId.set(student.sectionId, [entry])
+    }
+  })
 
   return {
     activeRoleView,
     activeWorkspace,
     assessments,
     sections,
-    weightConfig,
     mentorNameList,
     courseTeamNames,
-    sectionSummaries,
-    buildReportRow,
-    buildComponentStats,
+    sectionSummaries: buildSectionSummaryRows(
+      sections,
+      facultyBySectionId,
+      studentsBySectionId,
+      marksByStudentId,
+      assessmentsById
+    ),
   }
 }
 
@@ -264,23 +361,29 @@ export async function getReportsSummaryData() {
   const {
     activeRoleView,
     activeWorkspace,
+    assessments,
     sections,
     mentorNameList,
     courseTeamNames,
     sectionSummaries,
-    buildReportRow,
-  } = await loadReportsWorkspaceData()
+  } = await loadReportWorkspaceDataset()
 
-  const reportData = sectionSummaries.map((summary) => buildReportRow(summary))
+  const weightConfig = getAssessmentWeightConfig(assessments)
+  const reportData = sectionSummaries.map((summary) =>
+    buildReportRow(summary.studentMarks, weightConfig, summary)
+  )
   const isCourseView = activeRoleView !== "faculty" && sections.length > 1
 
   const courseAggregate = isCourseView
-    ? buildReportRow({
-        sectionId: "ALL",
-        sectionName: "Entire Course",
-        facultyName: "All Faculty",
-        studentMarks: sectionSummaries.flatMap((summary) => summary.studentMarks),
-      })
+    ? buildReportRow(
+        sectionSummaries.flatMap((summary) => summary.studentMarks),
+        weightConfig,
+        {
+          sectionId: "ALL",
+          sectionName: "Entire Course",
+          facultyName: "All Faculty",
+        }
+      )
     : null
 
   const reportMeta: ReportMeta = {
@@ -315,11 +418,11 @@ export async function getReportsDetailData() {
     assessments,
     sections,
     sectionSummaries,
-    buildComponentStats,
-    buildReportRow,
-    weightConfig,
-  } = await loadReportsWorkspaceData()
+  } = await loadReportWorkspaceDataset({
+    includeStudentIdentity: true,
+  })
 
+  const weightConfig = getAssessmentWeightConfig(assessments)
   const isCourseView = activeRoleView !== "faculty" && sections.length > 1
 
   const componentReports: AssessmentComponentReport[] = assessments.map((assessment) => {
@@ -383,19 +486,6 @@ export async function getReportsDetailData() {
       }
     })
   )
-
-  const allRows = sectionSummaries.map((summary) => buildReportRow(summary))
-
-  if (isCourseView) {
-    allRows.push(
-      buildReportRow({
-        sectionId: "ALL",
-        sectionName: "Entire Course",
-        facultyName: "All Faculty",
-        studentMarks: sectionSummaries.flatMap((summary) => summary.studentMarks),
-      })
-    )
-  }
 
   return {
     componentReports,

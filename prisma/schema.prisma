@@ -8,6 +8,11 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+enum AssessmentComponentType {
+  INTERNAL
+  EXTERNAL
+}
+
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -139,7 +144,7 @@ model Assessment {
   maxMarks     Float
   weightage    Float    @default(0)
   category     String   // e.g., "CA_QUIZ", "CA_REVIEW", "MID_TERM", "END_SEMESTER"
-  componentType String  @default("INTERNAL") // INTERNAL or EXTERNAL
+  componentType AssessmentComponentType @default(INTERNAL)
   isActive     Boolean  @default(true)
   includeInAgg Boolean  @default(true)
   displayOrder Int      @default(0)

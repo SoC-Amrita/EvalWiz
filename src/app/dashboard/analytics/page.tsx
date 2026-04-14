@@ -1,4 +1,5 @@
 import { auth } from "@/auth"
+import { createEmptyMetricStats } from "@/lib/assessment-structure"
 import prisma from "@/lib/db"
 import { buildScopedStudentWhere, getActiveWorkspaceState } from "@/lib/course-workspace"
 import { formatCompactSectionName, formatWorkspaceCode } from "@/lib/workspace-labels"
@@ -23,81 +24,97 @@ export default async function AnalyticsPage() {
   const scopedStudents = await prisma.student.findMany({
     where: studentWhere,
     select: {
+      id: true,
       section: {
         select: {
           name: true,
           sectionCode: true,
         },
       },
-      marks: {
+    },
+  })
+  const assessmentIds = assessments.map((assessment) => assessment.id)
+  const marks = assessmentIds.length === 0
+    ? []
+    : await prisma.mark.findMany({
         where: {
-          assessmentId: {
-            in: assessments.map((assessment) => assessment.id),
-          },
+          assessmentId: { in: assessmentIds },
+          student: studentWhere,
         },
         select: {
           assessmentId: true,
+          marks: true,
+          studentId: true,
         },
-      },
-    },
+      })
+
+  const marksByAssessmentId = new Map<
+    string,
+    {
+      values: number[]
+      studentIds: Set<string>
+    }
+  >()
+
+  marks.forEach((mark) => {
+    const current = marksByAssessmentId.get(mark.assessmentId)
+    if (current) {
+      current.values.push(mark.marks)
+      current.studentIds.add(mark.studentId)
+      return
+    }
+
+    marksByAssessmentId.set(mark.assessmentId, {
+      values: [mark.marks],
+      studentIds: new Set([mark.studentId]),
+    })
   })
 
-  // We need to fetch marks and aggregate them per assessment
-  // For a large real app, we would do this in pure SQL or a background job.
-  // For Prisma, we'll fetch averages directly using aggregate but we have to loop over assessments
-  // or use groupBy.
-  
-  const componentStats = await Promise.all(
-    assessments.map(async (a) => {
-      const agg = await prisma.mark.aggregate({
-        _avg: { marks: true },
-        _max: { marks: true },
-        _min: { marks: true },
-        _count: { marks: true },
-        where: {
-          assessmentId: a.id,
-          student: studentWhere,
+  const componentStats = assessments.map((assessment) => {
+    const current = marksByAssessmentId.get(assessment.id)
+    const values = current?.values ?? []
+    const stats = values.length
+      ? {
+          avg: Number((values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(2)),
+          max: Math.max(...values),
+          min: Math.min(...values),
+          countEntered: values.length,
         }
-      })
-      
-      const countMissing = await prisma.student.count({
-        where: {
-          ...studentWhere,
-          marks: { none: { assessmentId: a.id } }
+      : {
+          ...createEmptyMetricStats(assessment.maxMarks),
+          countEntered: 0,
         }
-      })
 
-      // We handle Standard Deviation simply on the client or ignore for now,
-      // as SQLite doesn't have a native STDDEV_SAMP without extension
-      return {
-        id: a.id,
-        name: a.name,
-        code: a.code,
-        category: a.category,
-        weightage: a.weightage,
-        maxMarks: a.maxMarks,
-        avg: agg._avg.marks ? Number(agg._avg.marks.toFixed(2)) : 0,
-        max: agg._max.marks ?? 0,
-        min: agg._min.marks ?? 0,
-        countEntered: agg._count.marks,
-        countMissing,
-        missingSections: Array.from(
-          scopedStudents.reduce((missingMap, student) => {
-            const hasMark = student.marks.some((mark) => mark.assessmentId === a.id)
-            if (hasMark || !student.section) {
-              return missingMap
-            }
+    const enteredStudentIds = current?.studentIds ?? new Set<string>()
+    const missingSections = Array.from(
+      scopedStudents.reduce((missingMap, student) => {
+        if (!student.section || enteredStudentIds.has(student.id)) {
+          return missingMap
+        }
 
-            const label = formatCompactSectionName(student.section.name, student.section.sectionCode)
-            missingMap.set(label, (missingMap.get(label) ?? 0) + 1)
-            return missingMap
-          }, new Map<string, number>())
-        )
-          .map(([label, missingCount]) => ({ label, missingCount }))
-          .sort((left, right) => left.label.localeCompare(right.label)),
-      }
-    })
-  )
+        const label = formatCompactSectionName(student.section.name, student.section.sectionCode)
+        missingMap.set(label, (missingMap.get(label) ?? 0) + 1)
+        return missingMap
+      }, new Map<string, number>())
+    )
+      .map(([label, missingCount]) => ({ label, missingCount }))
+      .sort((left, right) => left.label.localeCompare(right.label))
+
+    return {
+      id: assessment.id,
+      name: assessment.name,
+      code: assessment.code,
+      category: assessment.category,
+      weightage: assessment.weightage,
+      maxMarks: assessment.maxMarks,
+      avg: values.length ? stats.avg : 0,
+      max: values.length ? stats.max : 0,
+      min: values.length ? stats.min : 0,
+      countEntered: values.length ? stats.countEntered : 0,
+      countMissing: scopedStudents.length - enteredStudentIds.size,
+      missingSections,
+    }
+  })
 
   return (
     <div className="space-y-6">

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -26,8 +27,13 @@ export function AdvancedAnalyticsShell({
     if (detailData || isLoadingDetails) return
 
     startLoadingDetails(async () => {
-      const nextData = await loadDetailsAction()
-      setDetailData(nextData)
+      try {
+        const nextData = await loadDetailsAction()
+        setDetailData(nextData)
+      } catch (error) {
+        console.error(error)
+        toast.error("Failed to load the charts workspace")
+      }
     })
   }
 

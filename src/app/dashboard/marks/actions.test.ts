@@ -18,10 +18,13 @@ const prismaMock = {
   },
   mark: {
     upsert: vi.fn(),
+    deleteMany: vi.fn(),
+    createMany: vi.fn(),
   },
   auditLog: {
     create: vi.fn(),
   },
+  $transaction: vi.fn(),
 }
 
 vi.mock("next/cache", () => ({
@@ -45,6 +48,7 @@ describe("marks actions", () => {
       activeWorkspace: { offeringId: "off-1", isElective: false },
       allowedSectionIds: new Set(["sec-a"]),
     })
+    prismaMock.$transaction.mockResolvedValue([])
   })
 
   it("blocks saving marks for an out-of-scope student", async () => {
@@ -77,7 +81,19 @@ describe("marks actions", () => {
       { rollNo: "CB.SC.U4CSE23003", marks: 25 },
     ])
 
-    expect(prismaMock.mark.upsert).toHaveBeenCalledTimes(1)
+    expect(prismaMock.$transaction).toHaveBeenCalledWith([
+      prismaMock.mark.deleteMany.mock.results[0]?.value,
+      prismaMock.mark.createMany.mock.results[0]?.value,
+    ])
+    expect(prismaMock.mark.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          studentId: "stu-1",
+          assessmentId: "assess-1",
+          marks: 18,
+        },
+      ],
+    })
     expect(prismaMock.auditLog.create).toHaveBeenCalledWith({
       data: {
         action: "BULK_MARK_UPLOAD",

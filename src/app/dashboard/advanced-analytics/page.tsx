@@ -16,9 +16,6 @@ export default async function AdvancedAnalyticsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Advanced Analytics</h1>
-        <p className="text-slate-500">
-          Deep performance analysis loads in stages so you can reach the page quickly and open the heavy chart workspace only when you need it.
-        </p>
       </div>
 
       <AdvancedAnalyticsShell

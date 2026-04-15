@@ -208,6 +208,11 @@ export function getWeightedContribution(mark: WeightedMarkLike) {
   return (mark.marks / mark.assessment.maxMarks) * mark.assessment.weightage
 }
 
+export function roundGrandTotal(value: number) {
+  const floor = Math.floor(value)
+  return value - floor < 0.5 ? floor : Math.ceil(value)
+}
+
 export function buildWeightedStudentTotals(marks: WeightedMarkLike[]) {
   const totals = createEmptyMetricTotals()
 
@@ -229,6 +234,7 @@ export function buildWeightedStudentTotals(marks: WeightedMarkLike[]) {
   })
 
   totals.caMidTerm = totals.ca + totals.midTerm
+  totals.overall = roundGrandTotal(totals.overall)
 
   return totals
 }

@@ -211,7 +211,7 @@ function ReportConfigDialog({
       await new Promise(res => setTimeout(res, 200))
       const { imgData, width, height } = await captureElementAsImage(printContainerId, {
         pixelRatio: 2.5,
-        forceLightTheme: true,
+        forcePaletteTheme: "aurora",
         forceSerifFont: true,
       })
 
@@ -1211,6 +1211,7 @@ function FinalMarksStemChart({
     try {
       const { imgData } = await captureElementAsImage(FINAL_MARKS_STEM_EXPORT_ID, {
         pixelRatio: 3,
+        forcePaletteTheme: "aurora",
       })
       const link = document.createElement("a")
       link.href = imgData

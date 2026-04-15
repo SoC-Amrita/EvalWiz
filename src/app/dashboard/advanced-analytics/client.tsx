@@ -1700,7 +1700,7 @@ export function AdvancedAnalyticsClient({
     try {
       const { imgData } = await captureElementAsImage(
         EXPORT_CHART_ID,
-        { pixelRatio: 2.5, forceLightTheme: true }
+        { pixelRatio: 2.5, forcePaletteTheme: "aurora" }
       )
       const link = document.createElement("a")
       link.href = imgData

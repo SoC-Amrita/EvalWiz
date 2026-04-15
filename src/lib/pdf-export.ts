@@ -1,5 +1,6 @@
 import { toCanvas } from "html-to-image"
 import jsPDF from "jspdf"
+import { PALETTE_THEMES, isDarkPaletteTheme, type PaletteTheme } from "./palette-theme"
 
 type PdfExportOptions = {
   orientation?: "portrait" | "landscape"
@@ -11,6 +12,7 @@ type CaptureOptions = {
   pixelRatio?: number
   backgroundColor?: string
   forceLightTheme?: boolean
+  forcePaletteTheme?: PaletteTheme
   forceSerifFont?: boolean
 }
 
@@ -24,41 +26,18 @@ export const captureElementAsImage = async (
   const width = element.scrollWidth
   const height = element.scrollHeight
   const html = document.documentElement
-  const hadLight = html.classList.contains("light")
-  const hadClassic = html.classList.contains("classic")
-  const hadOcean = html.classList.contains("ocean")
-  const hadForest = html.classList.contains("forest")
-  const hadAurora = html.classList.contains("aurora")
-  const hadLinen = html.classList.contains("linen")
-  const hadDark = html.classList.contains("dark")
-  const hadNeon = html.classList.contains("neon")
-  const hadObsidian = html.classList.contains("obsidian")
-  const hadEmber = html.classList.contains("ember")
-  const hadHarbor = html.classList.contains("harbor")
-  const hadSlateFrost = html.classList.contains("slate-frost")
+  const previousThemes = PALETTE_THEMES.filter((theme) => html.classList.contains(theme))
   const previousFont = html.dataset.font
   const hadSansFont = html.classList.contains("font-style-sans")
   const hadSerifFont = html.classList.contains("font-style-serif")
   const previousColorScheme = html.style.colorScheme
+  const forcedPaletteTheme = options.forcePaletteTheme ?? (options.forceLightTheme ? "aurora" : null)
 
   try {
-    if (options.forceLightTheme) {
-      html.classList.remove(
-        "light",
-        "classic",
-        "ocean",
-        "forest",
-        "aurora",
-        "linen",
-        "dark",
-        "neon",
-        "obsidian",
-        "ember",
-        "harbor",
-        "slate-frost"
-      )
-      html.classList.add("classic")
-      html.style.colorScheme = "light"
+    if (forcedPaletteTheme) {
+      html.classList.remove(...PALETTE_THEMES)
+      html.classList.add(forcedPaletteTheme)
+      html.style.colorScheme = isDarkPaletteTheme(forcedPaletteTheme) ? "dark" : "light"
       await new Promise<void>((resolve) => {
         requestAnimationFrame(() => resolve())
       })
@@ -91,33 +70,9 @@ export const captureElementAsImage = async (
       height: canvas.height,
     }
   } finally {
-    if (options.forceLightTheme) {
-      html.classList.remove(
-        "light",
-        "classic",
-        "ocean",
-        "forest",
-        "aurora",
-        "linen",
-        "dark",
-        "neon",
-        "obsidian",
-        "ember",
-        "harbor",
-        "slate-frost"
-      )
-      if (hadLight) html.classList.add("light")
-      if (hadClassic) html.classList.add("classic")
-      if (hadOcean) html.classList.add("ocean")
-      if (hadForest) html.classList.add("forest")
-      if (hadAurora) html.classList.add("aurora")
-      if (hadLinen) html.classList.add("linen")
-      if (hadDark) html.classList.add("dark")
-      if (hadNeon) html.classList.add("neon")
-      if (hadObsidian) html.classList.add("obsidian")
-      if (hadEmber) html.classList.add("ember")
-      if (hadHarbor) html.classList.add("harbor")
-      if (hadSlateFrost) html.classList.add("slate-frost")
+    if (forcedPaletteTheme) {
+      html.classList.remove(...PALETTE_THEMES)
+      previousThemes.forEach((theme) => html.classList.add(theme))
       html.style.colorScheme = previousColorScheme
     }
 

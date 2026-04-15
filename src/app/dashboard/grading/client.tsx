@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react"
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
-import { Copy, Save, ShieldAlert, Sparkles, Trash2 } from "lucide-react"
+import { Download, Save, ShieldAlert } from "lucide-react"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
@@ -13,19 +13,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { CHART_THEME, GRADE_BUCKET_COLORS, getSectionColor } from "@/lib/chart-theme"
 import {
   buildGradeRuleSectionRows,
-  createDefaultGradeRule,
+  collapseGradeRuleConfigToActiveRule,
+  createDefaultGradeRuleConfig,
   createEmptyGradeRuleConfig,
   formatGradeBandUpperBound,
+  getActiveGradeRule,
   getDerivedGradeBands,
-  getGradeRuleIssues,
-  sanitizeGradeRuleConfig,
   validateGradeRuleConfig,
   type GradeRule,
   type GradeRuleConfig,
 } from "@/lib/grade-rules"
 import type { AdvancedAnalyticsExportMeta, SectionMeta } from "@/app/dashboard/advanced-analytics/types"
-import type { FinalMarkStemPoint } from "@/app/dashboard/reports/types"
+import type { FinalMarkStemPoint, GradingReportSection } from "@/app/dashboard/reports/types"
 import { StemLeafOverviewCard } from "./stem-leaf-views"
+import { downloadClassReportPdf, type ExamType, type GradingReportWeights } from "./class-report-pdf"
 
 type SaveGradeRulesAction = (
   payload: GradeRuleConfig
@@ -35,14 +36,6 @@ type SaveGradeRulesAction = (
 
 type FinalScorePoint = FinalMarkStemPoint & {
   percentage: number
-}
-
-function makeId(prefix: string) {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return `${prefix}-${crypto.randomUUID()}`
-  }
-
-  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`
 }
 
 function quantile(sorted: number[], q: number) {
@@ -115,17 +108,6 @@ function formatNumber(value: number) {
   return value.toFixed(2).replace(/\.00$/, "").replace(/(\.\d)0$/, "$1")
 }
 
-function createRuleCopy(baseRule: GradeRule, nextName: string): GradeRule {
-  return {
-    id: makeId("rule"),
-    name: nextName,
-    bands: baseRule.bands.map((band) => ({
-      ...band,
-      id: makeId("band"),
-    })),
-  }
-}
-
 function SimpleTooltip({
   active,
   label,
@@ -163,26 +145,21 @@ function GradeRulesPanel({
   sections,
   canEdit,
   activeRoleView,
-  initialConfig,
+  config,
+  onConfigChange,
   saveGradeRulesAction,
 }: {
   points: FinalScorePoint[]
   sections: SectionMeta[]
   canEdit: boolean
   activeRoleView: "administrator" | "mentor" | "faculty"
-  initialConfig: GradeRuleConfig
+  config: GradeRuleConfig
+  onConfigChange: (config: GradeRuleConfig) => void
   saveGradeRulesAction: SaveGradeRulesAction
 }) {
-  const [draftConfig, setDraftConfig] = useState(() => sanitizeGradeRuleConfig(initialConfig))
   const [isSaving, startSaving] = useTransition()
-
-  useEffect(() => {
-    setDraftConfig(sanitizeGradeRuleConfig(initialConfig))
-  }, [initialConfig])
-
-  const selectedRule =
-    draftConfig.rules.find((rule) => rule.id === draftConfig.selectedRuleId) ?? draftConfig.rules[0]
-  const issues = useMemo(() => validateGradeRuleConfig(draftConfig), [draftConfig])
+  const selectedRule = getActiveGradeRule(config)
+  const issues = useMemo(() => validateGradeRuleConfig(config), [config])
   const issuesByRule = useMemo(
     () =>
       issues.reduce<Record<string, string[]>>((accumulator, issue) => {
@@ -193,18 +170,18 @@ function GradeRulesPanel({
   )
 
   const updateRule = (ruleId: string, updater: (rule: GradeRule) => GradeRule) => {
-    setDraftConfig((current) => ({
-      ...current,
-      rules: current.rules.map((rule) => (rule.id === ruleId ? updater(rule) : rule)),
-    }))
+    onConfigChange({
+      ...config,
+      rules: config.rules.map((rule) => (rule.id === ruleId ? updater(rule) : rule)),
+    })
   }
 
   const saveRules = () => {
     startSaving(async () => {
       try {
-        const result = await saveGradeRulesAction(draftConfig)
-        setDraftConfig(sanitizeGradeRuleConfig(result.gradeRuleConfig))
-        toast.success("Grade rules saved for this course workspace")
+        const result = await saveGradeRulesAction(config)
+        onConfigChange(collapseGradeRuleConfigToActiveRule(result.gradeRuleConfig))
+        toast.success("Grade rule saved for this course workspace")
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Failed to save grade rules")
       }
@@ -220,6 +197,7 @@ function GradeRulesPanel({
     ? activeRows.find((row) => row.bandId === activeBottomBand.id)
     : null
   const totalStudents = points.length
+  const createRule = () => onConfigChange(createDefaultGradeRuleConfig())
 
   return (
     <div className="space-y-6">
@@ -227,9 +205,9 @@ function GradeRulesPanel({
         <CardHeader className="border-b border-border">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="space-y-1">
-              <CardTitle>Grade Rule Comparison</CardTitle>
+              <CardTitle>Grade Rule</CardTitle>
               <CardDescription>
-                Configure multiple grading rules side by side and choose which one powers the grading dashboard.
+                Configure the mentor-owned grading rule that powers the dashboard and exported class reports.
               </CardDescription>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -239,39 +217,14 @@ function GradeRulesPanel({
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() =>
-                      setDraftConfig((current) => {
-                        const nextRule =
-                          current.rules.length === 0
-                            ? createDefaultGradeRule("rule-1", "Rule 1")
-                            : createRuleCopy(
-                                current.rules[current.rules.length - 1],
-                                `Rule ${current.rules.length + 1}`
-                              )
-
-                        return {
-                          ...current,
-                          rules: [...current.rules, nextRule],
-                          selectedRuleId: current.selectedRuleId ?? nextRule.id,
-                        }
-                      })
-                    }
+                    onClick={() => onConfigChange(createEmptyGradeRuleConfig())}
+                    disabled={isSaving || config.rules.length === 0}
                   >
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Add Rule
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setDraftConfig(createEmptyGradeRuleConfig())}
-                    disabled={isSaving || draftConfig.rules.length === 0}
-                  >
-                    Clear Rules
+                    Clear Rule
                   </Button>
                   <Button type="button" size="sm" onClick={saveRules} disabled={isSaving || issues.length > 0}>
                     <Save className="h-3.5 w-3.5" />
-                    {isSaving ? "Saving..." : draftConfig.rules.length === 0 ? "Publish Blank State" : "Save Rules"}
+                    {isSaving ? "Saving..." : config.rules.length === 0 ? "Publish Blank State" : "Save Rule"}
                   </Button>
                 </>
               ) : (
@@ -285,16 +238,16 @@ function GradeRulesPanel({
         <CardContent className="space-y-5 pt-5">
           <div className="rounded-xl border border-dashed border-border bg-muted/40 p-4 text-sm text-muted-foreground">
             {canEdit ? (
-              <span>Mentor mode is active. Save here to publish grading rules for everyone in this workspace.</span>
+              <span>Mentor mode is active. Save here to publish the grading rule for everyone in this workspace.</span>
             ) : (
               <span>
-                Only mentors can publish grading rules. Faculty and administrators can still review the saved rules and
+                Only mentors can publish the grading rule. Faculty and administrators can still review the saved rule and
                 section-wise grade counts.
               </span>
             )}
           </div>
 
-          {draftConfig.rules.length === 0 ? (
+          {config.rules.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-border bg-background px-6 py-10 text-center">
               <div className="mx-auto max-w-2xl space-y-3">
                 <h3 className="text-lg font-semibold text-foreground">No grade rules published yet</h3>
@@ -303,195 +256,118 @@ function GradeRulesPanel({
                   distribution, section box plot, and stem-and-leaf chart below still stay available for review.
                 </p>
                 {canEdit ? (
-                  <div className="flex justify-center gap-2 pt-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() =>
-                        setDraftConfig({
-                          selectedRuleId: "rule-1",
-                          rules: [createDefaultGradeRule("rule-1", "Rule 1")],
-                        })
-                      }
-                    >
-                      Start First Rule
+                  <div className="pt-2">
+                    <Button type="button" onClick={createRule}>
+                      Create Grade Rule
                     </Button>
                   </div>
                 ) : null}
               </div>
             </div>
           ) : (
-          <div className="grid gap-4 xl:grid-cols-2">
-            {draftConfig.rules.map((rule, ruleIndex) => {
-              const ruleRows = buildGradeRuleSectionRows(points, rule, sectionIds)
-              const ruleIssues = issuesByRule[rule.id] ?? getGradeRuleIssues(rule)
-
-              return (
-                <Card key={rule.id} className="border-border bg-background shadow-none">
-                  <CardHeader className="border-b border-border pb-4">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="min-w-0 flex-1 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant={draftConfig.selectedRuleId === rule.id ? "default" : "outline"}
-                            onClick={() =>
-                              setDraftConfig((current) => ({
-                                ...current,
-                                selectedRuleId: rule.id,
-                              }))
-                            }
-                            className="h-7"
-                          >
-                            {draftConfig.selectedRuleId === rule.id ? "Active Dashboard Rule" : "Use for Dashboard"}
-                          </Button>
-                          <Badge variant="outline" className="chip-soft-primary">
-                            {ruleRows.reduce((sum, row) => sum + row.total, 0)} students
-                          </Badge>
-                        </div>
-                        <Input
-                          value={rule.name}
-                          disabled={!canEdit}
-                          onChange={(event) =>
-                            updateRule(rule.id, (current) => ({
-                              ...current,
-                              name: event.target.value,
-                            }))
-                          }
-                        />
+            selectedRule ? (
+              <Card className="border-border bg-background shadow-none">
+                <CardHeader className="border-b border-border pb-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="chip-soft-primary">
+                          Mentor-owned rule
+                        </Badge>
+                        <Badge variant="outline" className="chip-soft-primary">
+                          {activeRows.reduce((sum, row) => sum + row.total, 0)} students
+                        </Badge>
                       </div>
-                      {canEdit ? (
-                        <div className="flex items-center gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              setDraftConfig((current) => ({
-                                ...current,
-                                rules: [
-                                  ...current.rules,
-                                  createRuleCopy(rule, `${rule.name} Copy`),
-                                ],
-                              }))
-                            }
-                          >
-                            <Copy className="h-3.5 w-3.5" />
-                            Duplicate
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              setDraftConfig((current) => {
-                                const remaining = current.rules.filter((entry) => entry.id !== rule.id)
-                                return {
-                                  selectedRuleId:
-                                    current.selectedRuleId === rule.id ? remaining[0]?.id ?? null : current.selectedRuleId,
-                                  rules: remaining,
+                      <Input
+                        value={selectedRule.name}
+                        disabled={!canEdit}
+                        onChange={(event) =>
+                          updateRule(selectedRule.id, (current) => ({
+                            ...current,
+                            name: event.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4 pt-4">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Grade</TableHead>
+                        <TableHead className="text-right">From</TableHead>
+                        <TableHead className="text-right">To</TableHead>
+                        <TableHead className="text-right">Count</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {getDerivedGradeBands(selectedRule).map((band, bandIndex) => {
+                        const row = activeRows.find((entry) => entry.bandId === band.id)
+                        return (
+                          <TableRow key={band.id}>
+                            <TableCell className="min-w-28">
+                              <Input
+                                value={band.label}
+                                disabled={!canEdit}
+                                onChange={(event) =>
+                                  updateRule(selectedRule.id, (current) => ({
+                                    ...current,
+                                    bands: current.bands.map((entry) =>
+                                      entry.id === band.id ? { ...entry, label: event.target.value } : entry
+                                    ),
+                                  }))
                                 }
-                              })
-                            }
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                            Remove
-                          </Button>
-                        </div>
-                      ) : null}
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4 pt-4">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Grade</TableHead>
-                          <TableHead className="text-right">From</TableHead>
-                          <TableHead className="text-right">To</TableHead>
-                          <TableHead className="text-right">Count</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {getDerivedGradeBands(rule).map((band, bandIndex) => {
-                          const row = ruleRows.find((entry) => entry.bandId === band.id)
-                          return (
-                            <TableRow key={band.id}>
-                              <TableCell className="min-w-28">
-                                <Input
-                                  value={band.label}
-                                  disabled={!canEdit}
-                                  onChange={(event) =>
-                                    updateRule(rule.id, (current) => ({
-                                      ...current,
-                                      bands: current.bands.map((entry) =>
-                                        entry.id === band.id ? { ...entry, label: event.target.value } : entry
-                                      ),
-                                    }))
-                                  }
-                                />
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <Input
-                                  type="number"
-                                  step="0.5"
-                                  min="0"
-                                  max="100"
-                                  value={band.minScore}
-                                  disabled={!canEdit}
-                                  onChange={(event) =>
-                                    updateRule(rule.id, (current) => ({
-                                      ...current,
-                                      bands: current.bands.map((entry) =>
-                                        entry.id === band.id
-                                          ? { ...entry, minScore: Number(event.target.value || 0) }
-                                          : entry
-                                      ),
-                                    }))
-                                  }
-                                  className="ml-auto w-24 text-right"
-                                />
-                              </TableCell>
-                              <TableCell className="text-right font-mono text-muted-foreground">
-                                {formatGradeBandUpperBound(rule, bandIndex)}
-                              </TableCell>
-                              <TableCell className="text-right font-semibold text-foreground">
-                                {row?.total ?? 0}
-                              </TableCell>
-                            </TableRow>
-                          )
-                        })}
-                      </TableBody>
-                    </Table>
-                    {ruleIssues.length > 0 ? (
-                      <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-200">
-                        <div className="mb-2 flex items-center gap-2 font-medium">
-                          <ShieldAlert className="h-4 w-4" />
-                          Fix these rule issues before saving
-                        </div>
-                        <ul className="space-y-1">
-                          {ruleIssues.map((message) => (
-                            <li key={`${rule.id}-${message}`}>{message}</li>
-                          ))}
-                        </ul>
+                              />
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Input
+                                type="number"
+                                step="0.5"
+                                min="0"
+                                max="100"
+                                value={band.minScore}
+                                disabled={!canEdit}
+                                onChange={(event) =>
+                                  updateRule(selectedRule.id, (current) => ({
+                                    ...current,
+                                    bands: current.bands.map((entry) =>
+                                      entry.id === band.id
+                                        ? { ...entry, minScore: Number(event.target.value || 0) }
+                                        : entry
+                                    ),
+                                  }))
+                                }
+                                className="ml-auto w-24 text-right"
+                              />
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-muted-foreground">
+                              {formatGradeBandUpperBound(selectedRule, bandIndex)}
+                            </TableCell>
+                            <TableCell className="text-right font-semibold text-foreground">
+                              {row?.total ?? 0}
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                  {(issuesByRule[selectedRule.id] ?? []).length > 0 ? (
+                    <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-200">
+                      <div className="mb-2 flex items-center gap-2 font-medium">
+                        <ShieldAlert className="h-4 w-4" />
+                        Fix these rule issues before saving
                       </div>
-                    ) : null}
-                    <div className="grid gap-3 sm:grid-cols-3">
-                      <StatPill
-                        label={rule.bands[0]?.label ?? "Top"}
-                        value={String(ruleRows[0]?.total ?? 0)}
-                      />
-                      <StatPill
-                        label={rule.bands[rule.bands.length - 1]?.label ?? "Bottom"}
-                        value={String(ruleRows[ruleRows.length - 1]?.total ?? 0)}
-                      />
-                      <StatPill label="Rule" value={`#${ruleIndex + 1}`} />
+                      <ul className="space-y-1">
+                        {(issuesByRule[selectedRule.id] ?? []).map((message) => (
+                          <li key={`${selectedRule.id}-${message}`}>{message}</li>
+                        ))}
+                      </ul>
                     </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
+                  ) : null}
+                </CardContent>
+              </Card>
+            ) : null
           )}
         </CardContent>
       </Card>
@@ -615,6 +491,142 @@ function GradeRulesPanel({
         </Card>
       )}
     </div>
+  )
+}
+
+function ClassReportExportCard({
+  exportMeta,
+  sections,
+  gradingSections,
+  weights,
+  rule,
+}: {
+  exportMeta: AdvancedAnalyticsExportMeta
+  sections: SectionMeta[]
+  gradingSections: GradingReportSection[]
+  weights: GradingReportWeights
+  rule: GradeRule | null
+}) {
+  const [selectedSectionId, setSelectedSectionId] = useState(sections[0]?.id ?? "")
+  const [facultyName, setFacultyName] = useState("")
+  const [examDate, setExamDate] = useState("")
+  const [examType, setExamType] = useState<ExamType>("Regular")
+  const [isDownloading, setIsDownloading] = useState(false)
+
+  useEffect(() => {
+    if (!sections.some((section) => section.id === selectedSectionId)) {
+      setSelectedSectionId(sections[0]?.id ?? "")
+    }
+  }, [sections, selectedSectionId])
+
+  const selectedSection = useMemo(
+    () => gradingSections.find((section) => section.sectionId === selectedSectionId) ?? gradingSections[0] ?? null,
+    [gradingSections, selectedSectionId]
+  )
+
+  useEffect(() => {
+    setFacultyName(selectedSection?.facultyName ?? "")
+  }, [selectedSection?.facultyName, selectedSection?.sectionId])
+
+  const canDownload = Boolean(rule && selectedSection && selectedSection.students.length > 0)
+  const classAverage = selectedSection
+    ? selectedSection.students.reduce((sum, student) => sum + student.total, 0) / Math.max(selectedSection.students.length, 1)
+    : 0
+
+  const handleDownload = async () => {
+    if (!rule || !selectedSection) {
+      toast.error("Save a grading rule before downloading the class report.")
+      return
+    }
+
+    setIsDownloading(true)
+    try {
+      downloadClassReportPdf({
+        exportMeta,
+        section: selectedSection,
+        rule,
+        weights,
+        examDate,
+        examType,
+        facultyName,
+      })
+      toast.success("Class report PDF downloaded")
+    } catch (error) {
+      console.error(error)
+      toast.error("Unable to generate the class report PDF")
+    } finally {
+      setIsDownloading(false)
+    }
+  }
+
+  return (
+    <Card className="border-border bg-card shadow-sm">
+      <CardHeader className="border-b border-border">
+        <div className="flex flex-col gap-2">
+          <CardTitle>Class Report PDF</CardTitle>
+          <CardDescription>
+            Download the complete grading report for a class using the mentor&apos;s active grading rule.
+          </CardDescription>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-5 pt-6">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Section</label>
+            <select
+              value={selectedSectionId}
+              onChange={(event) => setSelectedSectionId(event.target.value)}
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            >
+              {sections.map((section) => (
+                <option key={section.id} value={section.id}>
+                  {section.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Faculty Name</label>
+            <Input value={facultyName} onChange={(event) => setFacultyName(event.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Date of Examination</label>
+            <Input type="date" value={examDate} onChange={(event) => setExamDate(event.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Exam Type</label>
+            <select
+              value={examType}
+              onChange={(event) => setExamType(event.target.value as ExamType)}
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="Regular">Regular</option>
+              <option value="Supplementary">Supplementary</option>
+              <option value="Redo">Redo</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-4">
+          <StatCard label="Students" value={String(selectedSection?.students.length ?? 0)} helper="Registered in this class" />
+          <StatCard label="Class Average" value={formatNumber(classAverage)} helper={`Out of ${formatNumber(weights.overall)}`} />
+          <StatCard label="CA / Mid / End" value={`${formatNumber(weights.ca)} / ${formatNumber(weights.midTerm)} / ${formatNumber(weights.endSemester)}`} helper="Weight split used in the report" />
+          <StatCard label="Active Rule" value={rule?.name ?? "Not published"} helper="This rule drives grade distribution and grades" />
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed border-border bg-muted/35 px-4 py-3 text-sm text-muted-foreground">
+          <span>
+            {rule
+              ? "The exported PDF uses the current mentor rule, the selected section, and the exam details entered above."
+              : "Publish a grading rule before downloading the class report PDF."}
+          </span>
+          <Button type="button" onClick={handleDownload} disabled={!canDownload || isDownloading}>
+            <Download className="h-4 w-4" />
+            {isDownloading ? "Preparing PDF..." : "Download PDF"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -790,6 +802,8 @@ export function GradingClient({
   exportMeta,
   sections,
   finalMarkStemData,
+  gradingReportSections,
+  gradingWeights,
   activeRoleView,
   canEditGradeRules,
   initialGradeRuleConfig,
@@ -798,11 +812,19 @@ export function GradingClient({
   exportMeta: AdvancedAnalyticsExportMeta
   sections: SectionMeta[]
   finalMarkStemData: FinalMarkStemPoint[]
+  gradingReportSections: GradingReportSection[]
+  gradingWeights: GradingReportWeights
   activeRoleView: "administrator" | "mentor" | "faculty"
   canEditGradeRules: boolean
   initialGradeRuleConfig: GradeRuleConfig
   saveGradeRulesAction: SaveGradeRulesAction
 }) {
+  const [gradeRuleConfig, setGradeRuleConfig] = useState(() => collapseGradeRuleConfigToActiveRule(initialGradeRuleConfig))
+
+  useEffect(() => {
+    setGradeRuleConfig(collapseGradeRuleConfigToActiveRule(initialGradeRuleConfig))
+  }, [initialGradeRuleConfig])
+
   const finalPoints = useMemo<FinalScorePoint[]>(
     () =>
       finalMarkStemData.map((point) => ({
@@ -814,13 +836,7 @@ export function GradingClient({
 
   const outOf = finalPoints[0]?.outOf ?? 100
   const overallStats = useMemo(() => stats(finalPoints.map((point) => point.score)), [finalPoints])
-  const normalizedRuleConfig = useMemo(() => sanitizeGradeRuleConfig(initialGradeRuleConfig), [initialGradeRuleConfig])
-  const savedRule = useMemo(
-    () =>
-      normalizedRuleConfig.rules.find((rule) => rule.id === normalizedRuleConfig.selectedRuleId) ??
-      normalizedRuleConfig.rules[0],
-    [normalizedRuleConfig]
-  )
+  const activeRule = useMemo(() => getActiveGradeRule(gradeRuleConfig), [gradeRuleConfig])
 
   return (
     <div className="space-y-6">
@@ -830,7 +846,7 @@ export function GradingClient({
         <StatCard label="Sections" value={sections.length.toLocaleString()} helper="Sections in the selected offering" />
         <StatCard
           label="Current rule"
-          value={savedRule?.name ?? "Rule 1"}
+          value={activeRule?.name ?? "Not published"}
           helper={canEditGradeRules ? "Mentor-managed" : "Mentor-managed, read-only here"}
         />
       </div>
@@ -840,7 +856,7 @@ export function GradingClient({
           <CardTitle>Grading Workspace</CardTitle>
           <CardDescription>
             Workbook-style grading review for {exportMeta.subjectCode} · {exportMeta.subjectTitle}. This page groups the
-            configurable grade rules, section comparison charts, and stem-and-leaf review into one place.
+            mentor-managed grade rule, section comparison charts, and stem-and-leaf review into one place.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 pt-6 md:grid-cols-2 xl:grid-cols-4">
@@ -856,8 +872,16 @@ export function GradingClient({
         sections={sections}
         canEdit={canEditGradeRules}
         activeRoleView={activeRoleView}
-        initialConfig={normalizedRuleConfig}
+        config={gradeRuleConfig}
+        onConfigChange={setGradeRuleConfig}
         saveGradeRulesAction={saveGradeRulesAction}
+      />
+      <ClassReportExportCard
+        exportMeta={exportMeta}
+        sections={sections}
+        gradingSections={gradingReportSections}
+        weights={gradingWeights}
+        rule={activeRule}
       />
 
       <FinalScoreDistribution points={finalPoints} outOf={outOf} />

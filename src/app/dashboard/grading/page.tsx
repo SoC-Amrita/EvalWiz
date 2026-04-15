@@ -22,7 +22,7 @@ export default async function GradingPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Grading</h1>
         <p className="text-slate-500">
-          Centralized grading analytics, grade-rule comparison, and final-score review for{" "}
+          Centralized grading analytics, mentor-managed grade publishing, and final-score review for{" "}
           {analyticsDetail.exportMeta.subjectCode} - {analyticsDetail.exportMeta.subjectTitle}.
         </p>
       </div>
@@ -31,6 +31,8 @@ export default async function GradingPage() {
         exportMeta={analyticsDetail.exportMeta}
         sections={analyticsDetail.sections}
         finalMarkStemData={reportDetail.finalMarkStemData}
+        gradingReportSections={reportDetail.gradingReportSections}
+        gradingWeights={reportDetail.gradingWeights}
         activeRoleView={analyticsDetail.activeRoleView}
         canEditGradeRules={analyticsDetail.canEditGradeRules}
         initialGradeRuleConfig={analyticsDetail.gradeRuleConfig}

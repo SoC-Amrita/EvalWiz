@@ -68,11 +68,19 @@ function parseProgramYear(value: string) {
   const numeric = value.match(/\d+/)
   if (numeric) return Number(numeric[0])
 
-  const upper = value.toUpperCase()
-  if (upper.includes("III")) return 3
-  if (upper.includes("II")) return 2
-  if (upper.includes("IV")) return 4
-  if (upper.includes("I")) return 1
+  const roman = value.trim().toUpperCase()
+  const romanYearMap: Record<string, number> = {
+    I: 1,
+    II: 2,
+    III: 3,
+    IV: 4,
+    V: 5,
+    VI: 6,
+  }
+
+  if (roman in romanYearMap) {
+    return romanYearMap[roman]
+  }
 
   return null
 }

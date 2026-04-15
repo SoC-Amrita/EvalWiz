@@ -507,17 +507,21 @@ function ClassReportExportCard({
   weights: GradingReportWeights
   rule: GradeRule | null
 }) {
-  const [selectedSectionId, setSelectedSectionId] = useState(sections[0]?.id ?? "")
+  const availableSections = useMemo(
+    () => sections.filter((section) => gradingSections.some((gradingSection) => gradingSection.sectionId === section.id)),
+    [gradingSections, sections]
+  )
+  const [selectedSectionId, setSelectedSectionId] = useState(() => availableSections[0]?.id ?? sections[0]?.id ?? "")
   const [facultyName, setFacultyName] = useState("")
   const [examDate, setExamDate] = useState("")
   const [examType, setExamType] = useState<ExamType>("Regular")
   const [isDownloading, setIsDownloading] = useState(false)
 
   useEffect(() => {
-    if (!sections.some((section) => section.id === selectedSectionId)) {
-      setSelectedSectionId(sections[0]?.id ?? "")
+    if (!availableSections.some((section) => section.id === selectedSectionId)) {
+      setSelectedSectionId(availableSections[0]?.id ?? "")
     }
-  }, [sections, selectedSectionId])
+  }, [availableSections, selectedSectionId])
 
   const selectedSection = useMemo(
     () => gradingSections.find((section) => section.sectionId === selectedSectionId) ?? gradingSections[0] ?? null,
@@ -578,7 +582,7 @@ function ClassReportExportCard({
               onChange={(event) => setSelectedSectionId(event.target.value)}
               className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
             >
-              {sections.map((section) => (
+              {availableSections.map((section) => (
                 <option key={section.id} value={section.id}>
                   {section.name}
                 </option>

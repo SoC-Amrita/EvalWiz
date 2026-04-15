@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { useEffect, useState, type ComponentType, type ReactNode } from "react"
 import {
   BarChart,
@@ -63,6 +64,7 @@ export function DashboardShell({
   changePasswordAction,
   children,
 }: DashboardShellProps) {
+  const pathname = usePathname()
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(() => {
     if (typeof window === "undefined") {
       return true
@@ -71,6 +73,9 @@ export function DashboardShell({
     return window.localStorage.getItem(SIDEBAR_STORAGE_KEY) !== "0"
   })
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const isFocusedWorkspaceRoute = pathname === "/dashboard/grading/stem-leaf"
+  const showDesktopSidebar = desktopSidebarOpen && !isFocusedWorkspaceRoute
+  const showSidebarControls = !isFocusedWorkspaceRoute
 
   useEffect(() => {
     window.localStorage.setItem(SIDEBAR_STORAGE_KEY, desktopSidebarOpen ? "1" : "0")
@@ -92,13 +97,13 @@ export function DashboardShell({
     <div className="relative flex min-h-screen overflow-hidden app-shell">
       <div className="pointer-events-none absolute inset-0 app-grid opacity-60" />
 
-      {desktopSidebarOpen ? (
+      {showDesktopSidebar ? (
         <aside className="relative z-10 hidden w-64 flex-col border-r border-border/80 bg-background/85 backdrop-blur-xl md:flex">
           {SidebarContents}
         </aside>
       ) : null}
 
-      <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
+      <Sheet open={mobileSidebarOpen && showSidebarControls} onOpenChange={setMobileSidebarOpen}>
         <SheetContent side="left" className="w-[88vw] max-w-xs p-0" showCloseButton>
           <SheetHeader className="sr-only">
             <SheetTitle>Navigation</SheetTitle>
@@ -111,28 +116,32 @@ export function DashboardShell({
       <main className="relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden">
         <header className="relative z-30 flex h-16 items-center justify-between border-b border-border/80 bg-background/78 px-4 backdrop-blur-xl md:px-6">
           <div className="flex min-w-0 items-center gap-3">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              className="md:hidden"
-              onClick={() => setMobileSidebarOpen(true)}
-            >
-              <Menu className="h-5 w-5" />
-              <span className="sr-only">Open navigation</span>
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              className="hidden md:inline-flex"
-              onClick={() => setDesktopSidebarOpen((current) => !current)}
-            >
-              {desktopSidebarOpen ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeftOpen className="h-5 w-5" />}
-              <span className="sr-only">
-                {desktopSidebarOpen ? "Hide sidebar" : "Show sidebar"}
-              </span>
-            </Button>
+            {showSidebarControls ? (
+              <>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="md:hidden"
+                  onClick={() => setMobileSidebarOpen(true)}
+                >
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Open navigation</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="hidden md:inline-flex"
+                  onClick={() => setDesktopSidebarOpen((current) => !current)}
+                >
+                  {desktopSidebarOpen ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeftOpen className="h-5 w-5" />}
+                  <span className="sr-only">
+                    {desktopSidebarOpen ? "Hide sidebar" : "Show sidebar"}
+                  </span>
+                </Button>
+              </>
+            ) : null}
             {hasWorkspace && !isAdmin ? (
               <WorkspaceContextBeacon
                 step={CONTEXT_BEACON_SECONDARY}
@@ -159,7 +168,7 @@ export function DashboardShell({
         </header>
         <div className="flex-1 overflow-auto p-6 md:p-8">
           {showAnalysisPreview ? <AnalysisPreviewDialog /> : null}
-          <div className="mx-auto max-w-7xl">
+          <div className={showSidebarControls ? "mx-auto max-w-7xl" : "mx-auto max-w-[min(1600px,100%)]"}>
             {children}
           </div>
         </div>

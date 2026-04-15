@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache"
 
 import prisma from "@/lib/db"
 import {
-  sanitizeGradeRuleConfig,
+  collapseGradeRuleConfigToActiveRule,
   serializeGradeRuleConfig,
   validateGradeRuleConfig,
   type GradeRuleConfig,
@@ -25,7 +25,7 @@ export async function saveAdvancedAnalyticsGradeRules(config: GradeRuleConfig) {
     throw new Error("Only mentors can update grade rules for this course workspace.")
   }
 
-  const sanitized = sanitizeGradeRuleConfig(config)
+  const sanitized = collapseGradeRuleConfigToActiveRule(config)
   const issues = validateGradeRuleConfig(sanitized)
   if (issues.length > 0) {
     throw new Error(issues[0].message)

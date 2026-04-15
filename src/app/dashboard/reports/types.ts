@@ -38,6 +38,27 @@ export type FinalMarkStemPoint = {
   outOf: number
 }
 
+export type GradingReportStudentRow = {
+  studentId: string
+  rollNo: string
+  studentName: string
+  caTotal: number
+  midTerm: number
+  endSemester: number
+  total: number
+  percentage: number
+  hasEndSemesterScore: boolean
+}
+
+export type GradingReportSection = {
+  sectionId: string
+  sectionName: string
+  classLabel: string
+  facultyName: string | null
+  totalStudents: number
+  students: GradingReportStudentRow[]
+}
+
 export type ReportMeta = {
   appName: string
   school: string

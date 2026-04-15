@@ -97,12 +97,11 @@ export function createEmptyGradeRuleConfig(): GradeRuleConfig {
 }
 
 export function createDefaultGradeRuleConfig(): GradeRuleConfig {
+  const defaultRule = createDefaultGradeRule("rule-1", "Course Grade Rule")
+
   return {
-    selectedRuleId: "rule-1",
-    rules: [
-      createDefaultGradeRule("rule-1", "Rule 1"),
-      createDefaultGradeRule("rule-2", "Rule 2"),
-    ],
+    selectedRuleId: defaultRule.id,
+    rules: [defaultRule],
   }
 }
 
@@ -140,18 +139,36 @@ export function sanitizeGradeRuleConfig(input: unknown): GradeRuleConfig {
   }
 }
 
+export function getActiveGradeRule(config: GradeRuleConfig) {
+  return config.rules.find((rule) => rule.id === config.selectedRuleId) ?? config.rules[0] ?? null
+}
+
+export function collapseGradeRuleConfigToActiveRule(input: unknown): GradeRuleConfig {
+  const sanitized = sanitizeGradeRuleConfig(input)
+  const activeRule = getActiveGradeRule(sanitized)
+
+  if (!activeRule) {
+    return createEmptyGradeRuleConfig()
+  }
+
+  return {
+    selectedRuleId: activeRule.id,
+    rules: [activeRule],
+  }
+}
+
 export function parseGradeRuleConfig(serialized?: string | null) {
   if (!serialized) return createEmptyGradeRuleConfig()
 
   try {
-    return sanitizeGradeRuleConfig(JSON.parse(serialized))
+    return collapseGradeRuleConfigToActiveRule(JSON.parse(serialized))
   } catch {
     return createEmptyGradeRuleConfig()
   }
 }
 
 export function serializeGradeRuleConfig(config: GradeRuleConfig) {
-  return JSON.stringify(sanitizeGradeRuleConfig(config))
+  return JSON.stringify(collapseGradeRuleConfigToActiveRule(config))
 }
 
 export function getGradeRuleIssues(rule: GradeRule): string[] {

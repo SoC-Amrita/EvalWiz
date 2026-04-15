@@ -1,6 +1,7 @@
 import { APP_INFO } from "@/lib/app-info"
 import {
   buildWeightedStudentTotals,
+  classifyAssessment,
   computeMetricStats,
   getAssessmentWeightConfig,
   type AssessmentLike,
@@ -9,11 +10,12 @@ import {
 import { buildScopedSectionWhere, buildScopedStudentWhere } from "@/lib/course-workspace"
 import prisma from "@/lib/db"
 import { requireAuthenticatedWorkspaceState, requireRealWorkspace } from "@/lib/workspace-guards"
-import { formatDetailedCompactSectionName } from "@/lib/workspace-labels"
+import { formatCompactProgramSectionName, formatDetailedCompactSectionName } from "@/lib/workspace-labels"
 
 import type {
   AssessmentComponentReport,
   FinalMarkStemPoint,
+  GradingReportSection,
   ReportMeta,
   SectionReportData,
 } from "./types"
@@ -470,6 +472,35 @@ export async function getReportsDetailData() {
     }
   })
 
+  const gradingReportSections: GradingReportSection[] = sectionSummaries.map((summary) => ({
+    sectionId: summary.sectionId,
+    sectionName: summary.sectionName,
+    classLabel: formatCompactProgramSectionName(
+      sections.find((section) => section.id === summary.sectionId) ?? { name: summary.sectionName }
+    ),
+    facultyName: summary.facultyName,
+    totalStudents: summary.studentRecords.length,
+    students: summary.studentMarks.map((marks, index) => {
+      const student = summary.studentRecords[index]
+      const totals = buildWeightedStudentTotals(marks)
+      const hasEndSemesterScore = marks.some(
+        (mark) => classifyAssessment(mark.assessment).family === "END_SEMESTER"
+      )
+
+      return {
+        studentId: student?.id ?? `${summary.sectionId}-${index}`,
+        rollNo: student?.rollNo ?? "—",
+        studentName: student?.name ?? "Student",
+        caTotal: Number(totals.ca.toFixed(2)),
+        midTerm: Number(totals.midTerm.toFixed(2)),
+        endSemester: Number(totals.endSemester.toFixed(2)),
+        total: Number(totals.overall.toFixed(2)),
+        percentage: weightConfig.overall > 0 ? Number(((totals.overall / weightConfig.overall) * 100).toFixed(2)) : 0,
+        hasEndSemesterScore,
+      }
+    }),
+  }))
+
   const finalMarkStemData: FinalMarkStemPoint[] = sectionSummaries.flatMap((summary) =>
     summary.studentMarks.map((marks, index) => {
       const student = summary.studentRecords[index]
@@ -490,5 +521,12 @@ export async function getReportsDetailData() {
   return {
     componentReports,
     finalMarkStemData,
+    gradingReportSections,
+    gradingWeights: {
+      ca: weightConfig.ca,
+      midTerm: weightConfig.midTerm,
+      endSemester: weightConfig.endSemester,
+      overall: weightConfig.overall,
+    },
   }
 }

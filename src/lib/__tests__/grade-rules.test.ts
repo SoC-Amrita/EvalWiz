@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest"
 
 import {
   buildGradeRuleSectionRows,
+  collapseGradeRuleConfigToActiveRule,
   createDefaultGradeRule,
-  createEmptyGradeRuleConfig,
+  createDefaultGradeRuleConfig,
   parseGradeRuleConfig,
   resolveGradeBand,
   sanitizeGradeRuleConfig,
@@ -47,6 +48,20 @@ describe("grade rule config helpers", () => {
     expect(config.rules).toHaveLength(0)
     expect(config.selectedRuleId).toBeNull()
   })
+
+  it("keeps only the mentor-selected active rule", () => {
+    const config = collapseGradeRuleConfigToActiveRule({
+      selectedRuleId: "rule-2",
+      rules: [
+        createDefaultGradeRule("rule-1", "Rule 1"),
+        createDefaultGradeRule("rule-2", "Rule 2"),
+      ],
+    })
+
+    expect(config.selectedRuleId).toBe("rule-2")
+    expect(config.rules).toHaveLength(1)
+    expect(config.rules[0]?.id).toBe("rule-2")
+  })
 })
 
 describe("validateGradeRuleConfig", () => {
@@ -75,7 +90,7 @@ describe("validateGradeRuleConfig", () => {
   })
 
   it("accepts the default configuration", () => {
-    expect(validateGradeRuleConfig(createEmptyGradeRuleConfig())).toEqual([])
+    expect(validateGradeRuleConfig(createDefaultGradeRuleConfig())).toEqual([])
   })
 
   it("accepts a blank unpublished configuration", () => {

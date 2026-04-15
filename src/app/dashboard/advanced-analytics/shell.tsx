@@ -65,9 +65,6 @@ export function AdvancedAnalyticsShell({
         <Card className="border-slate-200 dark:border-slate-800 bg-white shadow-sm dark:bg-slate-900">
           <CardHeader>
             <CardTitle>Analysis Scope</CardTitle>
-            <CardDescription>
-              This summary loads first so the page stays responsive. Open the charts workspace only when you want the full raw-mark visual analysis tools.
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 text-sm text-slate-600 dark:text-slate-300">
             <div className="grid gap-3 md:grid-cols-2">
@@ -107,9 +104,6 @@ export function AdvancedAnalyticsShell({
           <Card className="border-dashed border-slate-300 bg-slate-50/80 dark:border-slate-700 dark:bg-slate-900/60">
             <CardHeader>
               <CardTitle>Charts Workspace</CardTitle>
-              <CardDescription>
-                The full advanced analytics workspace loads raw marks, section comparisons, and chart-ready datasets on demand.
-              </CardDescription>
             </CardHeader>
             <CardContent>
               <Button

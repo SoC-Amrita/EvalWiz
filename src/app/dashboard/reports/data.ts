@@ -426,6 +426,7 @@ export async function getReportsDetailData() {
 
   const weightConfig = getAssessmentWeightConfig(assessments)
   const isCourseView = activeRoleView !== "faculty" && sections.length > 1
+  const sectionById = new Map(sections.map((section) => [section.id, section]))
 
   const componentReports: AssessmentComponentReport[] = assessments.map((assessment) => {
     const rows = sectionSummaries.map((summary) =>
@@ -476,12 +477,12 @@ export async function getReportsDetailData() {
     sectionId: summary.sectionId,
     sectionName: summary.sectionName,
     classLabel: formatCompactProgramSectionName(
-      sections.find((section) => section.id === summary.sectionId) ?? { name: summary.sectionName }
+      sectionById.get(summary.sectionId) ?? { name: summary.sectionName }
     ),
     facultyName: summary.facultyName,
     totalStudents: summary.studentRecords.length,
-    students: summary.studentMarks.map((marks, index) => {
-      const student = summary.studentRecords[index]
+    students: summary.studentRecords.map((student, index) => {
+      const marks = summary.studentMarks[index] ?? []
       const totals = buildWeightedStudentTotals(marks)
       const hasEndSemesterScore = marks.some(
         (mark) => classifyAssessment(mark.assessment).family === "END_SEMESTER"

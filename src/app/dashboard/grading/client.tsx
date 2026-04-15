@@ -25,7 +25,6 @@ import {
 } from "@/lib/grade-rules"
 import type { AdvancedAnalyticsExportMeta, SectionMeta } from "@/app/dashboard/advanced-analytics/types"
 import type { FinalMarkStemPoint } from "@/app/dashboard/reports/types"
-import { StemLeafOverviewCard } from "./stem-leaf-views"
 
 type SaveGradeRulesAction = (
   payload: GradeRuleConfig
@@ -36,6 +35,23 @@ type SaveGradeRulesAction = (
 type FinalScorePoint = FinalMarkStemPoint & {
   percentage: number
 }
+
+type StemLeafPoint = FinalScorePoint & {
+  displayScore: number
+  leaf: string
+}
+
+type HighlightKey = "ALL" | "GE90" | "80_89" | "70_79" | "60_69" | "50_59" | "LT50"
+
+const HIGHLIGHT_OPTIONS: Array<{ key: HighlightKey; label: string }> = [
+  { key: "ALL", label: "All" },
+  { key: "GE90", label: "90+" },
+  { key: "80_89", label: "80-89" },
+  { key: "70_79", label: "70-79" },
+  { key: "60_69", label: "60-69" },
+  { key: "50_59", label: "50-59" },
+  { key: "LT50", label: "<50" },
+]
 
 function makeId(prefix: string) {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -124,6 +140,43 @@ function createRuleCopy(baseRule: GradeRule, nextName: string): GradeRule {
       id: makeId("band"),
     })),
   }
+}
+
+function getHighlightKey(percentage: number): HighlightKey {
+  if (percentage >= 90) return "GE90"
+  if (percentage >= 80) return "80_89"
+  if (percentage >= 70) return "70_79"
+  if (percentage >= 60) return "60_69"
+  if (percentage >= 50) return "50_59"
+  return "LT50"
+}
+
+function buildStemRows(points: FinalScorePoint[], outOf: number) {
+  const rows = new Map<number, StemLeafPoint[]>()
+
+  points
+    .map((point) => {
+      const roundedScore = Math.round(point.score)
+      const stem = Math.floor(roundedScore / 10)
+      const leaf = String(roundedScore - stem * 10)
+
+      return {
+        ...point,
+        displayScore: roundedScore,
+        leaf,
+      }
+    })
+    .sort((left, right) => left.displayScore - right.displayScore || left.rollNo.localeCompare(right.rollNo))
+    .forEach((point) => {
+      const stem = Math.floor(point.displayScore / 10)
+      if (!rows.has(stem)) rows.set(stem, [])
+      rows.get(stem)?.push(point)
+    })
+
+  return Array.from({ length: Math.floor(outOf / 10) + 1 }, (_, index) => ({
+    stem: index,
+    leaves: rows.get(index) ?? [],
+  }))
 }
 
 function SimpleTooltip({
@@ -786,6 +839,143 @@ function FinalScoreBoxWhisker({
   )
 }
 
+function StemLeafChart({
+  points,
+  outOf,
+  sections,
+}: {
+  points: FinalScorePoint[]
+  outOf: number
+  sections: SectionMeta[]
+}) {
+  const [selectedSectionId, setSelectedSectionId] = useState("ALL")
+  const [showRollNumbers, setShowRollNumbers] = useState(false)
+  const [hideEmptyStems, setHideEmptyStems] = useState(true)
+  const [highlightRange, setHighlightRange] = useState<HighlightKey>("ALL")
+
+  const visiblePoints = useMemo(
+    () => (selectedSectionId === "ALL" ? points : points.filter((point) => point.sectionId === selectedSectionId)),
+    [points, selectedSectionId]
+  )
+
+  const rows = useMemo(() => buildStemRows(visiblePoints, outOf), [outOf, visiblePoints])
+
+  return (
+    <Card className="border-border bg-card shadow-sm">
+      <CardHeader className="border-b border-border">
+        <CardTitle>Stem-and-Leaf Chart</CardTitle>
+        <CardDescription>Final weighted scores arranged exactly for grading review conversations.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6 pt-6">
+        <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+          <div className="space-y-4">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Section</div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Button type="button" size="sm" variant={selectedSectionId === "ALL" ? "default" : "outline"} onClick={() => setSelectedSectionId("ALL")}>
+                  All sections
+                </Button>
+                {sections.map((section) => (
+                  <Button
+                    key={section.id}
+                    type="button"
+                    size="sm"
+                    variant={selectedSectionId === section.id ? "default" : "outline"}
+                    onClick={() => setSelectedSectionId(section.id)}
+                  >
+                    {section.name}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Highlight</div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {HIGHLIGHT_OPTIONS.map((option) => (
+                  <Button
+                    key={option.key}
+                    type="button"
+                    size="sm"
+                    variant={highlightRange === option.key ? "default" : "outline"}
+                    onClick={() => setHighlightRange(option.key)}
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {[
+                {
+                  label: "Show roll numbers",
+                  checked: showRollNumbers,
+                  onChange: () => setShowRollNumbers((current) => !current),
+                },
+                {
+                  label: "Hide empty stems",
+                  checked: hideEmptyStems,
+                  onChange: () => setHideEmptyStems((current) => !current),
+                },
+              ].map((control) => (
+                <label key={control.label} className="flex items-center justify-between rounded-xl border border-border bg-muted/40 px-3 py-3 text-sm">
+                  <span>{control.label}</span>
+                  <input type="checkbox" checked={control.checked} onChange={control.onChange} className="h-4 w-4 rounded border-slate-300" />
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-border bg-background">
+            <div className="grid grid-cols-[88px_minmax(0,1fr)] border-b border-border bg-muted/50 px-5 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              <div>Stem</div>
+              <div>Leaves</div>
+            </div>
+            <div className="divide-y divide-border">
+              {(hideEmptyStems ? rows.filter((row) => row.leaves.length > 0) : rows).map((row) => (
+                <div key={row.stem} className="grid grid-cols-[88px_minmax(0,1fr)] gap-4 px-5 py-4">
+                  <div className="font-mono text-2xl font-semibold text-foreground">{row.stem}</div>
+                  <div className="flex flex-wrap gap-2.5">
+                    {row.leaves.length > 0 ? (
+                      row.leaves.map((point) => {
+                        const pointHighlight = getHighlightKey(point.percentage)
+                        const isDimmed = highlightRange !== "ALL" && pointHighlight !== highlightRange
+                        const color = GRADE_BUCKET_COLORS[HIGHLIGHT_OPTIONS.findIndex((option) => option.key === pointHighlight) % GRADE_BUCKET_COLORS.length]
+
+                        return (
+                          <span
+                            key={`${point.studentId}-${point.displayScore}`}
+                            title={`${point.rollNo} · ${point.sectionName} · ${formatNumber(point.score)} / ${formatNumber(point.outOf)}`}
+                            className={`inline-flex min-w-10 items-center justify-center gap-1 rounded-lg border px-3 py-1.5 font-mono text-sm font-semibold shadow-sm ${isDimmed ? "opacity-25 grayscale" : ""}`}
+                            style={{
+                              borderColor: color,
+                              color,
+                              background: `color-mix(in srgb, ${color} 14%, var(--card))`,
+                            }}
+                          >
+                            <span>{point.leaf}</span>
+                            {showRollNumbers ? <span className="text-[10px] opacity-70">{point.rollNo}</span> : null}
+                          </span>
+                        )
+                      })
+                    ) : (
+                      <span className="text-sm text-muted-foreground">No leaves</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Key: <span className="font-mono font-semibold text-foreground">7 | 4</span> means 74 out of {formatNumber(outOf)}.
+        </p>
+      </CardContent>
+    </Card>
+  )
+}
+
 export function GradingClient({
   exportMeta,
   sections,
@@ -862,7 +1052,7 @@ export function GradingClient({
 
       <FinalScoreDistribution points={finalPoints} outOf={outOf} />
       <FinalScoreBoxWhisker points={finalPoints} sections={sections} outOf={outOf} />
-      <StemLeafOverviewCard points={finalMarkStemData} sections={sections} />
+      <StemLeafChart points={finalPoints} outOf={outOf} sections={sections} />
     </div>
   )
 }

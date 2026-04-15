@@ -273,6 +273,28 @@ describe("buildWeightedStudentTotals", () => {
     expect(totals.overall).toBe(0)
     expect(totals.ca).toBe(0)
   })
+
+  it("rounds grand total down when the fractional part is below 0.5", () => {
+    const totals = buildWeightedStudentTotals([
+      {
+        marks: 4.49,
+        assessment: { code: "QZ1", name: "Quiz 1", category: "QUIZ", weightage: 10, maxMarks: 10 },
+      },
+    ])
+
+    expect(totals.overall).toBe(4)
+  })
+
+  it("rounds grand total up when the fractional part is 0.5 or above", () => {
+    const totals = buildWeightedStudentTotals([
+      {
+        marks: 4.5,
+        assessment: { code: "QZ1", name: "Quiz 1", category: "QUIZ", weightage: 10, maxMarks: 10 },
+      },
+    ])
+
+    expect(totals.overall).toBe(5)
+  })
 })
 
 // ---------------------------------------------------------------------------

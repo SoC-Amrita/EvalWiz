@@ -147,3 +147,12 @@ For visual or PDF changes:
 - Commits and PRs should be made using the user's credentials.
 - Keep unrelated pending changes out of the PR.
 - Mention any leftover local changes after a merge.
+
+## AI Context Automation
+
+- Before starting work, read `PROJECT_MAP.md`, `ARCHITECTURE.md`, `TASK_LOG.md`, and `.repo-files.txt` to get oriented.
+- Avoid whole-repository scans unless the focused context files are insufficient.
+- Use the smallest relevant file set for the task, then expand only when the code points you there.
+- Run `npm run ai:context` after structural or functionality changes that affect the project map, architecture notes, task log, or file inventory.
+- Update `PROJECT_MAP.md` when files, routes, modules, or ownership boundaries change.
+- Update `TASK_LOG.md` when user-visible functionality, workflow decisions, or important implementation notes change.

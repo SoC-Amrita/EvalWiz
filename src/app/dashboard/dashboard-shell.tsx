@@ -257,8 +257,6 @@ function SidebarNavigation({
             <NavLink href="/dashboard/analytics" icon={BarChart} label="Course Analytics" onNavigate={onNavigate} />
             <NavLink href="/dashboard/grading" icon={FileSpreadsheet} label="Grading" onNavigate={onNavigate} />
             <NavLink href="/dashboard/students" icon={Users} label="Students" onNavigate={onNavigate} />
-            <NavLink href="/dashboard/reports" icon={FileSpreadsheet} label="Section Reports" onNavigate={onNavigate} />
-            <NavLink href="/dashboard/advanced-analytics" icon={BarChart} label="Advanced Analytics" onNavigate={onNavigate} />
             <NavLink href="/dashboard/marks" icon={Users} label="Marks Entry" onNavigate={onNavigate} />
 
             {canManageAssessments || canAccessSections ? (

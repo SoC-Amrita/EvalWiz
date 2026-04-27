@@ -4,14 +4,41 @@ import prisma from "@/lib/db"
 import { buildScopedStudentWhere, getActiveWorkspaceState } from "@/lib/course-workspace"
 import { formatCompactSectionName, formatWorkspaceCode } from "@/lib/workspace-labels"
 import { redirect } from "next/navigation"
-import { AnalyticsClient } from "./client"
 
-export default async function AnalyticsPage() {
+import { loadAdvancedAnalyticsDetailData } from "../advanced-analytics/actions"
+import { getAdvancedAnalyticsSummaryData } from "../advanced-analytics/data"
+import { loadReportsDetailData } from "../reports/actions"
+import { getReportsSummaryData } from "../reports/data"
+import { AnalyticsWorkspaceShell, type AnalyticsWorkspaceTab } from "./workspace-shell"
+
+type AnalyticsPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>
+}
+
+function readSingleSearchParam(
+  searchParams: Record<string, string | string[] | undefined>,
+  key: string
+) {
+  const value = searchParams[key]
+  return Array.isArray(value) ? value[0] : value
+}
+
+function readAnalyticsTab(value: string | undefined): AnalyticsWorkspaceTab {
+  if (value === "advanced" || value === "reports") {
+    return value
+  }
+
+  return "course"
+}
+
+export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps) {
   const session = await auth()
   const user = session?.user
   if (!user) redirect("/login")
 
   const { activeWorkspace, activeRoleView } = await getActiveWorkspaceState(user)
+  const resolvedSearchParams = (await searchParams) ?? {}
+  const activeTab = readAnalyticsTab(readSingleSearchParam(resolvedSearchParams, "tab"))
   const studentWhere = await buildScopedStudentWhere(user, activeWorkspace, activeRoleView, {
     excludeFromAnalytics: true,
   })
@@ -116,6 +143,11 @@ export default async function AnalyticsPage() {
     }
   })
 
+  const [{ reportData, courseAggregate, reportMeta }, advancedSummary] = await Promise.all([
+    getReportsSummaryData(),
+    getAdvancedAnalyticsSummaryData(),
+  ])
+
   return (
     <div className="space-y-6">
       <div>
@@ -123,11 +155,20 @@ export default async function AnalyticsPage() {
           Course Analytics
         </h1>
         <p className="text-slate-500">
-          Component trends and score patterns for {formatWorkspaceCode(activeWorkspace)}.
+          Overview, advanced charts, and section reports for {formatWorkspaceCode(activeWorkspace)}.
         </p>
       </div>
 
-      <AnalyticsClient data={componentStats} />
+      <AnalyticsWorkspaceShell
+        initialTab={activeTab}
+        componentStats={componentStats}
+        advancedSummary={advancedSummary}
+        reportData={reportData}
+        courseAggregate={courseAggregate}
+        reportMeta={reportMeta}
+        loadAdvancedDetailsAction={loadAdvancedAnalyticsDetailData}
+        loadReportDetailsAction={loadReportsDetailData}
+      />
     </div>
   )
 }

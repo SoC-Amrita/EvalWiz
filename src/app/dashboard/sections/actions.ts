@@ -1,12 +1,11 @@
 "use server"
 
-import { auth } from "@/auth"
 import prisma from "@/lib/db"
 import bcrypt from "bcryptjs"
 import { revalidatePath } from "next/cache"
 import { buildNameFields } from "@/lib/user-names"
-import { canManageUsers } from "@/lib/user-roles"
 import {
+  requireAdminUser,
   requireAuthenticatedWorkspaceState,
   requireRealWorkspace,
   requireWorkspaceManagerState,
@@ -25,8 +24,7 @@ function splitLegacyName(name: string) {
 }
 
 export async function createFaculty(data: { name: string; email: string; password?: string }) {
-  const session = await auth()
-  if (!session?.user || !canManageUsers(session.user)) throw new Error("Unauthorized")
+  await requireAdminUser()
 
   const existingUser = await prisma.user.findUnique({
     where: { email: data.email }
@@ -89,8 +87,7 @@ export async function assignFacultyToSection(sectionId: string, facultyId: strin
 }
 
 export async function editFaculty(facultyId: string, userId: string, data: { name: string; email: string }) {
-  const session = await auth()
-  if (!session?.user || !canManageUsers(session.user)) throw new Error("Unauthorized")
+  await requireAdminUser()
 
   const nameFields = buildNameFields(splitLegacyName(data.name))
 

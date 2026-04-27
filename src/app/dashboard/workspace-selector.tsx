@@ -8,9 +8,8 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { formatWorkspaceCycleLabel, formatWorkspaceProgramSummary } from "@/lib/workspace-labels"
+import { formatWorkspaceCycleLabel, formatWorkspaceProgramSummary, hasRealWorkspace, getRoleViewLabel } from "@/lib/workspace-labels"
 import { activateWorkspace } from "./workspace-actions"
-import { hasRealWorkspace, getRoleViewLabel } from "@/lib/course-workspace"
 import type { CourseWorkspace, WorkspaceRoleView } from "@/lib/course-workspace"
 
 function roleIcon(roleView: WorkspaceRoleView) {

@@ -7,6 +7,8 @@
     "build": "next build --webpack",
     "start": "next start",
     "postinstall": "prisma generate",
+    "ai:context": "python3 scripts/update-ai-context.py",
+    "ai:hooks": "bash scripts/install-ai-context-hooks.sh",
     "lint": "eslint",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",

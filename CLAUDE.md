@@ -9,3 +9,9 @@ The most important local conventions are:
 - Use branch prefixes such as `frontend/`, `backend/`, `feature/`, and `fix/`.
 - Do not stage unrelated local changes.
 - Preserve teammate deployment changes and never rewrite `main` history without explicit approval.
+
+## AI Context Automation
+
+Before work, read `PROJECT_MAP.md`, `ARCHITECTURE.md`, `TASK_LOG.md`, and `.repo-files.txt`.
+
+Avoid broad repository scans unless those files do not contain enough context. Prefer the smallest relevant file set, and update `PROJECT_MAP.md` plus `TASK_LOG.md` when structure or functionality changes.

@@ -153,22 +153,6 @@ function computeExpectedGraduationYear(admissionYear: string, programDurationYea
   return String(parsedAdmissionYear + programDurationYears)
 }
 
-function inferProgramProfile(programLabel: string) {
-  const normalized = programLabel.trim().toUpperCase()
-
-  if (normalized.includes("BTECH") || normalized.includes("B TECH")) {
-    return {
-      levelCode: "U",
-      programDurationYears: 4,
-    }
-  }
-
-  return {
-    levelCode: "U",
-    programDurationYears: 4,
-  }
-}
-
 function buildParsedRollFromClassInput(
   normalizedClass: ReturnType<typeof normalizeClassInput>,
   options?: { programCode?: string | null }
@@ -178,19 +162,17 @@ function buildParsedRollFromClassInput(
     throw new Error("Could not determine the roll program code from the academic program label")
   }
 
-  const programProfile = inferProgramProfile(normalizedClass.program)
-
   return {
     normalizedRollNo: "",
     rollPrefix: "CB",
     schoolCode: getDefaultSchoolCodeForProgramCode(programCode) ?? "SC",
     schoolName: null,
-    levelCode: programProfile.levelCode,
-    programDurationYears: programProfile.programDurationYears,
+    levelCode: "U",
+    programDurationYears: 4,
     programCode,
     programName: null,
     admissionYear: normalizedClass.batchYear,
-    expectedGraduationYear: computeExpectedGraduationYear(normalizedClass.batchYear, programProfile.programDurationYears),
+    expectedGraduationYear: computeExpectedGraduationYear(normalizedClass.batchYear, 4),
     sectionCode: normalizedClass.sectionCode,
     sectionIndex: 0,
     rosterNumber: "",

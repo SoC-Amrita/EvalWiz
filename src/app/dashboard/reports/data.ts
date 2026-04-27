@@ -390,9 +390,9 @@ export async function getReportsSummaryData() {
 
   const reportMeta: ReportMeta = {
     appName: APP_INFO.name,
-    school: "School of Computing",
-    department: "Department of Computer Science and Engineering",
-    institution: "Amrita Vishwa Vidyapeetham, Coimbatore",
+    school: APP_INFO.school,
+    department: APP_INFO.department,
+    institution: APP_INFO.institution,
     subjectCode: activeWorkspace.subjectCode,
     subjectTitle: activeWorkspace.subjectTitle,
     academicYear: activeWorkspace.academicYear,

@@ -26,10 +26,6 @@ export function isFacultyRole(context?: string | RoleContext | null) {
   return getRole(context) !== null
 }
 
-export function canManageCourse(context?: string | RoleContext | null) {
-  return getIsAdmin(context)
-}
-
 export function canManageUsers(context?: string | RoleContext | null) {
   return getIsAdmin(context)
 }

@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest"
 import {
   isAdminRole,
   isFacultyRole,
-  canManageCourse,
   canManageUsers,
 } from "@/lib/user-roles"
 
@@ -55,24 +54,6 @@ describe("isFacultyRole", () => {
 
   it("returns false for undefined context", () => {
     expect(isFacultyRole(undefined)).toBe(false)
-  })
-})
-
-describe("canManageCourse", () => {
-  it("returns true when isAdmin is true", () => {
-    expect(canManageCourse({ isAdmin: true })).toBe(true)
-  })
-
-  it("returns false when isAdmin is false", () => {
-    expect(canManageCourse({ isAdmin: false })).toBe(false)
-  })
-
-  it("returns false for a plain string", () => {
-    expect(canManageCourse("ADMIN")).toBe(false)
-  })
-
-  it("returns false for null", () => {
-    expect(canManageCourse(null)).toBe(false)
   })
 })
 

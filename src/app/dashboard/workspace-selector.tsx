@@ -8,13 +8,9 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { formatWorkspaceCycleLabel, formatWorkspaceProgramSummary } from "@/lib/workspace-labels"
+import { formatWorkspaceCycleLabel, formatWorkspaceProgramSummary, hasRealWorkspace, getRoleViewLabel } from "@/lib/workspace-labels"
 import { activateWorkspace } from "./workspace-actions"
 import type { CourseWorkspace, WorkspaceRoleView } from "@/lib/course-workspace"
-
-function hasRealWorkspace(workspace: CourseWorkspace) {
-  return Boolean(workspace.offeringId)
-}
 
 function roleIcon(roleView: WorkspaceRoleView) {
   switch (roleView) {
@@ -24,17 +20,6 @@ function roleIcon(roleView: WorkspaceRoleView) {
       return UserCog
     case "faculty":
       return Users
-  }
-}
-
-function roleLabel(roleView: WorkspaceRoleView) {
-  switch (roleView) {
-    case "administrator":
-      return "Administrator"
-    case "mentor":
-      return "Mentor"
-    case "faculty":
-      return "Faculty"
   }
 }
 
@@ -133,8 +118,8 @@ export function WorkspaceSelector({
                       const Icon = roleIcon(roleView)
                       const isActiveRole = isActiveCourse && activeRoleView === roleView
                       const buttonLabel = isAdminVariant
-                        ? `Open ${roleLabel(roleView)}`
-                        : roleLabel(roleView)
+                        ? `Open ${getRoleViewLabel(roleView)}`
+                        : getRoleViewLabel(roleView)
                       return (
                         <Button
                           key={roleView}

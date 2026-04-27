@@ -420,17 +420,4 @@ export async function setAdminConsoleModeCookie(mode: "admin" | "workspace") {
   cookieStore.set(ADMIN_CONSOLE_MODE_COOKIE, mode, { path: "/", sameSite: "lax" })
 }
 
-export function hasRealWorkspace(workspace: CourseWorkspace) {
-  return Boolean(workspace.offeringId)
-}
-
-export function getRoleViewLabel(roleView: WorkspaceRoleView) {
-  switch (roleView) {
-    case "administrator":
-      return "Administrator"
-    case "mentor":
-      return "Mentor"
-    case "faculty":
-      return "Faculty"
-  }
-}
+export { hasRealWorkspace, getRoleViewLabel } from "@/lib/workspace-labels"

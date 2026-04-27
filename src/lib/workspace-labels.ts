@@ -1,4 +1,4 @@
-import type { CourseWorkspace } from "@/lib/course-workspace"
+import type { CourseWorkspace, WorkspaceRoleView } from "@/lib/course-workspace"
 
 import { inferSectionCodeFromLabel } from "@/lib/roll-number"
 
@@ -6,6 +6,21 @@ type WorkspaceLabelInput = Pick<
   CourseWorkspace,
   "subjectCode" | "subjectTitle" | "program" | "semester" | "academicYear" | "term" | "year" | "batchLabel"
 >
+
+export function hasRealWorkspace(workspace: Pick<CourseWorkspace, "offeringId">) {
+  return Boolean(workspace.offeringId)
+}
+
+export function getRoleViewLabel(roleView: WorkspaceRoleView) {
+  switch (roleView) {
+    case "administrator":
+      return "Administrator"
+    case "mentor":
+      return "Mentor"
+    case "faculty":
+      return "Faculty"
+  }
+}
 
 export function formatWorkspaceCode(workspace: Pick<CourseWorkspace, "subjectCode">) {
   return workspace.subjectCode?.trim() || "Selected course"

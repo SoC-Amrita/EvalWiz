@@ -3,6 +3,7 @@
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
 
+import { APP_INFO } from "@/lib/app-info"
 import { getDerivedGradeBands, resolveGradeBand, type GradeRule } from "@/lib/grade-rules"
 import type { AdvancedAnalyticsExportMeta } from "@/app/dashboard/advanced-analytics/types"
 import type { GradingReportSection } from "@/app/dashboard/reports/types"
@@ -245,8 +246,8 @@ function drawPageOne(options: DownloadClassReportOptions, pdf: jsPDF) {
 
   drawReportHeader(pdf, {
     title: "Class Grading Report",
-    school: "Amrita School of Computing, Coimbatore",
-    institution: "Amrita Vishwa Vidyapeetham",
+    school: APP_INFO.school,
+    institution: APP_INFO.institution,
   })
 
   pdf.setFillColor(...AURORA.soft)
@@ -406,9 +407,9 @@ function drawPageTwo(options: DownloadClassReportOptions, pdf: jsPDF) {
   pdf.addPage()
   drawReportHeader(pdf, {
     title: "Class Grading Report",
-    school: "School of Computing",
-    department: "Department of Computer Science & Engineering",
-    institution: "Amrita Vishwa Vidyapeetham",
+    school: APP_INFO.school,
+    department: APP_INFO.department,
+    institution: APP_INFO.institution,
   })
 
   pdf.setFontSize(10)

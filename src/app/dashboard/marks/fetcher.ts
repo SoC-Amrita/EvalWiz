@@ -1,6 +1,7 @@
 "use server"
 
 import prisma from "@/lib/db"
+import { APP_INFO } from "@/lib/app-info"
 import { requireAllowedSectionAccess, requireRealWorkspace } from "@/lib/workspace-guards"
 
 async function getScopedExportContext() {
@@ -247,9 +248,9 @@ export async function fetchSectionExportData(
 
   return {
     meta: {
-      department: "Department of Computer Science & Engineering",
-      school: "School of Computing",
-      institution: "Amrita Vishwa Vidyapeetham, Coimbatore",
+      department: APP_INFO.department,
+      school: APP_INFO.school,
+      institution: APP_INFO.institution,
       subjectCode: activeWorkspace.subjectCode,
       subjectTitle: activeWorkspace.subjectTitle,
       program: activeWorkspace.program,

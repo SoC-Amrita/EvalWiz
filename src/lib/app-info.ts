@@ -1,7 +1,9 @@
 export const APP_INFO = {
   name: "EvalWiz",
   developer: "Team SE@SoCAmrita",
-  institution: "School of Computing, Amrita Vishwa Vidyapeetham, Coimbatore",
+  department: "Department of Computer Science & Engineering",
+  school: "School of Computing",
+  institution: "Amrita Vishwa Vidyapeetham, Coimbatore",
   subjectCode: "23CSE311",
   subjectTitle: "Software Engineering",
   academicYear: "2025 - 2026",

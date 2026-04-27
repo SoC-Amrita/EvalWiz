@@ -15,6 +15,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog"
+import { useConfirmDialog } from "@/components/ui/use-confirm-dialog"
 import { Upload, Download, AlertCircle, CheckCircle, Search, ChevronRight, Pencil, RotateCcw, ShieldCheck, ShieldX, Trash2 } from "lucide-react"
 import {
   approveStudentDeletionRequest,
@@ -109,6 +110,7 @@ export function StudentsClient({
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const { confirm, confirmDialog } = useConfirmDialog()
   const [open, setOpen] = useState(false)
   const [addStudentOpen, setAddStudentOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -129,10 +131,18 @@ export function StudentsClient({
 
   const handleEditAnalyticsIncludedChange = (checked: boolean) => {
     if (!checked) {
-      const confirmed = window.confirm(
-        "Exclude this student from analytics? The student will be removed from analytics and report calculations globally."
-      )
-      if (!confirmed) return
+      confirm({
+        title: "Exclude student from analytics?",
+        description: "The student will be removed from analytics and report calculations globally.",
+        confirmLabel: "Exclude student",
+        destructive: true,
+        onConfirm: () => {
+          setEditingStudent((current) =>
+            current ? { ...current, excludeFromAnalytics: true } : current
+          )
+        },
+      })
+      return
     }
 
     setEditingStudent((current) =>
@@ -296,9 +306,7 @@ export function StudentsClient({
     }
   }
 
-  const handleApproveDeletionRequest = async (requestId: string) => {
-    if (!window.confirm("Approve this deletion request and archive-delete the student?")) return
-
+  const approveDeletionRequest = async (requestId: string) => {
     setLoading(true)
     try {
       await approveStudentDeletionRequest(requestId)
@@ -311,9 +319,17 @@ export function StudentsClient({
     }
   }
 
-  const handleRejectDeletionRequest = async (requestId: string) => {
-    if (!window.confirm("Reject this deletion request?")) return
+  const handleApproveDeletionRequest = (requestId: string) => {
+    confirm({
+      title: "Approve deletion request?",
+      description: "This will archive-delete the student and remove them from active records.",
+      confirmLabel: "Approve request",
+      destructive: true,
+      onConfirm: () => approveDeletionRequest(requestId),
+    })
+  }
 
+  const rejectDeletionRequest = async (requestId: string) => {
     setLoading(true)
     try {
       await rejectStudentDeletionRequest(requestId)
@@ -326,9 +342,16 @@ export function StudentsClient({
     }
   }
 
-  const handleRestoreArchivedStudent = async (archivedStudentId: string) => {
-    if (!window.confirm("Restore this archived student and their associated records?")) return
+  const handleRejectDeletionRequest = (requestId: string) => {
+    confirm({
+      title: "Reject deletion request?",
+      description: "This keeps the student active and marks the deletion request as rejected.",
+      confirmLabel: "Reject request",
+      onConfirm: () => rejectDeletionRequest(requestId),
+    })
+  }
 
+  const restoreArchivedStudentRecord = async (archivedStudentId: string) => {
     setLoading(true)
     try {
       await restoreArchivedStudent(archivedStudentId)
@@ -339,6 +362,15 @@ export function StudentsClient({
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleRestoreArchivedStudent = (archivedStudentId: string) => {
+    confirm({
+      title: "Restore archived student?",
+      description: "This will restore the archived student and their associated records where the original course data still exists.",
+      confirmLabel: "Restore student",
+      onConfirm: () => restoreArchivedStudentRecord(archivedStudentId),
+    })
   }
 
   const downloadTemplate = () => {
@@ -359,6 +391,7 @@ export function StudentsClient({
 
   return (
     <>
+      {confirmDialog}
       {/* ── Toolbar ── */}
       <div className="flex flex-col gap-3">
         <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/60">

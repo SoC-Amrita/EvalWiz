@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useEffect, useState, type ComponentType, type ReactNode } from "react"
+import { useState, useSyncExternalStore, type ComponentType, type ReactNode } from "react"
 import {
   BarChart,
   BookOpen,
@@ -27,6 +27,7 @@ import {
 } from "./workspace-context-gate"
 
 const SIDEBAR_STORAGE_KEY = "evalwiz:dashboard-sidebar-open"
+const SIDEBAR_STORAGE_EVENT = "evalwiz:dashboard-sidebar-open-change"
 
 type DashboardShellProps = {
   isAdmin: boolean
@@ -45,6 +46,29 @@ type DashboardShellProps = {
   signOutAction: () => Promise<void>
   changePasswordAction: (formData: FormData) => Promise<{ success: boolean }>
   children: ReactNode
+}
+
+function subscribeToSidebarPreference(onStoreChange: () => void) {
+  window.addEventListener("storage", onStoreChange)
+  window.addEventListener(SIDEBAR_STORAGE_EVENT, onStoreChange)
+
+  return () => {
+    window.removeEventListener("storage", onStoreChange)
+    window.removeEventListener(SIDEBAR_STORAGE_EVENT, onStoreChange)
+  }
+}
+
+function getSidebarPreferenceSnapshot() {
+  return window.localStorage.getItem(SIDEBAR_STORAGE_KEY) !== "0"
+}
+
+function getServerSidebarPreferenceSnapshot() {
+  return true
+}
+
+function setSidebarPreference(open: boolean) {
+  window.localStorage.setItem(SIDEBAR_STORAGE_KEY, open ? "1" : "0")
+  window.dispatchEvent(new Event(SIDEBAR_STORAGE_EVENT))
 }
 
 export function DashboardShell({
@@ -66,21 +90,15 @@ export function DashboardShell({
   children,
 }: DashboardShellProps) {
   const pathname = usePathname()
-  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(() => {
-    if (typeof window === "undefined") {
-      return true
-    }
-
-    return window.localStorage.getItem(SIDEBAR_STORAGE_KEY) !== "0"
-  })
+  const desktopSidebarOpen = useSyncExternalStore(
+    subscribeToSidebarPreference,
+    getSidebarPreferenceSnapshot,
+    getServerSidebarPreferenceSnapshot
+  )
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const isFocusedWorkspaceRoute = pathname === "/dashboard/grading/stem-leaf"
   const showDesktopSidebar = desktopSidebarOpen && !isFocusedWorkspaceRoute
   const showSidebarControls = !isFocusedWorkspaceRoute
-
-  useEffect(() => {
-    window.localStorage.setItem(SIDEBAR_STORAGE_KEY, desktopSidebarOpen ? "1" : "0")
-  }, [desktopSidebarOpen])
 
   const SidebarContents = (
     <SidebarNavigation
@@ -135,7 +153,7 @@ export function DashboardShell({
                   variant="ghost"
                   size="icon-sm"
                   className="hidden md:inline-flex"
-                  onClick={() => setDesktopSidebarOpen((current) => !current)}
+                  onClick={() => setSidebarPreference(!desktopSidebarOpen)}
                 >
                   {desktopSidebarOpen ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeftOpen className="h-5 w-5" />}
                   <span className="sr-only">

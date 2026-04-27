@@ -1,7 +1,10 @@
 import prisma from "@/lib/db"
+import { requireAdminUser } from "@/lib/workspace-guards"
 
 export async function getAcademicSetupData() {
-  const [subjects, classes, facultyMembers, mentors, offerings] = await Promise.all([
+  await requireAdminUser()
+
+  const [subjects, classes, facultyMembers, offerings] = await Promise.all([
     prisma.subject.findMany({
       include: {
         _count: {
@@ -29,15 +32,6 @@ export async function getAcademicSetupData() {
         { isActive: "desc" },
         { name: "asc" },
       ],
-    }),
-    prisma.faculty.findMany({
-      include: {
-        user: true,
-        _count: {
-          select: { offeringAssignments: true },
-        },
-      },
-      orderBy: { user: { name: "asc" } },
     }),
     prisma.faculty.findMany({
       include: {
@@ -82,7 +76,7 @@ export async function getAcademicSetupData() {
     subjects,
     classes,
     facultyMembers,
-    mentors: mentors.map((mentor) => ({
+    mentors: facultyMembers.map((mentor) => ({
       id: mentor.user.id,
       name: mentor.user.name,
       email: mentor.user.email,

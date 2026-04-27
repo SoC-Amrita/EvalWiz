@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useConfirmDialog } from "@/components/ui/use-confirm-dialog"
 import { getErrorMessage } from "@/lib/client-errors"
 import { formatRollSignature, inferSectionCodeFromLabel } from "@/lib/roll-number"
 
@@ -148,6 +149,7 @@ export function AcademicSetupClient({
   offerings: OfferingRecord[]
 }) {
   const router = useRouter()
+  const { confirm, confirmDialog } = useConfirmDialog()
   const [subjectDialogOpen, setSubjectDialogOpen] = useState(false)
   const [classDialogOpen, setClassDialogOpen] = useState(false)
   const [editingSubject, setEditingSubject] = useState<SubjectRecord | null>(null)
@@ -251,9 +253,7 @@ export function AcademicSetupClient({
     }
   }
 
-  const handleDeleteSubject = async (subject: SubjectRecord) => {
-    if (!confirm(`Delete subject ${subject.code}? This is only allowed when it has no course offerings.`)) return
-
+  const deleteSubjectRecord = async (subject: SubjectRecord) => {
     setSaving(true)
     try {
       await deleteSubject(subject.id)
@@ -265,9 +265,17 @@ export function AcademicSetupClient({
     }
   }
 
-  const handleDeleteClass = async (section: ClassRecord) => {
-    if (!confirm(`Delete class ${section.name}? This is only allowed when it has no students and no offering assignments.`)) return
+  const handleDeleteSubject = (subject: SubjectRecord) => {
+    confirm({
+      title: `Delete subject ${subject.code}?`,
+      description: "This is only allowed when the subject has no course offerings.",
+      confirmLabel: "Delete subject",
+      destructive: true,
+      onConfirm: () => deleteSubjectRecord(subject),
+    })
+  }
 
+  const deleteClassRecord = async (section: ClassRecord) => {
     setSaving(true)
     try {
       await deleteClass(section.id)
@@ -279,9 +287,17 @@ export function AcademicSetupClient({
     }
   }
 
-  const handleDeleteOffering = async (offering: OfferingRecord) => {
-    if (!confirm(`Delete offering ${offering.subject.code} ${offering.term} ${offering.academicYear}? This is only allowed when no assessments exist yet.`)) return
+  const handleDeleteClass = (section: ClassRecord) => {
+    confirm({
+      title: `Delete class ${section.name}?`,
+      description: "This is only allowed when the class has no students and no offering assignments.",
+      confirmLabel: "Delete class",
+      destructive: true,
+      onConfirm: () => deleteClassRecord(section),
+    })
+  }
 
+  const deleteOfferingRecord = async (offering: OfferingRecord) => {
     setSaving(true)
     try {
       await deleteCourseOffering(offering.id)
@@ -293,13 +309,25 @@ export function AcademicSetupClient({
     }
   }
 
+  const handleDeleteOffering = (offering: OfferingRecord) => {
+    confirm({
+      title: `Delete offering ${offering.subject.code}?`,
+      description: `${offering.term} ${offering.academicYear}. This is only allowed when no assessments exist yet.`,
+      confirmLabel: "Delete offering",
+      destructive: true,
+      onConfirm: () => deleteOfferingRecord(offering),
+    })
+  }
+
   return (
-    <Tabs defaultValue="subjects" className="space-y-6">
-      <TabsList>
-        <TabsTrigger value="subjects">Subjects</TabsTrigger>
-        <TabsTrigger value="classes">Classes</TabsTrigger>
-        <TabsTrigger value="offerings">Course Offerings</TabsTrigger>
-      </TabsList>
+    <>
+      {confirmDialog}
+      <Tabs defaultValue="subjects" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="subjects">Subjects</TabsTrigger>
+          <TabsTrigger value="classes">Classes</TabsTrigger>
+          <TabsTrigger value="offerings">Course Offerings</TabsTrigger>
+        </TabsList>
 
       <TabsContent value="subjects">
         <Card>
@@ -827,6 +855,7 @@ export function AcademicSetupClient({
           </CardContent>
         </Card>
       </TabsContent>
-    </Tabs>
+      </Tabs>
+    </>
   )
 }

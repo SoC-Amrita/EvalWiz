@@ -175,6 +175,9 @@ model AuditLog {
   userId    String
   details   String   // JSON string
   createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
 }
 
 model CourseOffering {

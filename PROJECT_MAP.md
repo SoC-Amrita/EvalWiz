@@ -176,6 +176,7 @@ The active workspace is the central boundary for marks, reports, analytics, adva
 | Path | Purpose |
 | --- | --- |
 | `src/components/ui/*` | Reusable UI primitives: buttons, cards, dialogs, tabs, tables, sheets, selects, tooltips, etc. |
+| `src/components/ui/use-confirm-dialog.tsx` | Reusable design-system confirmation dialog hook for destructive or high-impact client actions. |
 | `src/components/theme-provider.tsx` | Palette theme context and DOM class application. |
 | `src/components/theme-toggle.tsx` | Theme toggle control. |
 | `src/components/palette-picker.tsx` | Theme studio / palette picker. |

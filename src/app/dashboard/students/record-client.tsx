@@ -19,6 +19,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import { useConfirmDialog } from "@/components/ui/use-confirm-dialog"
 import { updateStudentRecord } from "./actions"
 import { getErrorMessage } from "@/lib/client-errors"
 
@@ -66,6 +67,7 @@ export function StudentRecordClient({
   subjectGroups: SubjectMarkGroup[]
 }) {
   const router = useRouter()
+  const { confirm, confirmDialog } = useConfirmDialog()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedSectionId, setSelectedSectionId] = useState(student.section.id)
   const [excludeFromAnalytics, setExcludeFromAnalytics] = useState(student.excludeFromAnalytics)
@@ -73,10 +75,14 @@ export function StudentRecordClient({
 
   const handleAnalyticsIncludedChange = (checked: boolean) => {
     if (!checked) {
-      const confirmed = window.confirm(
-        "Exclude this student from analytics? The student will be removed from analytics and report calculations globally."
-      )
-      if (!confirmed) return
+      confirm({
+        title: "Exclude student from analytics?",
+        description: "The student will be removed from analytics and report calculations globally.",
+        confirmLabel: "Exclude student",
+        destructive: true,
+        onConfirm: () => setExcludeFromAnalytics(true),
+      })
+      return
     }
 
     setExcludeFromAnalytics(!checked)
@@ -104,6 +110,7 @@ export function StudentRecordClient({
 
   return (
     <div className="space-y-6">
+      {confirmDialog}
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm text-slate-500">

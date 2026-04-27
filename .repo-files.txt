@@ -6,7 +6,7 @@ Purpose: compact AI navigation. This file lists repository paths only; it does n
 
 Ignored directories: .claude, .git, .next, .venv, __pycache__, build, coverage, dist, node_modules, out, output, test-results, tmp, venv
 
-Tracked inventory count: 173 files
+Tracked inventory count: 175 files
 
 ## Context Files
 
@@ -73,6 +73,7 @@ Tracked inventory count: 173 files
 - src/app/dashboard/academic-setup/actions.test.ts
 - src/app/dashboard/academic-setup/actions.ts
 - src/app/dashboard/academic-setup/client.tsx
+- src/app/dashboard/academic-setup/data.test.ts
 - src/app/dashboard/academic-setup/data.ts
 - src/app/dashboard/academic-setup/offering-form.tsx
 - src/app/dashboard/academic-setup/offerings/[offeringId]/page.tsx
@@ -175,6 +176,7 @@ Tracked inventory count: 173 files
 - src/components/ui/table.tsx
 - src/components/ui/tabs.tsx
 - src/components/ui/tooltip.tsx
+- src/components/ui/use-confirm-dialog.tsx
 - src/lib/__tests__/analysis-preview-access.test.ts
 - src/lib/__tests__/app-info.test.ts
 - src/lib/__tests__/assessment-structure.test.ts

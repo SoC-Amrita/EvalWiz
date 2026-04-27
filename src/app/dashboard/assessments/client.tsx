@@ -32,6 +32,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
+import { useConfirmDialog } from "@/components/ui/use-confirm-dialog"
 import { MoreHorizontal, Pencil, Plus, Power, Trash2 } from "lucide-react"
 import { createAssessment, updateAssessment, toggleAssessmentStatus, deleteAssessment } from "./actions"
 import { toast } from "sonner"
@@ -39,6 +40,7 @@ import { Badge } from "@/components/ui/badge"
 import { classifyAssessment } from "@/lib/assessment-structure"
 
 export function AssessmentClient({ data }: { data: Assessment[] }) {
+  const { confirm, confirmDialog } = useConfirmDialog()
   const [open, setOpen] = useState(false)
   const [editingAssessment, setEditingAssessment] = useState<Assessment | null>(null)
   const [loading, setLoading] = useState(false)
@@ -112,14 +114,23 @@ export function AssessmentClient({ data }: { data: Assessment[] }) {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure? This will delete all marks associated with this component!")) return
+  const deleteAssessmentComponent = async (id: string) => {
     try {
       await deleteAssessment(id)
       toast.success("Component deleted")
     } catch {
       toast.error("Failed to delete component")
     }
+  }
+
+  const handleDelete = (id: string) => {
+    confirm({
+      title: "Delete assessment component?",
+      description: "This will delete all marks associated with this component.",
+      confirmLabel: "Delete component",
+      destructive: true,
+      onConfirm: () => deleteAssessmentComponent(id),
+    })
   }
 
   const openEditDialog = (assessment: Assessment) => {
@@ -157,6 +168,7 @@ export function AssessmentClient({ data }: { data: Assessment[] }) {
 
   return (
     <>
+      {confirmDialog}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           {/* Filtering could go here */}

@@ -30,6 +30,7 @@ import { fetchSectionData, fetchSectionExportData, fetchSectionRoster, type Sect
 import { saveStudentMark, bulkUploadMarks } from "./actions"
 import { toast } from "sonner"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { useConfirmDialog } from "@/components/ui/use-confirm-dialog"
 import { formatCompactSectionName } from "@/lib/workspace-labels"
 
 type StudentRow = { id: string; rollNo: string; name: string; mark: number | null }
@@ -89,6 +90,7 @@ export function MarksClient({
   sections: Section[], 
   assessments: Assessment[] 
 }) {
+  const { confirm, confirmDialog } = useConfirmDialog()
   const [activeSection, setActiveSection] = useState<string>("")
   const [activeAssessment, setActiveAssessment] = useState<string | null>(null)
   const [students, setStudents] = useState<StudentRow[]>([])
@@ -253,17 +255,24 @@ export function MarksClient({
     if (parsedData.length === 0 || !activeSection || !activeAssessment) return
 
     if (hasPartialCsvUpload) {
-      const confirmationMessage = [
-        `This CSV includes marks for ${parsedData.length} of ${students.length} students in ${activeSectionLabel}.`,
-        `${missingCsvStudents.length} roster record(s) are missing from the file and will be left unchanged.`,
-        "",
-        "Did you mean to update only the uploaded records?",
-      ].join("\n")
-
-      if (!window.confirm(confirmationMessage)) {
-        return
-      }
+      confirm({
+        title: "Upload partial marks CSV?",
+        description: [
+          `This CSV includes marks for ${parsedData.length} of ${students.length} students in ${activeSectionLabel}.`,
+          `${missingCsvStudents.length} roster record(s) are missing from the file and will be left unchanged.`,
+          "Did you mean to update only the uploaded records?",
+        ].join("\n"),
+        confirmLabel: "Upload records",
+        onConfirm: submitBulkMarksConfirmed,
+      })
+      return
     }
+
+    await submitBulkMarksConfirmed()
+  }
+
+  const submitBulkMarksConfirmed = async () => {
+    if (!activeSection || !activeAssessment) return
 
     setLoading(true)
     try {
@@ -700,6 +709,7 @@ export function MarksClient({
 
   return (
     <>
+      {confirmDialog}
       <div className="mb-6 space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
           <div className="space-y-2">

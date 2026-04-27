@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { useConfirmDialog } from "@/components/ui/use-confirm-dialog"
 import { saveStudentMark } from "../marks/actions"
 import { requestStudentDeletion, setStudentAnalyticsExclusion } from "./actions"
 import { getErrorMessage } from "@/lib/client-errors"
@@ -46,6 +47,7 @@ export function WorkspaceStudentRecordClient({
   assessments: AssessmentRecord[]
 }) {
   const router = useRouter()
+  const { confirm, confirmDialog } = useConfirmDialog()
   const [savingAssessmentId, setSavingAssessmentId] = useState<string | null>(null)
   const [editingAssessmentId, setEditingAssessmentId] = useState<string | null>(null)
   const [dirtyMarks, setDirtyMarks] = useState<Record<string, string>>({})
@@ -125,14 +127,7 @@ export function WorkspaceStudentRecordClient({
     }
   }
 
-  const handleSetAnalyticsEnabled = async (enabled: boolean) => {
-    if (!enabled) {
-      const confirmed = window.confirm(
-        "Exclude this student from analytics? The student will be removed from analytics and report calculations globally."
-      )
-      if (!confirmed) return
-    }
-
+  const updateAnalyticsEnabled = async (enabled: boolean) => {
     const previousValue = analyticsEnabled
     setAnalyticsEnabled(enabled)
     setUpdatingStudentState(true)
@@ -148,6 +143,21 @@ export function WorkspaceStudentRecordClient({
     } finally {
       setUpdatingStudentState(false)
     }
+  }
+
+  const handleSetAnalyticsEnabled = (enabled: boolean) => {
+    if (!enabled) {
+      confirm({
+        title: "Exclude student from analytics?",
+        description: "The student will be removed from analytics and report calculations globally.",
+        confirmLabel: "Exclude student",
+        destructive: true,
+        onConfirm: () => updateAnalyticsEnabled(enabled),
+      })
+      return
+    }
+
+    void updateAnalyticsEnabled(enabled)
   }
 
   const handleRequestDeletion = async () => {
@@ -166,6 +176,7 @@ export function WorkspaceStudentRecordClient({
 
   return (
     <div className="space-y-6">
+      {confirmDialog}
       <div>
         <p className="text-sm text-slate-500">
           <Link href="/dashboard/students" className="hover:underline">

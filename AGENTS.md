@@ -76,6 +76,8 @@ PRs should include:
 
 Merge the PR after creation when the user has asked for the full branch, push, PR, and merge flow.
 
+Do not add a "Generated with Claude Code" footer or any agent attribution line to PR descriptions.
+
 ## Local Changes And Teammate Work
 
 - Assume a dirty worktree may contain user or teammate changes.

@@ -8,12 +8,6 @@ import { redirect } from "next/navigation"
 import { StudentRecordClient } from "../record-client"
 import { WorkspaceStudentRecordClient } from "../workspace-record-client"
 
-const prismaWithStudentManagement = prisma as typeof prisma & {
-  studentDeletionRequest?: {
-    findFirst: typeof prisma.auditLog.findFirst
-  }
-}
-
 export default async function StudentRecordPage({
   params,
 }: {
@@ -81,15 +75,13 @@ export default async function StudentRecordPage({
         },
         orderBy: { displayOrder: "asc" },
       }),
-      prismaWithStudentManagement.studentDeletionRequest
-        ? prismaWithStudentManagement.studentDeletionRequest.findFirst({
-            where: {
-              studentId,
-              status: "PENDING",
-            },
-            select: { id: true },
-          })
-        : Promise.resolve(null),
+      prisma.studentDeletionRequest.findFirst({
+        where: {
+          studentId,
+          status: "PENDING",
+        },
+        select: { id: true },
+      }),
     ])
 
     if (!student) {

@@ -4,6 +4,7 @@ Compact running notes for important project work. Keep this newest-first, focuse
 
 ## Recent Changes
 
+- 2026-04-28: Fixed medium-priority cleanup issues: removed incorrect Prisma casts, replaced grade-rule raw SQL with ORM calls, guarded academic setup data, deduplicated faculty loading, indexed audit logs, rejected non-finite marks, replaced dashboard `window.confirm` usages with design-system dialogs, and fixed dashboard sidebar hydration.
 - 2026-04-28: Fixed high-priority security/data-integrity issues in elective roster authorization, dashboard audit log scope, student imports/restores, workspace cookies, JWT claim validation, and archived snapshot validation.
 - 2026-04-28: Added server-action coverage for grade-rule authorization, workspace/account/user actions, last-admin deletion guard, and password enforcement; removed global hidden-preview state; relaxed global section-name uniqueness.
 - 2026-04-28: Added project-level AI context automation scaffolding.
@@ -16,6 +17,13 @@ Compact running notes for important project work. Keep this newest-first, focuse
 - 2026-04-28: `restoreArchivedStudent` now validates snapshot JSON at runtime before trusting fields, batches existence checks with `findMany`, and restores enrollments/marks with `createMany`.
 - 2026-04-28: Workspace/admin/analysis-preview cookies now set `httpOnly: true` and `secure: true`.
 - 2026-04-28: Auth session claims now validate JWT field types and default corrupted/missing `isAdmin` to `false`.
+- 2026-04-28: Student management pages now use typed Prisma delegates directly instead of casting `studentDeletionRequest`/`archivedStudent` through `auditLog` delegate types.
+- 2026-04-28: Advanced Analytics grade-rule reads/writes now use Prisma ORM (`courseOffering.findFirst/update`) instead of raw SQL.
+- 2026-04-28: `getAcademicSetupData` now enforces admin access and reuses a single faculty query for both faculty-member and mentor option data.
+- 2026-04-28: `AuditLog` now has indexes for latest-log and user-scoped latest-log queries.
+- 2026-04-28: Mark saving rejects non-finite values such as `Infinity`.
+- 2026-04-28: Dashboard destructive confirmations now use the local dialog system instead of `window.confirm`.
+- 2026-04-28: Dashboard sidebar preference now uses `useSyncExternalStore`, avoiding localStorage hydration mismatch.
 - 2026-04-28: `advanced-analytics/actions.ts`, `reports/actions.ts`, `workspace-actions.ts`, `users/actions.ts`, and `account-actions.ts` now have Vitest coverage for their critical server-action paths.
 - 2026-04-28: Mentor-only grade rule updates are verified by tests; non-mentor role views cannot write grade rules.
 - 2026-04-28: User deletion now has a regression test for the last-admin guard and self-delete guard.
@@ -30,6 +38,7 @@ Compact running notes for important project work. Keep this newest-first, focuse
 - `uploadStudents` still reports per-row validation errors while committing valid rows atomically in one transaction. If the desired policy becomes all-or-nothing for validation errors too, convert validation errors into a transaction-aborting failure before writes.
 - `academic-setup/actions.ts` and `students/actions.ts` still have comparatively low coverage because they are large, branch-heavy action files. Add focused tests when changing import/archive/offering behavior.
 - The hidden analysis preview dialog still uses a browser event to notify the dialog after the sequence unlocks. This is no longer persisted as global state, but a future cleanup could move the open/close notification into context as well.
+- Workspace student deletion requests still use a browser `window.prompt` for optional reason entry. It is not a confirm dialog, but it should eventually become a first-class dialog/form for accessibility and iframe compatibility.
 
 ## Notes For Future Agents
 

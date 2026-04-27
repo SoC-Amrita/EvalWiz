@@ -17,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { useConfirmDialog } from "@/components/ui/use-confirm-dialog"
 import { getErrorMessage } from "@/lib/client-errors"
 import type { WorkspaceRoleView } from "@/lib/course-workspace"
 import type { AssessmentFamily, CASubcomponent } from "@/lib/assessment-structure"
@@ -93,6 +94,7 @@ export function WorkspaceStudentsClient({
   pendingDeletionStudentIds: string[]
 }) {
   const router = useRouter()
+  const { confirm, confirmDialog } = useConfirmDialog()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [students, setStudents] = useState(initialData)
@@ -214,14 +216,7 @@ export function WorkspaceStudentsClient({
     }
   }, [filteredStudentRows.length, selectedAssessment, selectedAssessmentValues])
 
-  const handleSetAnalyticsEnabled = async (studentId: string, enabled: boolean) => {
-    if (!enabled) {
-      const confirmed = window.confirm(
-        "Exclude this student from analytics? The student will be removed from analytics and report calculations globally."
-      )
-      if (!confirmed) return
-    }
-
+  const updateAnalyticsEnabled = async (studentId: string, enabled: boolean) => {
     const previousStudents = students
     setStudents((current) =>
       current.map((student) =>
@@ -246,8 +241,24 @@ export function WorkspaceStudentsClient({
     }
   }
 
+  const handleSetAnalyticsEnabled = (studentId: string, enabled: boolean) => {
+    if (!enabled) {
+      confirm({
+        title: "Exclude student from analytics?",
+        description: "The student will be removed from analytics and report calculations globally.",
+        confirmLabel: "Exclude student",
+        destructive: true,
+        onConfirm: () => updateAnalyticsEnabled(studentId, enabled),
+      })
+      return
+    }
+
+    void updateAnalyticsEnabled(studentId, enabled)
+  }
+
   return (
     <div className="space-y-4">
+      {confirmDialog}
       <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/60">
         <div className="mb-3">
           <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">Student Search</div>

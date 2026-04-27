@@ -9,7 +9,7 @@ export async function saveStudentMark(studentId: string, assessmentId: string, m
   requireRealWorkspace(activeWorkspace)
 
   const marks = parseFloat(marksStr)
-  if (isNaN(marks)) throw new Error("Invalid mark")
+  if (!Number.isFinite(marks)) throw new Error("Invalid mark")
 
   const hasAccess = activeWorkspace.isElective
     ? await prisma.courseOfferingEnrollment.findFirst({

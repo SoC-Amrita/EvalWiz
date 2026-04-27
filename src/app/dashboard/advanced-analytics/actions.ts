@@ -31,11 +31,10 @@ export async function saveAdvancedAnalyticsGradeRules(config: GradeRuleConfig) {
     throw new Error(issues[0].message)
   }
 
-  await prisma.$executeRaw`
-    UPDATE "CourseOffering"
-    SET "gradeRulesConfig" = ${serializeGradeRuleConfig(sanitized)}
-    WHERE "id" = ${activeWorkspace.offeringId}
-  `
+  await prisma.courseOffering.update({
+    where: { id: activeWorkspace.offeringId },
+    data: { gradeRulesConfig: serializeGradeRuleConfig(sanitized) },
+  })
 
   revalidatePath("/dashboard/advanced-analytics")
   revalidatePath("/dashboard/grading")

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const revalidatePathMock = vi.fn()
-const executeRawMock = vi.fn()
+const courseOfferingUpdateMock = vi.fn()
 const requireAuthenticatedWorkspaceStateMock = vi.fn()
 const requireRealWorkspaceMock = vi.fn()
 const getAdvancedAnalyticsDetailDataMock = vi.fn()
@@ -10,7 +10,9 @@ const serializeGradeRuleConfigMock = vi.fn()
 const validateGradeRuleConfigMock = vi.fn()
 
 const prismaMock = {
-  $executeRaw: executeRawMock,
+  courseOffering: {
+    update: courseOfferingUpdateMock,
+  },
 }
 
 vi.mock("next/cache", () => ({
@@ -82,7 +84,7 @@ describe("advanced analytics actions", () => {
     await expect(saveAdvancedAnalyticsGradeRules(gradeRuleConfig)).rejects.toThrow(
       "Only mentors can update grade rules"
     )
-    expect(executeRawMock).not.toHaveBeenCalled()
+    expect(courseOfferingUpdateMock).not.toHaveBeenCalled()
     expect(revalidatePathMock).not.toHaveBeenCalled()
   })
 
@@ -95,7 +97,10 @@ describe("advanced analytics actions", () => {
     expect(requireRealWorkspaceMock).toHaveBeenCalledWith({ offeringId: "off-1" })
     expect(collapseGradeRuleConfigToActiveRuleMock).toHaveBeenCalledWith(gradeRuleConfig)
     expect(validateGradeRuleConfigMock).toHaveBeenCalledWith(gradeRuleConfig)
-    expect(executeRawMock).toHaveBeenCalledTimes(1)
+    expect(courseOfferingUpdateMock).toHaveBeenCalledWith({
+      where: { id: "off-1" },
+      data: { gradeRulesConfig: '{"rules":[]}' },
+    })
     expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard/advanced-analytics")
     expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard/grading")
   })
@@ -106,6 +111,6 @@ describe("advanced analytics actions", () => {
     const { saveAdvancedAnalyticsGradeRules } = await import("@/app/dashboard/advanced-analytics/actions")
 
     await expect(saveAdvancedAnalyticsGradeRules(gradeRuleConfig)).rejects.toThrow("Grade bands overlap")
-    expect(executeRawMock).not.toHaveBeenCalled()
+    expect(courseOfferingUpdateMock).not.toHaveBeenCalled()
   })
 })

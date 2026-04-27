@@ -61,6 +61,16 @@ describe("marks actions", () => {
     )
   })
 
+  it("rejects non-finite marks before writing", async () => {
+    prismaMock.student.findFirst.mockResolvedValue({ id: "stu-1" })
+
+    const { saveStudentMark } = await import("@/app/dashboard/marks/actions")
+
+    await expect(saveStudentMark("stu-1", "assess-1", "Infinity")).rejects.toThrow("Invalid mark")
+    expect(prismaMock.mark.upsert).not.toHaveBeenCalled()
+    expect(prismaMock.auditLog.create).not.toHaveBeenCalled()
+  })
+
   it("handles bulk uploads with mixed success and error rows", async () => {
     prismaMock.assessment.findFirst.mockResolvedValue({
       id: "assess-1",

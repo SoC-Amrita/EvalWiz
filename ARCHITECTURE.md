@@ -335,5 +335,6 @@ These areas deserve extra care:
 - Turbopack-specific local/build behavior
 - Section identity drift if code starts assuming `Section.name` is unique again
 - Audit-log scoping drift if new actions omit `offeringId`/actor metadata from `details`
+- Hydration drift from reading browser-only state during client component initialization
 
 When changing any of these, run broader checks and keep the diff small enough to review.

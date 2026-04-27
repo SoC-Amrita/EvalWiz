@@ -8,15 +8,6 @@ import { StudentsClient } from "./client"
 import { getAdminStudentsPage, getWorkspaceStudentsPage } from "./queries"
 import { WorkspaceStudentsClient } from "./workspace-students-client"
 
-const prismaWithStudentManagement = prisma as typeof prisma & {
-  studentDeletionRequest?: {
-    findMany: typeof prisma.auditLog.findMany
-  }
-  archivedStudent?: {
-    findMany: typeof prisma.auditLog.findMany
-  }
-}
-
 type StudentsPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 }
@@ -90,19 +81,17 @@ export default async function StudentsPage({ searchParams }: StudentsPageProps) 
         },
       }),
     ])
-    const pendingDeletionRequests = prismaWithStudentManagement.studentDeletionRequest
-      ? await prismaWithStudentManagement.studentDeletionRequest.findMany({
-          where: {
-            status: "PENDING",
-            studentId: {
-              in: studentPage.students.map((student) => student.id),
-            },
-          },
-          select: {
-            studentId: true,
-          },
-        })
-      : []
+    const pendingDeletionRequests = await prisma.studentDeletionRequest.findMany({
+      where: {
+        status: "PENDING",
+        studentId: {
+          in: studentPage.students.map((student) => student.id),
+        },
+      },
+      select: {
+        studentId: true,
+      },
+    })
 
     return (
       <div className="space-y-6">
@@ -145,44 +134,39 @@ export default async function StudentsPage({ searchParams }: StudentsPageProps) 
     }),
     prisma.section.findMany({
       orderBy: { name: "asc" },
-    })
-    ,
-    prismaWithStudentManagement.studentDeletionRequest
-      ? prismaWithStudentManagement.studentDeletionRequest.findMany({
-          where: {
-            status: "PENDING",
-          },
-          orderBy: { createdAt: "desc" },
-          select: {
-            id: true,
-            studentId: true,
-            studentRollNo: true,
-            studentName: true,
-            sectionName: true,
-            requestedByName: true,
-            requestedByUserId: true,
-            reason: true,
-            createdAt: true,
-          },
-        })
-      : Promise.resolve([]),
-    prismaWithStudentManagement.archivedStudent
-      ? prismaWithStudentManagement.archivedStudent.findMany({
-          where: {
-            restoredAt: null,
-          },
-          orderBy: { archivedAt: "desc" },
-          select: {
-            id: true,
-            rollNo: true,
-            name: true,
-            sectionName: true,
-            archivedAt: true,
-            archiveReason: true,
-          },
-          take: 100,
-        })
-      : Promise.resolve([]),
+    }),
+    prisma.studentDeletionRequest.findMany({
+      where: {
+        status: "PENDING",
+      },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        studentId: true,
+        studentRollNo: true,
+        studentName: true,
+        sectionName: true,
+        requestedByName: true,
+        requestedByUserId: true,
+        reason: true,
+        createdAt: true,
+      },
+    }),
+    prisma.archivedStudent.findMany({
+      where: {
+        restoredAt: null,
+      },
+      orderBy: { archivedAt: "desc" },
+      select: {
+        id: true,
+        rollNo: true,
+        name: true,
+        sectionName: true,
+        archivedAt: true,
+        archiveReason: true,
+      },
+      take: 100,
+    }),
   ])
 
   return (

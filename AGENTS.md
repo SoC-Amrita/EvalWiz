@@ -2,6 +2,24 @@
 
 These instructions apply to coding agents working in this repository. They capture the development workflow used by the project owner and should be followed unless the user gives a newer, explicit instruction.
 
+Before making changes, read these files first:
+
+1. PROJECT_MAP.md
+2. ARCHITECTURE.md
+3. TASK_LOG.md
+
+Do not scan the entire repository unless necessary.
+
+For every task:
+1. Identify the smallest set of relevant files.
+2. Read only those files first.
+3. Explain the intended change.
+4. Modify only the necessary files.
+5. Update PROJECT_MAP.md if files, modules, routes, or dependencies change.
+6. Update TASK_LOG.md after completing the task.
+
+Prefer targeted context over broad codebase scans.
+
 ## Identity And Credentials
 
 - Use the user's existing local Git and GitHub credentials for commits, pushes, pull requests, and merges.
@@ -142,9 +160,9 @@ For visual or PDF changes:
 - Do not run destructive database or Git operations without explicit user approval.
 - Avoid test or seed commands that can overwrite local academic data unless the user has asked for that reset.
 
-## Current Known Workflow Preferences
+## Workflow Preferences
 
-- The user prefers branch, push, PR, and merge even for small changes.
+- I prefer branch, push, PR, and merge even for small changes.
 - Branch names should use project categories such as `frontend`, `backend`, `feature`, or `fix`.
 - Commits and PRs should be made using the user's credentials.
 - Keep unrelated pending changes out of the PR.

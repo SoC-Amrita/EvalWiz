@@ -32,6 +32,7 @@ const prismaMock = {
   courseOfferingEnrollment: {
     upsert: vi.fn(),
     create: vi.fn(),
+    createMany: vi.fn(),
   },
   studentDeletionRequest: {
     findFirst: vi.fn(),
@@ -42,15 +43,18 @@ const prismaMock = {
   },
   courseOffering: {
     findUnique: vi.fn(),
+    findMany: vi.fn(),
   },
   auditLog: {
     create: vi.fn(),
   },
   assessment: {
     findFirst: vi.fn(),
+    findMany: vi.fn(),
   },
   mark: {
     upsert: vi.fn(),
+    createMany: vi.fn(),
   },
 }
 
@@ -122,6 +126,10 @@ describe("student actions", () => {
     })
     prismaMock.$transaction.mockImplementation(async (callback: (tx: typeof prismaMock) => Promise<unknown>) => callback(prismaMock as never))
     prismaMock.archivedStudent.create.mockResolvedValue({ id: "arch-1" })
+    prismaMock.courseOffering.findMany.mockResolvedValue([])
+    prismaMock.assessment.findMany.mockResolvedValue([])
+    prismaMock.courseOfferingEnrollment.createMany.mockResolvedValue({ count: 0 })
+    prismaMock.mark.createMany.mockResolvedValue({ count: 0 })
   })
 
   it("uploads students and enrolls them into the active elective offering", async () => {
@@ -313,5 +321,123 @@ describe("student actions", () => {
       update: { marks: 42 },
       create: { studentId: "stu-1", assessmentId: "assess-1", marks: 42 },
     })
+  })
+
+  it("rejects corrupted archived snapshots before restoring", async () => {
+    prismaMock.archivedStudent.findUnique.mockResolvedValue({
+      id: "arch-1",
+      rollNo: "CB.SC.U4CSE23001",
+      restoredAt: null,
+      snapshot: JSON.stringify({
+        student: {
+          rollNo: "CB.SC.U4CSE23001",
+          name: "Asha",
+          sectionId: "sec-a",
+          sectionName: "Section A",
+          excludeFromAnalytics: "no",
+        },
+        offeringEnrollments: [],
+        marks: [],
+      }),
+    })
+
+    const { restoreArchivedStudent } = await import("@/app/dashboard/students/actions")
+
+    await expect(restoreArchivedStudent("arch-1")).rejects.toThrow(
+      "Archived record is corrupted and cannot be restored"
+    )
+    expect(prismaMock.$transaction).not.toHaveBeenCalled()
+  })
+
+  it("restores archived enrollments and marks with batched lookups and createMany", async () => {
+    prismaMock.archivedStudent.findUnique.mockResolvedValue({
+      id: "arch-1",
+      rollNo: "CB.SC.U4CSE23001",
+      restoredAt: null,
+      snapshot: JSON.stringify({
+        student: {
+          id: "stu-1",
+          rollNo: "CB.SC.U4CSE23001",
+          name: "Asha",
+          sectionId: "sec-a",
+          sectionName: "Section A",
+          excludeFromAnalytics: false,
+        },
+        offeringEnrollments: [
+          {
+            offeringId: "off-1",
+            subjectCode: "23CSE311",
+            subjectTitle: "Software Engineering",
+            term: "Even / Winter",
+            academicYear: "2025 - 2026",
+            semester: "VI",
+            year: "III",
+            courseType: "Theory",
+            evaluationPattern: "70 - 30",
+            sectionId: "sec-a",
+            sectionName: "Section A",
+          },
+        ],
+        marks: [
+          {
+            assessmentId: "assess-1",
+            assessmentName: "Midterm",
+            assessmentCode: "MID",
+            category: "MID_TERM",
+            maxMarks: 50,
+            weightage: 20,
+            marks: 42,
+            offeringId: "off-1",
+            subjectCode: "23CSE311",
+            subjectTitle: "Software Engineering",
+            term: "Even / Winter",
+            academicYear: "2025 - 2026",
+            semester: "VI",
+            year: "III",
+            courseType: "Theory",
+            evaluationPattern: "70 - 30",
+          },
+        ],
+      }),
+    })
+    prismaMock.student.findUnique.mockResolvedValue(null)
+    prismaMock.section.findUnique.mockResolvedValue({ id: "sec-a" })
+    prismaMock.student.create.mockResolvedValue({ id: "restored-stu-1" })
+    prismaMock.courseOffering.findMany.mockResolvedValue([{ id: "off-1" }])
+    prismaMock.section.findMany.mockResolvedValue([{ id: "sec-a" }])
+    prismaMock.assessment.findMany.mockResolvedValue([{ id: "assess-1" }])
+
+    const { restoreArchivedStudent } = await import("@/app/dashboard/students/actions")
+
+    await expect(restoreArchivedStudent("arch-1")).resolves.toEqual({ success: true })
+    expect(prismaMock.courseOffering.findMany).toHaveBeenCalledWith({
+      where: { id: { in: ["off-1"] } },
+      select: { id: true },
+    })
+    expect(prismaMock.assessment.findMany).toHaveBeenCalledWith({
+      where: { id: { in: ["assess-1"] } },
+      select: { id: true },
+    })
+    expect(prismaMock.courseOfferingEnrollment.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          offeringId: "off-1",
+          studentId: "restored-stu-1",
+          sectionId: "sec-a",
+        },
+      ],
+      skipDuplicates: true,
+    })
+    expect(prismaMock.mark.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          studentId: "restored-stu-1",
+          assessmentId: "assess-1",
+          marks: 42,
+        },
+      ],
+      skipDuplicates: true,
+    })
+    expect(prismaMock.courseOfferingEnrollment.create).not.toHaveBeenCalled()
   })
 })

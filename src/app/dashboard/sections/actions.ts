@@ -116,8 +116,8 @@ export async function uploadElectiveRoster(rollNumbers: string[]) {
     throw new Error("This roster upload is only available for elective offerings")
   }
 
-  if (activeRoleView === "administrator") {
-    throw new Error("Open the elective workspace view before uploading its roster")
+  if (activeRoleView !== "mentor") {
+    throw new Error("Only mentors can upload elective rosters")
   }
 
   const normalizedRollNumbers = [...new Set(rollNumbers.map((value) => value.trim().toUpperCase()).filter(Boolean))]

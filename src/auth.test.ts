@@ -179,6 +179,29 @@ describe("auth", () => {
     })
   })
 
+  it("falls back to non-admin session claims when JWT fields are missing or corrupted", async () => {
+    await import("@/auth")
+
+    const sessionResult = capturedConfig?.callbacks.session({
+      session: { user: {} },
+      token: {
+        id: 123,
+        role: null,
+        isAdmin: "true",
+        title: null,
+      },
+    })
+
+    expect(sessionResult?.user).toMatchObject({
+      id: "",
+      role: "FACULTY",
+      isAdmin: false,
+      title: "Dr.",
+      firstName: "",
+      lastName: "",
+    })
+  })
+
   it("keeps the login page and jwt session strategy configured", async () => {
     await import("@/auth")
 

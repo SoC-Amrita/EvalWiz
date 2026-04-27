@@ -287,6 +287,7 @@ Testing is layered:
 | Layer | Purpose |
 | --- | --- |
 | `src/lib/__tests__/*` | Unit tests for shared domain helpers. |
+| `src/app/dashboard/*actions.test.ts` | Mocked tests for dashboard-level server actions such as account and workspace actions. |
 | `src/app/dashboard/*/*.test.ts` | Mocked tests for server actions. |
 | `tests/e2e/auth-smoke.spec.ts` | Playwright auth and protected-route smoke tests. |
 
@@ -332,5 +333,7 @@ These areas deserve extra care:
 - Large chart containers in analytics pages
 - Supabase connection strings and Prisma schema drift
 - Turbopack-specific local/build behavior
+- Section identity drift if code starts assuming `Section.name` is unique again
+- Audit-log scoping drift if new actions omit `offeringId`/actor metadata from `details`
 
 When changing any of these, run broader checks and keep the diff small enough to review.

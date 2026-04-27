@@ -49,7 +49,7 @@ model Subject {
 
 model Section {
   id                String    @id @default(cuid())
-  name              String    @unique // Admin-defined section/group label; not restricted to A-Z.
+  name              String    // Admin-defined section/group label; not globally unique across batches/courses.
   isElectiveClass   Boolean   @default(false)
   facultyId         String?
   faculty           Faculty?  @relation(fields: [facultyId], references: [id], onDelete: SetNull)
@@ -79,6 +79,8 @@ model Section {
   // above and treat Section exclusively as a reusable class roster snapshot.
 
   @@index([facultyId])
+  @@index([name])
+  @@index([programCode, admissionYear, sectionCode])
 }
 
 model Student {

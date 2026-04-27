@@ -22,6 +22,8 @@ describe("analysis-preview-access", () => {
     expect(set).toHaveBeenCalledWith(ANALYSIS_PREVIEW_COOKIE, "unlocked", {
       path: "/",
       sameSite: "lax",
+      httpOnly: true,
+      secure: true,
     })
   })
 

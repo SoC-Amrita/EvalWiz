@@ -103,12 +103,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
     session({ session, token }) {
       if (token && session.user) {
-        session.user.id = token.id as string
-        session.user.role = token.role as string
-        session.user.isAdmin = token.isAdmin as boolean
-        session.user.title = token.title as string
-        session.user.firstName = token.firstName as string
-        session.user.lastName = token.lastName as string
+        session.user.id = typeof token.id === "string" ? token.id : ""
+        session.user.role = typeof token.role === "string" ? token.role : "FACULTY"
+        session.user.isAdmin = typeof token.isAdmin === "boolean" ? token.isAdmin : false
+        session.user.title = typeof token.title === "string" ? token.title : "Dr."
+        session.user.firstName = typeof token.firstName === "string" ? token.firstName : ""
+        session.user.lastName = typeof token.lastName === "string" ? token.lastName : ""
       }
       return session
     }

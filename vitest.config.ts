@@ -13,7 +13,7 @@ export default defineConfig({
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
     coverage: {
       provider: "v8",
-      include: ["src/lib/**", "src/auth.ts", "src/app/dashboard/**/actions.ts"],
+      include: ["src/lib/**", "src/auth.ts", "src/app/dashboard/*actions.ts", "src/app/dashboard/**/actions.ts"],
     },
   },
   resolve: {

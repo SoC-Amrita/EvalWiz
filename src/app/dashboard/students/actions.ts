@@ -90,7 +90,8 @@ async function resolveSectionIdForStudent(
     programCode: string | null
     admissionYear: string | null
     sectionCode: string | null
-  }>
+  }>,
+  client: Pick<TransactionClient, "section"> = prisma
 ) {
   const providedSectionName = normalizeSectionName(row.sectionName)
   if (providedSectionName) {
@@ -130,7 +131,7 @@ async function resolveSectionIdForStudent(
 
   if (options.createMissingHomeClass) {
     const programLabel = inferAcademicProgramLabel(parsedRollNo.levelCode, parsedRollNo.programDurationYears)
-    const createdSection = await prisma.section.create({
+    const createdSection = await client.section.create({
       data: {
         name: buildClassLabel({
           programLabel,
@@ -281,6 +282,116 @@ function buildArchivedStudentSnapshot(student: {
       courseType: mark.assessment.offering?.courseType ?? null,
       evaluationPattern: mark.assessment.offering?.evaluationPattern ?? null,
     })),
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value)
+}
+
+function readRequiredSnapshotString(record: Record<string, unknown>, key: string) {
+  const value = record[key]
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error("Archived record is corrupted and cannot be restored")
+  }
+  return value
+}
+
+function readNullableSnapshotString(record: Record<string, unknown>, key: string) {
+  const value = record[key]
+  if (value === null) return null
+  if (typeof value !== "string") {
+    throw new Error("Archived record is corrupted and cannot be restored")
+  }
+  return value
+}
+
+function readSnapshotBoolean(record: Record<string, unknown>, key: string) {
+  const value = record[key]
+  if (typeof value !== "boolean") {
+    throw new Error("Archived record is corrupted and cannot be restored")
+  }
+  return value
+}
+
+function readSnapshotNumber(record: Record<string, unknown>, key: string) {
+  const value = record[key]
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error("Archived record is corrupted and cannot be restored")
+  }
+  return value
+}
+
+function parseArchivedStudentSnapshot(snapshotText: string): ArchivedStudentSnapshot {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(snapshotText)
+  } catch {
+    throw new Error("Archived record is corrupted and cannot be restored")
+  }
+
+  if (!isRecord(parsed) || !isRecord(parsed.student)) {
+    throw new Error("Archived record is corrupted and cannot be restored")
+  }
+
+  const rawEnrollments = parsed.offeringEnrollments
+  const rawMarks = parsed.marks
+  if (!Array.isArray(rawEnrollments) || !Array.isArray(rawMarks)) {
+    throw new Error("Archived record is corrupted and cannot be restored")
+  }
+
+  return {
+    student: {
+      id: readRequiredSnapshotString(parsed.student, "id"),
+      rollNo: readRequiredSnapshotString(parsed.student, "rollNo"),
+      name: readRequiredSnapshotString(parsed.student, "name"),
+      sectionId: readRequiredSnapshotString(parsed.student, "sectionId"),
+      sectionName: readRequiredSnapshotString(parsed.student, "sectionName"),
+      excludeFromAnalytics: readSnapshotBoolean(parsed.student, "excludeFromAnalytics"),
+    },
+    offeringEnrollments: rawEnrollments.map((item) => {
+      if (!isRecord(item)) {
+        throw new Error("Archived record is corrupted and cannot be restored")
+      }
+
+      return {
+        offeringId: readRequiredSnapshotString(item, "offeringId"),
+        subjectCode: readNullableSnapshotString(item, "subjectCode"),
+        subjectTitle: readNullableSnapshotString(item, "subjectTitle"),
+        term: readRequiredSnapshotString(item, "term"),
+        academicYear: readRequiredSnapshotString(item, "academicYear"),
+        semester: readRequiredSnapshotString(item, "semester"),
+        year: readRequiredSnapshotString(item, "year"),
+        courseType: readRequiredSnapshotString(item, "courseType"),
+        evaluationPattern: readRequiredSnapshotString(item, "evaluationPattern"),
+        sectionId: readRequiredSnapshotString(item, "sectionId"),
+        sectionName: readRequiredSnapshotString(item, "sectionName"),
+      }
+    }),
+    marks: rawMarks.map((item) => {
+      if (!isRecord(item)) {
+        throw new Error("Archived record is corrupted and cannot be restored")
+      }
+
+      return {
+        assessmentId: readRequiredSnapshotString(item, "assessmentId"),
+        assessmentName: readRequiredSnapshotString(item, "assessmentName"),
+        assessmentCode: readRequiredSnapshotString(item, "assessmentCode"),
+        category: readRequiredSnapshotString(item, "category"),
+        maxMarks: readSnapshotNumber(item, "maxMarks"),
+        weightage: readSnapshotNumber(item, "weightage"),
+        marks: readSnapshotNumber(item, "marks"),
+        offeringId: readNullableSnapshotString(item, "offeringId"),
+        subjectCode: readNullableSnapshotString(item, "subjectCode"),
+        subjectTitle: readNullableSnapshotString(item, "subjectTitle"),
+        term: readNullableSnapshotString(item, "term"),
+        academicYear: readNullableSnapshotString(item, "academicYear"),
+        semester: readNullableSnapshotString(item, "semester"),
+        year: readNullableSnapshotString(item, "year"),
+        courseType: readNullableSnapshotString(item, "courseType"),
+        evaluationPattern: readNullableSnapshotString(item, "evaluationPattern"),
+      }
+    }),
   }
 }
 
@@ -447,63 +558,88 @@ export async function uploadStudents(students: StudentUploadRow[]) {
   let successCount = 0
   let errorCount = 0
   const errors: string[] = []
-  const sections = await prisma.section.findMany({
-    select: {
-      id: true,
-      name: true,
-      rollPrefix: true,
-      schoolCode: true,
-      levelCode: true,
-      programDurationYears: true,
-      programCode: true,
-      admissionYear: true,
-      sectionCode: true,
-    },
-  })
 
-  for (const student of students) {
-    try {
-      const normalizedRollNo = normalizeText(student.rollNo)
-      const sectionId = await resolveSectionIdForStudent(
-        student,
-        {
-          allowRollFallback: true,
-          createMissingHomeClass: true,
-        },
-        sections
-      )
+  await prisma.$transaction(async (tx) => {
+    const sections = await tx.section.findMany({
+      select: {
+        id: true,
+        name: true,
+        rollPrefix: true,
+        schoolCode: true,
+        levelCode: true,
+        programDurationYears: true,
+        programCode: true,
+        admissionYear: true,
+        sectionCode: true,
+      },
+    })
+    const rowsToWrite: Array<{
+      normalizedRollNo: string
+      normalizedName: string
+      sectionId: string
+    }> = []
 
-      const savedStudent = await prisma.student.upsert({
-        where: { rollNo: normalizedRollNo },
-        update: { name: normalizeText(student.name), sectionId },
-        create: { rollNo: normalizedRollNo, name: normalizeText(student.name), sectionId }
-      })
+    for (const student of students) {
+      try {
+        const normalizedRollNo = normalizeText(student.rollNo)
+        const sectionId = await resolveSectionIdForStudent(
+          student,
+          {
+            allowRollFallback: true,
+            createMissingHomeClass: true,
+          },
+          sections,
+          tx
+        )
 
-      if (isElectiveContext && electiveSectionId) {
-        await prisma.courseOfferingEnrollment.upsert({
-          where: {
-            offeringId_studentId: {
+        rowsToWrite.push({
+          normalizedRollNo,
+          normalizedName: normalizeText(student.name),
+          sectionId,
+        })
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unexpected upload failure"
+        errors.push(`Row ${student.rollNo}: ${message}`)
+        errorCount++
+      }
+    }
+
+    const savedStudents = await Promise.all(
+      rowsToWrite.map(async (row) => ({
+        row,
+        savedStudent: await tx.student.upsert({
+          where: { rollNo: row.normalizedRollNo },
+          update: { name: row.normalizedName, sectionId: row.sectionId },
+          create: { rollNo: row.normalizedRollNo, name: row.normalizedName, sectionId: row.sectionId },
+        }),
+      }))
+    )
+
+    if (isElectiveContext && electiveSectionId) {
+      await Promise.all(
+        savedStudents.map(({ savedStudent }) =>
+          tx.courseOfferingEnrollment.upsert({
+            where: {
+              offeringId_studentId: {
+                offeringId: activeWorkspace.offeringId,
+                studentId: savedStudent.id,
+              },
+            },
+            update: {
+              sectionId: electiveSectionId,
+            },
+            create: {
               offeringId: activeWorkspace.offeringId,
               studentId: savedStudent.id,
+              sectionId: electiveSectionId,
             },
-          },
-          update: {
-            sectionId: electiveSectionId,
-          },
-          create: {
-            offeringId: activeWorkspace.offeringId,
-            studentId: savedStudent.id,
-            sectionId: electiveSectionId,
-          },
-        })
-      }
-      successCount++
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unexpected upload failure"
-      errors.push(`Row ${student.rollNo}: ${message}`)
-      errorCount++
+          })
+        )
+      )
     }
-  }
+
+    successCount = savedStudents.length
+  })
 
   revalidateStudentPaths()
   return { success: true, successCount, errorCount, errors }
@@ -758,12 +894,7 @@ export async function restoreArchivedStudent(archivedStudentId: string) {
     throw new Error("This archived student has already been restored")
   }
 
-  let snapshot: ArchivedStudentSnapshot
-  try {
-    snapshot = JSON.parse(archivedStudent.snapshot) as ArchivedStudentSnapshot
-  } catch {
-    throw new Error("Archived record is corrupted and cannot be restored")
-  }
+  const snapshot = parseArchivedStudentSnapshot(archivedStudent.snapshot)
   const existingStudent = await prisma.student.findUnique({
     where: { rollNo: archivedStudent.rollNo },
     select: { id: true },
@@ -791,39 +922,62 @@ export async function restoreArchivedStudent(archivedStudentId: string) {
       select: { id: true },
     })
 
-    for (const enrollment of snapshot.offeringEnrollments) {
-      const offeringExists = await tx.courseOffering.findUnique({
-        where: { id: enrollment.offeringId },
-        select: { id: true },
-      })
-      const sectionExists = await tx.section.findUnique({
-        where: { id: enrollment.sectionId },
-        select: { id: true },
-      })
-      if (!offeringExists || !sectionExists) continue
+    const enrollmentOfferingIds = [...new Set(snapshot.offeringEnrollments.map((enrollment) => enrollment.offeringId))]
+    const enrollmentSectionIds = [...new Set(snapshot.offeringEnrollments.map((enrollment) => enrollment.sectionId))]
+    const markAssessmentIds = [...new Set(snapshot.marks.map((mark) => mark.assessmentId))]
 
-      await tx.courseOfferingEnrollment.create({
-        data: {
-          offeringId: enrollment.offeringId,
-          studentId: restoredStudent.id,
-          sectionId: enrollment.sectionId,
-        },
+    const [existingOfferings, existingSections, existingAssessments] = await Promise.all([
+      enrollmentOfferingIds.length > 0
+        ? tx.courseOffering.findMany({
+            where: { id: { in: enrollmentOfferingIds } },
+            select: { id: true },
+          })
+        : Promise.resolve([]),
+      enrollmentSectionIds.length > 0
+        ? tx.section.findMany({
+            where: { id: { in: enrollmentSectionIds } },
+            select: { id: true },
+          })
+        : Promise.resolve([]),
+      markAssessmentIds.length > 0
+        ? tx.assessment.findMany({
+            where: { id: { in: markAssessmentIds } },
+            select: { id: true },
+          })
+        : Promise.resolve([]),
+    ])
+
+    const existingOfferingIds = new Set(existingOfferings.map((offering) => offering.id))
+    const existingSectionIds = new Set(existingSections.map((restoredSection) => restoredSection.id))
+    const existingAssessmentIds = new Set(existingAssessments.map((assessment) => assessment.id))
+
+    const enrollmentsToRestore = snapshot.offeringEnrollments
+      .filter((enrollment) => existingOfferingIds.has(enrollment.offeringId) && existingSectionIds.has(enrollment.sectionId))
+      .map((enrollment) => ({
+        offeringId: enrollment.offeringId,
+        studentId: restoredStudent.id,
+        sectionId: enrollment.sectionId,
+      }))
+
+    if (enrollmentsToRestore.length > 0) {
+      await tx.courseOfferingEnrollment.createMany({
+        data: enrollmentsToRestore,
+        skipDuplicates: true,
       })
     }
 
-    for (const mark of snapshot.marks) {
-      const assessmentExists = await tx.assessment.findUnique({
-        where: { id: mark.assessmentId },
-        select: { id: true },
-      })
-      if (!assessmentExists) continue
+    const marksToRestore = snapshot.marks
+      .filter((mark) => existingAssessmentIds.has(mark.assessmentId))
+      .map((mark) => ({
+        studentId: restoredStudent.id,
+        assessmentId: mark.assessmentId,
+        marks: mark.marks,
+      }))
 
-      await tx.mark.create({
-        data: {
-          studentId: restoredStudent.id,
-          assessmentId: mark.assessmentId,
-          marks: mark.marks,
-        },
+    if (marksToRestore.length > 0) {
+      await tx.mark.createMany({
+        data: marksToRestore,
+        skipDuplicates: true,
       })
     }
 

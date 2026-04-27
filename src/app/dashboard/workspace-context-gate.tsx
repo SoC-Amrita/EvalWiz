@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
@@ -36,42 +36,51 @@ const FOUND_EVENT = hexToText("616e616c797369732d707265766965772d7265616479")
 const WHAT_IF_ROUTE = hexToText("2f64617368626f6172642f776861742d6966")
 
 type BeaconStep = (typeof SECRET_SEQUENCE)[number]
+type SequenceState = {
+  progress: number
+  lastAt: number
+}
+type AnalysisPreviewSequenceContextValue = {
+  advance: (step: BeaconStep) => boolean
+}
 
 export const CONTEXT_BEACON_PRIMARY: BeaconStep = HOTSPOT_PRIMARY
 export const CONTEXT_BEACON_SECONDARY: BeaconStep = HOTSPOT_SECONDARY
 
-declare global {
-  interface Window {
-    __analysisPreviewState__?: {
-      progress: number
-      lastAt: number
+const AnalysisPreviewSequenceContext = createContext<AnalysisPreviewSequenceContextValue | null>(null)
+
+export function AnalysisPreviewSequenceProvider({ children }: { children: ReactNode }) {
+  const sequenceRef = useRef<SequenceState>({ progress: 0, lastAt: 0 })
+
+  const advance = useCallback((step: BeaconStep) => {
+    const now = Date.now()
+    const currentState = sequenceRef.current
+    const state =
+      now - currentState.lastAt > RESET_WINDOW_MS
+        ? { progress: 0, lastAt: now }
+        : currentState
+
+    const expectedStep = SECRET_SEQUENCE[state.progress]
+    const nextProgress = step === expectedStep ? state.progress + 1 : step === SECRET_SEQUENCE[0] ? 1 : 0
+
+    sequenceRef.current = {
+      progress: nextProgress,
+      lastAt: now,
     }
-  }
-}
 
-function advanceWhatIfSequence(step: BeaconStep) {
-  const now = Date.now()
-  const currentState = window.__analysisPreviewState__
+    if (nextProgress === SECRET_SEQUENCE.length) {
+      sequenceRef.current = { progress: 0, lastAt: now }
+      return true
+    }
 
-  const state =
-    !currentState || now - currentState.lastAt > RESET_WINDOW_MS
-      ? { progress: 0, lastAt: now }
-      : currentState
+    return false
+  }, [])
 
-  const expectedStep = SECRET_SEQUENCE[state.progress]
-  const nextProgress = step === expectedStep ? state.progress + 1 : step === SECRET_SEQUENCE[0] ? 1 : 0
-
-  window.__analysisPreviewState__ = {
-    progress: nextProgress,
-    lastAt: now,
-  }
-
-  if (nextProgress === SECRET_SEQUENCE.length) {
-    window.__analysisPreviewState__ = { progress: 0, lastAt: now }
-    return true
-  }
-
-  return false
+  return (
+    <AnalysisPreviewSequenceContext.Provider value={{ advance }}>
+      {children}
+    </AnalysisPreviewSequenceContext.Provider>
+  )
 }
 
 export function WorkspaceContextBeacon({
@@ -81,14 +90,16 @@ export function WorkspaceContextBeacon({
 }: {
   step: BeaconStep
   className: string
-  children: React.ReactNode
+  children: ReactNode
 }) {
+  const sequence = useContext(AnalysisPreviewSequenceContext)
+
   return (
     <button
       type="button"
       className={className}
       onClick={() => {
-        if (advanceWhatIfSequence(step)) {
+        if (sequence?.advance(step)) {
           window.dispatchEvent(new Event(FOUND_EVENT))
         }
       }}

@@ -6,7 +6,7 @@ Purpose: compact AI navigation. This file lists repository paths only; it does n
 
 Ignored directories: .claude, .git, .next, .venv, __pycache__, build, coverage, dist, node_modules, out, output, test-results, tmp, venv
 
-Tracked inventory count: 165 files
+Tracked inventory count: 166 files
 
 ## Context Files
 
@@ -38,6 +38,10 @@ Tracked inventory count: 165 files
 - TASK_LOG.md
 - tsconfig.json
 - vitest.config.ts
+
+### .github
+
+- .github/workflows/ci.yml
 
 ### prisma
 

@@ -177,4 +177,18 @@ describe("sections actions", () => {
       missingRollNumbers: ["CB.SC.U4CSE23002"],
     })
   })
+
+  it("allows only mentors to upload elective rosters", async () => {
+    requireAuthenticatedWorkspaceStateMock.mockResolvedValue({
+      activeWorkspace: { offeringId: "off-1", isElective: true },
+      activeRoleView: "faculty",
+    })
+
+    const { uploadElectiveRoster } = await import("@/app/dashboard/sections/actions")
+
+    await expect(uploadElectiveRoster(["CB.SC.U4CSE23001"])).rejects.toThrow(
+      "Only mentors can upload elective rosters"
+    )
+    expect(prismaMock.courseOfferingEnrollment.upsert).not.toHaveBeenCalled()
+  })
 })

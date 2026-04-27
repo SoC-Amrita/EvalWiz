@@ -19,6 +19,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { Button } from "@/components/ui/button"
 import { UserMenu } from "./user-menu"
 import {
+  AnalysisPreviewSequenceProvider,
   AnalysisPreviewDialog,
   CONTEXT_BEACON_PRIMARY,
   CONTEXT_BEACON_SECONDARY,
@@ -94,6 +95,7 @@ export function DashboardShell({
   )
 
   return (
+    <AnalysisPreviewSequenceProvider>
     <div className="relative flex min-h-screen overflow-hidden app-shell">
       <div className="pointer-events-none absolute inset-0 app-grid opacity-60" />
 
@@ -174,6 +176,7 @@ export function DashboardShell({
         </div>
       </main>
     </div>
+    </AnalysisPreviewSequenceProvider>
   )
 }
 

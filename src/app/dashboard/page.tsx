@@ -4,6 +4,7 @@ import prisma from "@/lib/db"
 import { buildScopedSectionWhere, buildScopedStudentWhere, getActiveWorkspaceState, getRoleViewLabel, hasRealWorkspace } from "@/lib/course-workspace"
 import { formatWorkspaceCode, formatWorkspaceRoleHeading } from "@/lib/workspace-labels"
 import { BarChart3, BookOpen, Clock, Users } from "lucide-react"
+import { buildDashboardAuditLogWhere } from "./audit-log-scope"
 import { DashboardTrendsChart } from "./trends-chart"
 import { WorkspaceSelector } from "./workspace-selector"
 
@@ -168,6 +169,7 @@ export default async function DashboardOverview() {
       orderBy: { displayOrder: "asc" },
     }),
     prisma.auditLog.findMany({
+      where: buildDashboardAuditLogWhere(user),
       orderBy: { createdAt: "desc" },
       take: 6,
     }),

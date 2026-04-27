@@ -41,6 +41,12 @@ const ADMIN_CONSOLE_MODE_COOKIE = "admin-console-mode"
 const EMPTY_WORKSPACE_KEY = "__empty_workspace__"
 const EMPTY_SECTION_IDS = ["__no_section__"]
 const EMPTY_STUDENT_IDS = ["__no_student__"]
+const WORKSPACE_COOKIE_OPTIONS = {
+  path: "/",
+  sameSite: "lax" as const,
+  httpOnly: true,
+  secure: true,
+}
 
 const workspaceOfferingSelect = {
   id: true,
@@ -408,16 +414,16 @@ export async function getActiveWorkspaceState(user: WorkspaceUser) {
 
 export async function setActiveWorkspaceCookies(courseKey: string, roleView: WorkspaceRoleView) {
   const cookieStore = await cookies()
-  cookieStore.set(ACTIVE_COURSE_COOKIE, courseKey, { path: "/", sameSite: "lax" })
-  cookieStore.set(ACTIVE_ROLE_COOKIE, roleView, { path: "/", sameSite: "lax" })
+  cookieStore.set(ACTIVE_COURSE_COOKIE, courseKey, WORKSPACE_COOKIE_OPTIONS)
+  cookieStore.set(ACTIVE_ROLE_COOKIE, roleView, WORKSPACE_COOKIE_OPTIONS)
   if (roleView !== "administrator") {
-    cookieStore.set(ADMIN_CONSOLE_MODE_COOKIE, "workspace", { path: "/", sameSite: "lax" })
+    cookieStore.set(ADMIN_CONSOLE_MODE_COOKIE, "workspace", WORKSPACE_COOKIE_OPTIONS)
   }
 }
 
 export async function setAdminConsoleModeCookie(mode: "admin" | "workspace") {
   const cookieStore = await cookies()
-  cookieStore.set(ADMIN_CONSOLE_MODE_COOKIE, mode, { path: "/", sameSite: "lax" })
+  cookieStore.set(ADMIN_CONSOLE_MODE_COOKIE, mode, WORKSPACE_COOKIE_OPTIONS)
 }
 
 export { hasRealWorkspace, getRoleViewLabel } from "@/lib/workspace-labels"

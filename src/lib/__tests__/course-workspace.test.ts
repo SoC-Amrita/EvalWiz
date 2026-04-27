@@ -269,10 +269,16 @@ describe("course-workspace", () => {
     await setActiveWorkspaceCookies("off-1", "mentor")
     await setAdminConsoleModeCookie("admin")
 
-    expect(set).toHaveBeenNthCalledWith(1, "active-course-key", "off-1", { path: "/", sameSite: "lax" })
-    expect(set).toHaveBeenNthCalledWith(2, "active-role-view", "mentor", { path: "/", sameSite: "lax" })
-    expect(set).toHaveBeenNthCalledWith(3, "admin-console-mode", "workspace", { path: "/", sameSite: "lax" })
-    expect(set).toHaveBeenNthCalledWith(4, "admin-console-mode", "admin", { path: "/", sameSite: "lax" })
+    const secureCookieOptions = {
+      path: "/",
+      sameSite: "lax",
+      httpOnly: true,
+      secure: true,
+    }
+    expect(set).toHaveBeenNthCalledWith(1, "active-course-key", "off-1", secureCookieOptions)
+    expect(set).toHaveBeenNthCalledWith(2, "active-role-view", "mentor", secureCookieOptions)
+    expect(set).toHaveBeenNthCalledWith(3, "admin-console-mode", "workspace", secureCookieOptions)
+    expect(set).toHaveBeenNthCalledWith(4, "admin-console-mode", "admin", secureCookieOptions)
   })
 
   it("exposes simple workspace helpers", async () => {

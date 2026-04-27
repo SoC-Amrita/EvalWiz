@@ -305,9 +305,9 @@ describe("student actions", () => {
     })
     prismaMock.student.findUnique.mockResolvedValue({ sectionId: "sec-a" })
 
-    const { saveStudentMark } = await import("@/app/dashboard/students/actions")
+    const { saveAdminStudentMark } = await import("@/app/dashboard/students/actions")
 
-    await expect(saveStudentMark("stu-1", "assess-1", 42)).resolves.toEqual({ success: true })
+    await expect(saveAdminStudentMark("stu-1", "assess-1", 42)).resolves.toEqual({ success: true })
     expect(prismaMock.mark.upsert).toHaveBeenCalledWith({
       where: { studentId_assessmentId: { studentId: "stu-1", assessmentId: "assess-1" } },
       update: { marks: 42 },

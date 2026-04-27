@@ -585,45 +585,37 @@ export async function setStudentAnalyticsExclusion(
   studentId: string,
   excludeFromAnalytics: boolean
 ) {
-  try {
-    const adminUser = await requireAdminUser()
-    await prisma.student.update({
-      where: { id: studentId },
-      data: { excludeFromAnalytics },
-    })
+  const { user } = await requireAuthenticatedWorkspaceState()
 
-    await prisma.auditLog.create({
-      data: {
-        action: excludeFromAnalytics ? "STUDENT_EXCLUDED_FROM_ANALYTICS" : "STUDENT_INCLUDED_IN_ANALYTICS",
-        userId: adminUser.id,
-        details: JSON.stringify({
-          studentId,
-          excludeFromAnalytics,
-          actorRole: "admin",
-        }),
-      },
-    })
-  } catch {
+  let actorUserId: string
+  let auditDetails: Record<string, unknown>
+
+  if (user.isAdmin) {
+    actorUserId = user.id
+    auditDetails = { studentId, excludeFromAnalytics, actorRole: "admin" }
+  } else {
     const workspaceState = await requireMentorScopedStudentAccess(studentId)
-
-    await prisma.student.update({
-      where: { id: studentId },
-      data: { excludeFromAnalytics },
-    })
-
-    await prisma.auditLog.create({
-      data: {
-        action: excludeFromAnalytics ? "STUDENT_EXCLUDED_FROM_ANALYTICS" : "STUDENT_INCLUDED_IN_ANALYTICS",
-        userId: workspaceState.user.id,
-        details: JSON.stringify({
-          studentId,
-          excludeFromAnalytics,
-          actorRole: workspaceState.activeRoleView,
-          offeringId: workspaceState.activeWorkspace.offeringId,
-        }),
-      },
-    })
+    actorUserId = workspaceState.user.id
+    auditDetails = {
+      studentId,
+      excludeFromAnalytics,
+      actorRole: workspaceState.activeRoleView,
+      offeringId: workspaceState.activeWorkspace.offeringId,
+    }
   }
+
+  await prisma.student.update({
+    where: { id: studentId },
+    data: { excludeFromAnalytics },
+  })
+
+  await prisma.auditLog.create({
+    data: {
+      action: excludeFromAnalytics ? "STUDENT_EXCLUDED_FROM_ANALYTICS" : "STUDENT_INCLUDED_IN_ANALYTICS",
+      userId: actorUserId,
+      details: JSON.stringify(auditDetails),
+    },
+  })
 
   revalidateStudentPaths()
   return { success: true }
@@ -766,7 +758,12 @@ export async function restoreArchivedStudent(archivedStudentId: string) {
     throw new Error("This archived student has already been restored")
   }
 
-  const snapshot = JSON.parse(archivedStudent.snapshot) as ArchivedStudentSnapshot
+  let snapshot: ArchivedStudentSnapshot
+  try {
+    snapshot = JSON.parse(archivedStudent.snapshot) as ArchivedStudentSnapshot
+  } catch {
+    throw new Error("Archived record is corrupted and cannot be restored")
+  }
   const existingStudent = await prisma.student.findUnique({
     where: { rollNo: archivedStudent.rollNo },
     select: { id: true },
@@ -856,7 +853,7 @@ export async function restoreArchivedStudent(archivedStudentId: string) {
   return { success: true }
 }
 
-export async function saveStudentMark(
+export async function saveAdminStudentMark(
   studentId: string,
   assessmentId: string,
   marks: number

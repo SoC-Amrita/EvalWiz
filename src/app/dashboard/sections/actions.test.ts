@@ -1,10 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-const authMock = vi.fn()
 const hashMock = vi.fn()
 const revalidatePathMock = vi.fn()
-const canManageUsersMock = vi.fn()
 const buildNameFieldsMock = vi.fn()
+const requireAdminUserMock = vi.fn()
 const requireAuthenticatedWorkspaceStateMock = vi.fn()
 const requireRealWorkspaceMock = vi.fn()
 const requireWorkspaceManagerStateMock = vi.fn()
@@ -32,10 +31,6 @@ const prismaMock = {
   $transaction: vi.fn(),
 }
 
-vi.mock("@/auth", () => ({
-  auth: authMock,
-}))
-
 vi.mock("bcryptjs", () => ({
   default: {
     hash: hashMock,
@@ -46,15 +41,12 @@ vi.mock("next/cache", () => ({
   revalidatePath: revalidatePathMock,
 }))
 
-vi.mock("@/lib/user-roles", () => ({
-  canManageUsers: canManageUsersMock,
-}))
-
 vi.mock("@/lib/user-names", () => ({
   buildNameFields: buildNameFieldsMock,
 }))
 
 vi.mock("@/lib/workspace-guards", () => ({
+  requireAdminUser: requireAdminUserMock,
   requireAuthenticatedWorkspaceState: requireAuthenticatedWorkspaceStateMock,
   requireRealWorkspace: requireRealWorkspaceMock,
   requireWorkspaceManagerState: requireWorkspaceManagerStateMock,
@@ -67,10 +59,7 @@ vi.mock("@/lib/db", () => ({
 describe("sections actions", () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    authMock.mockResolvedValue({
-      user: { id: "admin-1", role: "FACULTY", isAdmin: true },
-    })
-    canManageUsersMock.mockReturnValue(true)
+    requireAdminUserMock.mockResolvedValue({ id: "admin-1", role: "FACULTY", isAdmin: true })
     buildNameFieldsMock.mockReturnValue({
       title: "Dr.",
       firstName: "Anisha",

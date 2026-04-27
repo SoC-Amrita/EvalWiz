@@ -1,6 +1,5 @@
 "use server"
 
-import { auth } from "@/auth"
 import prisma from "@/lib/db"
 import {
   buildAcademicPlacement,
@@ -12,7 +11,7 @@ import {
   parseStudentRollNumber,
 } from "@/lib/roll-number"
 import { revalidatePath } from "next/cache"
-import { canManageUsers } from "@/lib/user-roles"
+import { requireAdminUser } from "@/lib/workspace-guards"
 
 type ClassInput = {
   program: string
@@ -73,15 +72,6 @@ function normalizeClassAssignments(assignments: OfferingInput["classAssignments"
   }
 
   return normalized
-}
-
-async function requireAdmin() {
-  const session = await auth()
-  const user = session?.user
-  if (!user || !canManageUsers(user)) {
-    throw new Error("Unauthorized")
-  }
-  return user
 }
 
 function normalizeOfferingInput(data: OfferingInput): OfferingInput {
@@ -433,7 +423,7 @@ export async function createSubject(data: {
   program: string
   isActive: boolean
 }) {
-  await requireAdmin()
+  await requireAdminUser()
 
   await prisma.subject.create({
     data: {
@@ -454,7 +444,7 @@ export async function updateSubject(subjectId: string, data: {
   program: string
   isActive: boolean
 }) {
-  await requireAdmin()
+  await requireAdminUser()
 
   await prisma.subject.update({
     where: { id: subjectId },
@@ -471,7 +461,7 @@ export async function updateSubject(subjectId: string, data: {
 }
 
 export async function deleteSubject(subjectId: string) {
-  await requireAdmin()
+  await requireAdminUser()
 
   const offeringCount = await prisma.courseOffering.count({
     where: { subjectId },
@@ -489,7 +479,7 @@ export async function deleteSubject(subjectId: string) {
 }
 
 export async function createClass(data: ClassInput) {
-  await requireAdmin()
+  await requireAdminUser()
   const normalizedClass = normalizeClassInput(data)
   const desiredProgramCode = inferProgramCodeFromLabel(normalizedClass.program)
   if (!desiredProgramCode) {
@@ -578,7 +568,7 @@ export async function createClass(data: ClassInput) {
 }
 
 export async function updateClass(sectionId: string, data: ClassInput) {
-  await requireAdmin()
+  await requireAdminUser()
   const normalizedClass = normalizeClassInput(data, { requireBatchYear: false })
   const existingSection = await prisma.section.findUnique({
     where: { id: sectionId },
@@ -661,7 +651,7 @@ export async function updateClass(sectionId: string, data: ClassInput) {
 }
 
 export async function deleteClass(sectionId: string) {
-  await requireAdmin()
+  await requireAdminUser()
 
   const section = await prisma.section.findUnique({
     where: { id: sectionId },
@@ -698,7 +688,7 @@ export async function deleteClass(sectionId: string) {
 }
 
 export async function createCourseOffering(data: OfferingInput) {
-  await requireAdmin()
+  await requireAdminUser()
 
   const normalizedInput = normalizeOfferingInput(data)
 
@@ -727,7 +717,7 @@ export async function createCourseOffering(data: OfferingInput) {
 }
 
 export async function updateCourseOffering(offeringId: string, data: OfferingInput) {
-  await requireAdmin()
+  await requireAdminUser()
 
   const normalizedInput = normalizeOfferingInput(data)
 
@@ -766,7 +756,7 @@ export async function updateCourseOffering(offeringId: string, data: OfferingInp
 }
 
 export async function deleteCourseOffering(offeringId: string) {
-  await requireAdmin()
+  await requireAdminUser()
 
   const assessmentCount = await prisma.assessment.count({
     where: { offeringId },

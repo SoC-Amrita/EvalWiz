@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import "./globals.css";
 import { APP_INFO, getCourseDisplayTitle } from "@/lib/app-info";
 import { FontProvider } from "@/components/font-provider";
 import { ThemeProvider } from "@/components/theme-provider";
-import { getRootThemeBootstrapScript } from "@/lib/palette-theme";
 
 export const metadata: Metadata = {
   title: APP_INFO.name,
@@ -23,11 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning className="h-full antialiased light">
-      <head>
-        <Script id="root-theme-bootstrap" strategy="beforeInteractive">
-          {getRootThemeBootstrapScript()}
-        </Script>
-      </head>
+      <head />
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
           <FontProvider>{children}</FontProvider>

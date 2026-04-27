@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { BarChart3, LineChart, Table2, type LucideIcon } from "lucide-react"
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { cn } from "@/lib/utils"
 
 import { AdvancedAnalyticsShell } from "../advanced-analytics/shell"
 import { ReportsClient } from "../reports/client"
@@ -36,19 +36,19 @@ const TAB_META: Record<
     icon: BarChart3,
     accentClassName: "text-[color:var(--chart-2)]",
     activeClassName:
-      "data-active:border-[color:var(--chart-2)]/30 data-active:bg-gradient-to-br data-active:from-[color:var(--chart-2)]/12 data-active:to-primary/6",
+      "border-[color:var(--chart-2)]/70 bg-[color:var(--chart-2)]/12 text-foreground shadow-md ring-1 ring-[color:var(--chart-2)]/35",
   },
   advanced: {
     icon: LineChart,
     accentClassName: "text-[color:var(--chart-8)]",
     activeClassName:
-      "data-active:border-[color:var(--chart-8)]/30 data-active:bg-gradient-to-br data-active:from-[color:var(--chart-8)]/12 data-active:to-primary/6",
+      "border-[color:var(--chart-8)]/70 bg-[color:var(--chart-8)]/12 text-foreground shadow-md ring-1 ring-[color:var(--chart-8)]/35",
   },
   reports: {
     icon: Table2,
     accentClassName: "text-[color:var(--chart-6)]",
     activeClassName:
-      "data-active:border-[color:var(--chart-6)]/30 data-active:bg-gradient-to-br data-active:from-[color:var(--chart-6)]/12 data-active:to-primary/6",
+      "border-[color:var(--chart-6)]/70 bg-[color:var(--chart-6)]/12 text-foreground shadow-md ring-1 ring-[color:var(--chart-6)]/35",
   },
 }
 
@@ -93,63 +93,79 @@ export function AnalyticsWorkspaceShell({
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
   }
 
+  const selectTab = (nextTab: AnalyticsWorkspaceTab) => {
+    setActiveTab(nextTab)
+    syncTabToUrl(nextTab)
+  }
+
   return (
-    <Tabs
-      value={activeTab}
-      onValueChange={(value) => {
-        const nextTab = value as AnalyticsWorkspaceTab
-        setActiveTab(nextTab)
-        syncTabToUrl(nextTab)
-      }}
-      className="space-y-6"
-    >
-      <TabsList className="grid h-auto w-full grid-cols-1 gap-2 rounded-2xl border border-border/80 bg-gradient-to-r from-background via-accent/20 to-background p-2 shadow-sm sm:grid-cols-3">
+    <div className="space-y-6">
+      <div
+        role="tablist"
+        aria-label="Course analytics views"
+        className="grid w-full grid-cols-1 gap-2 sm:grid-cols-3"
+      >
         {(Object.keys(TAB_LABELS) as AnalyticsWorkspaceTab[]).map((tab) => {
           const { icon: Icon, accentClassName, activeClassName } = TAB_META[tab]
+          const isActive = activeTab === tab
 
           return (
-            <TabsTrigger
+            <button
               key={tab}
-              value={tab}
-              className={`h-auto min-h-[72px] justify-start rounded-xl border border-transparent px-4 py-3 text-left after:hidden hover:border-border/70 hover:bg-background/80 ${activeClassName}`}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              aria-controls={`${tab}-analytics-panel`}
+              id={`${tab}-analytics-tab`}
+              onClick={() => selectTab(tab)}
+              className={cn(
+                "flex min-h-14 w-full items-center gap-3 rounded-md border border-border/55 bg-muted/30 px-3 py-2.5 text-left text-muted-foreground transition",
+                "hover:border-border hover:bg-background hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                isActive && activeClassName
+              )}
             >
-              <span className="flex items-center gap-3">
-                <span className={`flex h-10 w-10 items-center justify-center rounded-xl border border-current/10 bg-background/85 shadow-sm ${accentClassName}`}>
+              <span className="flex w-full items-center gap-3">
+                <span
+                  className={cn(
+                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-current/10 bg-background",
+                    accentClassName
+                  )}
+                >
                   <Icon className="h-5 w-5" />
                 </span>
-                <span className="flex flex-col items-start">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                    View
-                  </span>
-                  <span className="text-sm font-semibold text-foreground">
-                    {TAB_LABELS[tab]}
-                  </span>
+                <span className="min-w-0 flex-1 text-sm font-semibold leading-snug">
+                  {TAB_LABELS[tab]}
                 </span>
               </span>
-            </TabsTrigger>
+            </button>
           )
         })}
-      </TabsList>
+      </div>
 
-      <TabsContent value="course" className="space-y-6">
-        <AnalyticsClient data={componentStats} />
-      </TabsContent>
+      <div
+        role="tabpanel"
+        id={`${activeTab}-analytics-panel`}
+        aria-labelledby={`${activeTab}-analytics-tab`}
+        className="space-y-6"
+      >
+        {activeTab === "course" ? <AnalyticsClient data={componentStats} /> : null}
 
-      <TabsContent value="advanced" className="space-y-6">
-        <AdvancedAnalyticsShell
-          summary={advancedSummary}
-          loadDetailsAction={loadAdvancedDetailsAction}
-        />
-      </TabsContent>
+        {activeTab === "advanced" ? (
+          <AdvancedAnalyticsShell
+            summary={advancedSummary}
+            loadDetailsAction={loadAdvancedDetailsAction}
+          />
+        ) : null}
 
-      <TabsContent value="reports" className="space-y-6">
-        <ReportsClient
-          data={reportData}
-          courseAggregate={courseAggregate}
-          reportMeta={reportMeta}
-          loadDetailsAction={loadReportDetailsAction}
-        />
-      </TabsContent>
-    </Tabs>
+        {activeTab === "reports" ? (
+          <ReportsClient
+            data={reportData}
+            courseAggregate={courseAggregate}
+            reportMeta={reportMeta}
+            loadDetailsAction={loadReportDetailsAction}
+          />
+        ) : null}
+      </div>
+    </div>
   )
 }

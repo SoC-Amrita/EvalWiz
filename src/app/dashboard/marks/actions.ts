@@ -108,7 +108,7 @@ export async function bulkUploadMarks(
 
   for (const row of data) {
     try {
-      if (row.marks > assessment.maxMarks || row.marks < 0) {
+      if (!Number.isFinite(row.marks) || row.marks > assessment.maxMarks || row.marks < 0) {
         errors.push(`Row ${row.rollNo}: Mark ${row.marks} out of bounds (0-${assessment.maxMarks})`)
         errorCount++
         continue

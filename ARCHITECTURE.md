@@ -309,6 +309,7 @@ Important deployment notes:
 - Use `npm run build`, which maps to `next build --webpack`.
 - `postinstall` runs `prisma generate`.
 - `npm run db:push` applies Prisma schema changes when needed.
+- Manual Postgres indexes that Prisma cannot model live in `prisma/manual-indexes`; run them directly against Supabase/Postgres outside a transaction when noted.
 - Supabase is used as Postgres hosting, not through `@supabase/supabase-js`.
 
 ## Architectural Rules Of Thumb

@@ -6,7 +6,7 @@ Purpose: compact AI navigation. This file lists repository paths only; it does n
 
 Ignored directories: .claude, .git, .next, .venv, __pycache__, build, coverage, dist, node_modules, out, output, test-results, tmp, venv
 
-Tracked inventory count: 215 files
+Tracked inventory count: 216 files
 
 ## Context Files
 
@@ -89,6 +89,7 @@ Tracked inventory count: 215 files
 
 - prisma/backfill-users.mjs
 - prisma/backfill-users.ts
+- prisma/manual-indexes/2026-04-28-mark-query-covering-indexes.sql
 - prisma/schema.prisma
 - prisma/seed.ts
 

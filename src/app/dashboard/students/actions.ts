@@ -561,6 +561,9 @@ export async function uploadStudents(students: StudentUploadRow[]) {
 
   await prisma.$transaction(async (tx) => {
     const sections = await tx.section.findMany({
+      where: activeWorkspace.sectionIds.length > 0
+        ? { id: { in: activeWorkspace.sectionIds } }
+        : { id: { in: [] } },
       select: {
         id: true,
         name: true,

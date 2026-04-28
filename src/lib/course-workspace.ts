@@ -155,8 +155,7 @@ function createWorkspaceFromOffering(offering: {
   }
 }
 
-function getDefaultRoleView(user: WorkspaceUser, availableRoleViews: WorkspaceRoleView[]) {
-  if (user.isAdmin && availableRoleViews.includes("administrator")) return "administrator"
+function getDefaultRoleView(_user: WorkspaceUser, availableRoleViews: WorkspaceRoleView[]) {
   if (availableRoleViews.includes("mentor")) return "mentor"
   if (availableRoleViews.includes("faculty")) return "faculty"
   return availableRoleViews[0] ?? "faculty"

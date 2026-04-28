@@ -1621,6 +1621,7 @@ export function AdvancedAnalyticsClient({
           category: assessment.category,
           weightage: assessment.weightage,
           maxMarks: assessment.maxMarks,
+          includeInAgg: assessment.includeInAgg,
         }))
       ),
     [visibleAssessments]
@@ -1642,6 +1643,7 @@ export function AdvancedAnalyticsClient({
           category: mark.assessmentCategory,
           weightage: mark.assessmentWeightage,
           maxMarks: mark.assessmentMax,
+          includeInAgg: mark.assessmentIncludeInAgg,
         },
       })
     })

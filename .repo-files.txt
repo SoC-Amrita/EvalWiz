@@ -251,7 +251,7 @@ Tracked inventory count: 214 files
 - src/lib/utils.ts
 - src/lib/workspace-guards.ts
 - src/lib/workspace-labels.ts
-- src/proxy.ts
+- src/middleware.ts
 
 ### tests
 

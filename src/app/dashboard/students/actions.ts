@@ -703,6 +703,14 @@ export async function updateStudentRecord(data: {
 }) {
   await requireAdminUser()
 
+  const section = await prisma.section.findUnique({
+    where: { id: data.sectionId },
+    select: { id: true },
+  })
+  if (!section) {
+    return { success: false, error: "Section not found" }
+  }
+
   await prisma.student.update({
     where: { id: data.studentId },
     data: {

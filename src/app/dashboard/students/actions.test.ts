@@ -95,7 +95,7 @@ describe("student actions", () => {
     requireAdminUserMock.mockResolvedValue({ id: "admin-1", isAdmin: true })
     requireAuthenticatedWorkspaceStateMock.mockResolvedValue({
       user: { id: "admin-1", isAdmin: true },
-      activeWorkspace: { offeringId: "off-1", isElective: true },
+      activeWorkspace: { offeringId: "off-1", isElective: true, sectionIds: ["home-sec-a"] },
     })
     requireAllowedSectionAccessMock.mockResolvedValue({
       user: { id: "admin-1", isAdmin: true },

@@ -166,6 +166,7 @@ model Mark {
   assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, assessmentId])
+  @@index([studentId], map: "Mark_studentId_idx")
   @@index([assessmentId])
 }
 

@@ -22,6 +22,7 @@ The active workspace is the central boundary for marks, reports, analytics, adva
 | `CLAUDE.md` | Claude-specific pointer to `AGENTS.md`. |
 | `package.json` | Scripts and dependencies. Production build intentionally uses `next build --webpack`. |
 | `prisma/schema.prisma` | PostgreSQL schema for users, course offerings, students, assessments, marks, and enrollments. |
+| `prisma/manual-indexes/*` | Manual Postgres index SQL for database features Prisma schema cannot express, such as covering `INCLUDE` indexes. |
 | `prisma/seed.ts` | Demo/local seed data. |
 | `prisma.config.ts` | Prisma CLI environment configuration. |
 | `next.config.ts` | Next.js configuration. |

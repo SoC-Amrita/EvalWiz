@@ -4,6 +4,8 @@ Compact running notes for important project work. Keep this newest-first, focuse
 
 ## Recent Changes
 
+- 2026-04-28: Added Mark performance indexes for reports/analytics lookups, including a Prisma-tracked `studentId` index and a manual Postgres covering index SQL file.
+- 2026-04-28: Fixed middleware export shape so Next.js production build recognizes the auth middleware function.
 - 2026-04-28: Fixed medium-priority cleanup issues: removed incorrect Prisma casts, replaced grade-rule raw SQL with ORM calls, guarded academic setup data, deduplicated faculty loading, indexed audit logs, rejected non-finite marks, replaced dashboard `window.confirm` usages with design-system dialogs, and fixed dashboard sidebar hydration.
 - 2026-04-28: Fixed high-priority security/data-integrity issues in elective roster authorization, dashboard audit log scope, student imports/restores, workspace cookies, JWT claim validation, and archived snapshot validation.
 - 2026-04-28: Added server-action coverage for grade-rule authorization, workspace/account/user actions, last-admin deletion guard, and password enforcement; removed global hidden-preview state; relaxed global section-name uniqueness.
@@ -24,6 +26,7 @@ Compact running notes for important project work. Keep this newest-first, focuse
 - 2026-04-28: Mark saving rejects non-finite values such as `Infinity`.
 - 2026-04-28: Dashboard destructive confirmations now use the local dialog system instead of `window.confirm`.
 - 2026-04-28: Dashboard sidebar preference now uses `useSyncExternalStore`, avoiding localStorage hydration mismatch.
+- 2026-04-28: Reports/analytics Mark queries now have a planned index-only path via `prisma/manual-indexes/2026-04-28-mark-query-covering-indexes.sql`.
 - 2026-04-28: `advanced-analytics/actions.ts`, `reports/actions.ts`, `workspace-actions.ts`, `users/actions.ts`, and `account-actions.ts` now have Vitest coverage for their critical server-action paths.
 - 2026-04-28: Mentor-only grade rule updates are verified by tests; non-mentor role views cannot write grade rules.
 - 2026-04-28: User deletion now has a regression test for the last-admin guard and self-delete guard.
@@ -34,6 +37,7 @@ Compact running notes for important project work. Keep this newest-first, focuse
 ## Known Unfixed / Follow-Ups
 
 - Apply the Prisma schema change to the target database with the normal deployment step (`npm run db:push` or the deployment equivalent) so the old global unique index on `Section.name` is removed outside local generated types.
+- Apply `prisma/manual-indexes/2026-04-28-mark-query-covering-indexes.sql` directly in Supabase/Postgres outside a transaction. The `CREATE INDEX CONCURRENTLY ... INCLUDE ("marks")` statement cannot be represented by Prisma schema alone.
 - Audit logs still store scope metadata inside the JSON `details` string. Non-admin dashboard reads are safe by `userId`, but future cross-workspace audit views should add first-class indexed columns such as `offeringId` and `sectionId`.
 - `uploadStudents` still reports per-row validation errors while committing valid rows atomically in one transaction. If the desired policy becomes all-or-nothing for validation errors too, convert validation errors into a transaction-aborting failure before writes.
 - `academic-setup/actions.ts` and `students/actions.ts` still have comparatively low coverage because they are large, branch-heavy action files. Add focused tests when changing import/archive/offering behavior.

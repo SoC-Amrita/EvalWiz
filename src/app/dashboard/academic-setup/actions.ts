@@ -354,6 +354,16 @@ async function ensureElectiveSection(
     return updated.id
   }
 
+  const existing = await tx.section.findFirst({
+    where: { name: sectionName, isElectiveClass: true },
+    select: { id: true },
+  })
+
+  if (existing) {
+    await tx.section.update({ where: { id: existing.id }, data: sectionData })
+    return existing.id
+  }
+
   const created = await tx.section.create({
     data: sectionData,
     select: { id: true },

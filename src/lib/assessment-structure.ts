@@ -23,6 +23,7 @@ export type AssessmentLike = {
   category: string
   weightage: number
   maxMarks: number
+  includeInAgg?: boolean
 }
 
 export type WeightedMarkLike = {
@@ -184,6 +185,7 @@ export function getAssessmentWeightConfig(assessments: AssessmentLike[]) {
   const totals = createEmptyMetricTotals()
 
   assessments.forEach((assessment) => {
+    if (assessment.includeInAgg === false) return
     const classification = classifyAssessment(assessment)
     const weightage = assessment.weightage
 
@@ -217,6 +219,7 @@ export function buildWeightedStudentTotals(marks: WeightedMarkLike[]) {
   const totals = createEmptyMetricTotals()
 
   marks.forEach((mark) => {
+    if (mark.assessment.includeInAgg === false) return
     const weighted = getWeightedContribution(mark)
     const classification = classifyAssessment(mark.assessment)
 

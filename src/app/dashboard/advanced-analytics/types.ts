@@ -11,6 +11,7 @@ export type RawMark = {
   assessmentCategory: string
   assessmentMax: number
   assessmentWeightage: number
+  assessmentIncludeInAgg: boolean
   marks: number
 }
 
@@ -21,6 +22,7 @@ export type AssessmentMeta = {
   category: string
   maxMarks: number
   weightage: number
+  includeInAgg: boolean
 }
 
 export type SectionMeta = { id: string; name: string }

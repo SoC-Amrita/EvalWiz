@@ -192,6 +192,7 @@ async function loadReportWorkspaceDataset(options?: {
         category: true,
         weightage: true,
         maxMarks: true,
+        includeInAgg: true,
       },
     }),
     prisma.section.findMany({

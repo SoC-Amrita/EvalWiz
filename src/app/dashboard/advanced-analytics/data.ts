@@ -33,6 +33,7 @@ async function loadAdvancedAnalyticsBase() {
         category: true,
         maxMarks: true,
         weightage: true,
+        includeInAgg: true,
       },
     }),
     prisma.section.findMany({
@@ -179,6 +180,7 @@ export async function getAdvancedAnalyticsDetailData(): Promise<{
             assessmentCategory: mark.assessment.category,
             assessmentMax: mark.assessment.maxMarks,
             assessmentWeightage: mark.assessment.weightage,
+            assessmentIncludeInAgg: mark.assessment.includeInAgg,
             marks: mark.marks,
           }))
         )
@@ -208,6 +210,7 @@ export async function getAdvancedAnalyticsDetailData(): Promise<{
           assessmentCategory: mark.assessment.category,
           assessmentMax: mark.assessment.maxMarks,
           assessmentWeightage: mark.assessment.weightage,
+          assessmentIncludeInAgg: mark.assessment.includeInAgg,
           marks: mark.marks,
         }))
       )
@@ -221,6 +224,7 @@ export async function getAdvancedAnalyticsDetailData(): Promise<{
       category: assessment.category,
       maxMarks: assessment.maxMarks,
       weightage: assessment.weightage,
+      includeInAgg: assessment.includeInAgg,
     })),
     sections: sections.map((section) => ({
       id: section.id,

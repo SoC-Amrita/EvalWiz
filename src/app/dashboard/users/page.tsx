@@ -16,6 +16,7 @@ export default async function UserAdminPage() {
   }
 
   const users = await prisma.user.findMany({
+    omit: { password: true },
     include: {
       faculty: {
         include: {

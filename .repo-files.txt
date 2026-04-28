@@ -6,7 +6,7 @@ Purpose: compact AI navigation. This file lists repository paths only; it does n
 
 Ignored directories: .claude, .git, .next, .venv, __pycache__, build, coverage, dist, node_modules, out, output, test-results, tmp, venv
 
-Tracked inventory count: 214 files
+Tracked inventory count: 215 files
 
 ## Context Files
 
@@ -21,13 +21,13 @@ Tracked inventory count: 214 files
 
 ### root
 
-- .git
 - .gitignore
 - AGENTS.md
 - ARCHITECTURE.md
 - CLAUDE.md
 - components.json
 - eslint.config.mjs
+- next-env.d.ts
 - next.config.ts
 - package.json
 - playwright.config.ts
@@ -191,6 +191,7 @@ Tracked inventory count: 214 files
 - src/app/login/actions.ts
 - src/app/login/page.tsx
 - src/app/page.tsx
+- src/auth.config.ts
 - src/auth.test.ts
 - src/auth.ts
 - src/components/font-provider.tsx
@@ -251,7 +252,7 @@ Tracked inventory count: 214 files
 - src/lib/utils.ts
 - src/lib/workspace-guards.ts
 - src/lib/workspace-labels.ts
-- src/proxy.ts
+- src/middleware.ts
 
 ### tests
 

@@ -6,7 +6,7 @@ Purpose: compact AI navigation. This file lists repository paths only; it does n
 
 Ignored directories: .claude, .git, .next, .venv, __pycache__, build, coverage, dist, node_modules, out, output, test-results, tmp, venv
 
-Tracked inventory count: 218 files
+Tracked inventory count: 180 files
 
 ## Context Files
 
@@ -21,6 +21,7 @@ Tracked inventory count: 218 files
 
 ### root
 
+- .git
 - .gitignore
 - AGENTS.md
 - ARCHITECTURE.md
@@ -35,51 +36,9 @@ Tracked inventory count: 218 files
 - prisma.config.ts
 - PROJECT_MAP.md
 - README.md
-- skills-lock.json
 - TASK_LOG.md
 - tsconfig.json
 - vitest.config.ts
-
-### .agents
-
-- .agents/skills/supabase/assets/feedback-issue-template.md
-- .agents/skills/supabase/references/skill-feedback.md
-- .agents/skills/supabase/SKILL.md
-- .agents/skills/supabase-postgres-best-practices/references/_contributing.md
-- .agents/skills/supabase-postgres-best-practices/references/_sections.md
-- .agents/skills/supabase-postgres-best-practices/references/_template.md
-- .agents/skills/supabase-postgres-best-practices/references/advanced-full-text-search.md
-- .agents/skills/supabase-postgres-best-practices/references/advanced-jsonb-indexing.md
-- .agents/skills/supabase-postgres-best-practices/references/conn-idle-timeout.md
-- .agents/skills/supabase-postgres-best-practices/references/conn-limits.md
-- .agents/skills/supabase-postgres-best-practices/references/conn-pooling.md
-- .agents/skills/supabase-postgres-best-practices/references/conn-prepared-statements.md
-- .agents/skills/supabase-postgres-best-practices/references/data-batch-inserts.md
-- .agents/skills/supabase-postgres-best-practices/references/data-n-plus-one.md
-- .agents/skills/supabase-postgres-best-practices/references/data-pagination.md
-- .agents/skills/supabase-postgres-best-practices/references/data-upsert.md
-- .agents/skills/supabase-postgres-best-practices/references/lock-advisory.md
-- .agents/skills/supabase-postgres-best-practices/references/lock-deadlock-prevention.md
-- .agents/skills/supabase-postgres-best-practices/references/lock-short-transactions.md
-- .agents/skills/supabase-postgres-best-practices/references/lock-skip-locked.md
-- .agents/skills/supabase-postgres-best-practices/references/monitor-explain-analyze.md
-- .agents/skills/supabase-postgres-best-practices/references/monitor-pg-stat-statements.md
-- .agents/skills/supabase-postgres-best-practices/references/monitor-vacuum-analyze.md
-- .agents/skills/supabase-postgres-best-practices/references/query-composite-indexes.md
-- .agents/skills/supabase-postgres-best-practices/references/query-covering-indexes.md
-- .agents/skills/supabase-postgres-best-practices/references/query-index-types.md
-- .agents/skills/supabase-postgres-best-practices/references/query-missing-indexes.md
-- .agents/skills/supabase-postgres-best-practices/references/query-partial-indexes.md
-- .agents/skills/supabase-postgres-best-practices/references/schema-constraints.md
-- .agents/skills/supabase-postgres-best-practices/references/schema-data-types.md
-- .agents/skills/supabase-postgres-best-practices/references/schema-foreign-key-indexes.md
-- .agents/skills/supabase-postgres-best-practices/references/schema-lowercase-identifiers.md
-- .agents/skills/supabase-postgres-best-practices/references/schema-partitioning.md
-- .agents/skills/supabase-postgres-best-practices/references/schema-primary-keys.md
-- .agents/skills/supabase-postgres-best-practices/references/security-privileges.md
-- .agents/skills/supabase-postgres-best-practices/references/security-rls-basics.md
-- .agents/skills/supabase-postgres-best-practices/references/security-rls-performance.md
-- .agents/skills/supabase-postgres-best-practices/SKILL.md
 
 ### .github
 

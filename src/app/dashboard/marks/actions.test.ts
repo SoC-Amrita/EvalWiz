@@ -108,7 +108,7 @@ describe("marks actions", () => {
       data: {
         action: "BULK_MARK_UPLOAD",
         userId: "faculty-1",
-        details: JSON.stringify({
+        details: {
           type: "bulk",
           sectionId: "sec-a",
           assessmentId: "assess-1",
@@ -118,7 +118,7 @@ describe("marks actions", () => {
           successCount: 1,
           errorCount: 2,
           userName: "Dr. Malathi",
-        }),
+        },
       },
     })
     expect(result).toEqual({

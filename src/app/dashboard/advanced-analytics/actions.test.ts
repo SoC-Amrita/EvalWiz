@@ -60,7 +60,7 @@ describe("advanced analytics actions", () => {
       activeRoleView: "mentor",
     })
     collapseGradeRuleConfigToActiveRuleMock.mockImplementation((config) => config)
-    serializeGradeRuleConfigMock.mockReturnValue('{"rules":[]}')
+    serializeGradeRuleConfigMock.mockReturnValue({ selectedRuleId: null, rules: [] })
     validateGradeRuleConfigMock.mockReturnValue([])
   })
 
@@ -99,7 +99,7 @@ describe("advanced analytics actions", () => {
     expect(validateGradeRuleConfigMock).toHaveBeenCalledWith(gradeRuleConfig)
     expect(courseOfferingUpdateMock).toHaveBeenCalledWith({
       where: { id: "off-1" },
-      data: { gradeRulesConfig: '{"rules":[]}' },
+      data: { gradeRulesConfig: { selectedRuleId: null, rules: [] } },
     })
     expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard/advanced-analytics")
     expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard/grading")

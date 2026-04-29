@@ -285,8 +285,7 @@ export default async function DashboardOverview() {
             ) : (
               <div className="space-y-4">
                 {recentLogs.map((log) => {
-                  let details: AuditLogDetails = {}
-                  try { details = JSON.parse(log.details) as AuditLogDetails } catch {}
+                  const details = (log.details ?? {}) as AuditLogDetails
                   const isBulk = log.action === "BULK_MARK_UPLOAD"
                   const label = isBulk
                     ? `Bulk upload: ${details.assessmentName ?? details.assessmentCode} (${details.successCount} records)`

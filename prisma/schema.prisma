@@ -62,21 +62,16 @@ model Section {
   admissionYear     String?
   expectedGraduationYear String?
   sectionCode       String?
-  subjectCode       String? // legacy backfill / compatibility only
-  subjectTitle      String? // legacy backfill / compatibility only
   program           String?
-  term              String? // legacy backfill / compatibility only
-  academicYear      String? // legacy backfill / compatibility only
+  term              String? // legacy backfill / compatibility only — migrate reads to CourseOffering
+  academicYear      String? // legacy backfill / compatibility only — migrate reads to CourseOffering
   semester          String?
   year              String?
-  evaluationPattern String? // legacy backfill / compatibility only
-  courseType        String? // legacy backfill / compatibility only
+  evaluationPattern String? // legacy backfill / compatibility only — migrate reads to CourseOffering
+  courseType        String? // legacy backfill / compatibility only — migrate reads to CourseOffering
   isActive          Boolean  @default(true)
   offeringAssignments CourseOfferingClass[]
   offeringEnrollments CourseOfferingEnrollment[]
-
-  // TODO: Once all reads are migrated, remove the legacy course metadata fields
-  // above and treat Section exclusively as a reusable class roster snapshot.
 
   @@index([facultyId])
   @@index([name])
@@ -111,7 +106,7 @@ model ArchivedStudent {
   archivedAt           DateTime @default(now())
   archivedByUserId     String?
   archiveReason        String
-  snapshot             String
+  snapshot             Json
   restoredAt           DateTime?
   restoredByUserId     String?
   restoredStudentId    String?
@@ -137,20 +132,20 @@ model StudentDeletionRequest {
 }
 
 model Assessment {
-  id           String   @id @default(cuid())
-  offeringId    String?
-  offering      CourseOffering? @relation(fields: [offeringId], references: [id], onDelete: Cascade)
-  name         String
-  code         String
-  description  String?
-  maxMarks     Float
-  weightage    Float    @default(0)
-  category     String   // e.g., "CA_QUIZ", "CA_REVIEW", "MID_TERM", "END_SEMESTER"
+  id            String         @id @default(cuid())
+  offeringId    String
+  offering      CourseOffering @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+  name          String
+  code          String
+  description   String?
+  maxMarks      Float
+  weightage     Float          @default(0)
+  category      String         // e.g., "CA_QUIZ", "CA_REVIEW", "MID_TERM", "END_SEMESTER"
   componentType AssessmentComponentType @default(INTERNAL)
-  isActive     Boolean  @default(true)
-  includeInAgg Boolean  @default(true)
-  displayOrder Int      @default(0)
-  marks        Mark[]
+  isActive      Boolean        @default(true)
+  includeInAgg  Boolean        @default(true)
+  displayOrder  Int            @default(0)
+  marks         Mark[]
 
   @@unique([offeringId, code])
   @@index([offeringId, isActive, displayOrder])
@@ -166,7 +161,6 @@ model Mark {
   assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, assessmentId])
-  @@index([studentId], map: "Mark_studentId_idx")
   @@index([assessmentId])
 }
 
@@ -174,7 +168,7 @@ model AuditLog {
   id        String   @id @default(cuid())
   action    String
   userId    String
-  details   String   // JSON string
+  details   Json
   createdAt DateTime @default(now())
 
   @@index([createdAt])
@@ -193,7 +187,7 @@ model CourseOffering {
   courseType        String
   isElective        Boolean   @default(false)
   isActive          Boolean   @default(true)
-  gradeRulesConfig  String?
+  gradeRulesConfig  Json?
   assessments       Assessment[]
   classAssignments  CourseOfferingClass[]
   enrollments       CourseOfferingEnrollment[]

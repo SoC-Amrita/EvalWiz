@@ -288,7 +288,7 @@ describe("student actions", () => {
       data: {
         action: "STUDENT_ARCHIVE_DELETE",
         userId: "admin-1",
-        details: JSON.stringify({
+        details: {
           studentId: "stu-1",
           rollNo: "CB.SC.U4CSE23001",
           name: "Asha",
@@ -297,7 +297,7 @@ describe("student actions", () => {
           archiveReason: "ADMIN_DELETE",
           archivedStudentId: "arch-1",
           deletionRequestId: null,
-        }),
+        },
       },
     })
     expect(prismaMock.student.delete).toHaveBeenCalledWith({
@@ -328,7 +328,7 @@ describe("student actions", () => {
       id: "arch-1",
       rollNo: "CB.SC.U4CSE23001",
       restoredAt: null,
-      snapshot: JSON.stringify({
+      snapshot: {
         student: {
           rollNo: "CB.SC.U4CSE23001",
           name: "Asha",
@@ -338,7 +338,7 @@ describe("student actions", () => {
         },
         offeringEnrollments: [],
         marks: [],
-      }),
+      },
     })
 
     const { restoreArchivedStudent } = await import("@/app/dashboard/students/actions")
@@ -354,7 +354,7 @@ describe("student actions", () => {
       id: "arch-1",
       rollNo: "CB.SC.U4CSE23001",
       restoredAt: null,
-      snapshot: JSON.stringify({
+      snapshot: {
         student: {
           id: "stu-1",
           rollNo: "CB.SC.U4CSE23001",
@@ -398,7 +398,7 @@ describe("student actions", () => {
             evaluationPattern: "70 - 30",
           },
         ],
-      }),
+      },
     })
     prismaMock.student.findUnique.mockResolvedValue(null)
     prismaMock.section.findUnique.mockResolvedValue({ id: "sec-a" })

@@ -3,9 +3,20 @@ import { PrismaClient } from "@prisma/client"
 const prisma = new PrismaClient()
 
 async function main() {
-  console.log("Emptying old assessments and marks...")
-  await prisma.mark.deleteMany({})
-  await prisma.assessment.deleteMany({})
+  const offering = await prisma.courseOffering.findFirst({
+    where: { isActive: true },
+    select: { id: true },
+    orderBy: { createdAt: "desc" },
+  })
+  if (!offering) {
+    throw new Error("No active course offering found. Create one before seeding assessments.")
+  }
+
+  const offeringId = offering.id
+
+  console.log(`Emptying old assessments and marks for offering ${offeringId}...`)
+  await prisma.mark.deleteMany({ where: { assessment: { offeringId } } })
+  await prisma.assessment.deleteMany({ where: { offeringId } })
 
   console.log("Creating new specific 23CSE311 assessments...")
 
@@ -79,12 +90,12 @@ async function main() {
       displayOrder: 7,
       isActive: true,
       includeInAgg: true,
-    }
+    },
   ]
 
   for (const a of assessments) {
     await prisma.assessment.create({
-      data: a
+      data: { ...a, offeringId },
     })
   }
 

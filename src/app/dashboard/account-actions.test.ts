@@ -1,32 +1,40 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-const authMock = vi.fn()
-const signOutMock = vi.fn()
-const compareMock = vi.fn()
-const hashMock = vi.fn()
+const getSessionUserMock = vi.fn()
+const redirectMock = vi.fn()
+const supabaseSignOutMock = vi.fn()
+const supabaseSignInMock = vi.fn()
+const supabaseAdminUpdateUserMock = vi.fn()
 
-const prismaMock = {
-  user: {
-    findUnique: vi.fn(),
-    update: vi.fn(),
-  },
-}
-
-vi.mock("@/auth", () => ({
-  auth: authMock,
-  signOut: signOutMock,
+vi.mock("@/lib/session", () => ({
+  getSessionUser: getSessionUserMock,
 }))
 
-vi.mock("bcryptjs", () => ({
-  default: {
-    compare: compareMock,
-    hash: hashMock,
-  },
+vi.mock("next/navigation", () => ({
+  redirect: redirectMock,
 }))
 
-vi.mock("@/lib/db", () => ({
-  default: prismaMock,
+vi.mock("@/lib/supabase/server", () => ({
+  createSupabaseServerClient: vi.fn().mockResolvedValue({
+    auth: {
+      signOut: supabaseSignOutMock,
+      signInWithPassword: supabaseSignInMock,
+    },
+  }),
 }))
+
+vi.mock("@/lib/supabase/admin", () => ({
+  createSupabaseAdminClient: vi.fn().mockReturnValue({
+    auth: {
+      admin: {
+        updateUserById: supabaseAdminUpdateUserMock,
+      },
+    },
+  }),
+}))
+
+// Prisma is no longer used in account-actions but mock to prevent import errors.
+vi.mock("@/lib/db", () => ({ default: {} }))
 
 function passwordForm(values: {
   currentPassword?: string
@@ -43,23 +51,28 @@ function passwordForm(values: {
 describe("account actions", () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    authMock.mockResolvedValue({
-      user: { id: "user-1", name: "Dr. Faculty" },
+    getSessionUserMock.mockResolvedValue({
+      id: "user-1",
+      supabaseId: "supa-uuid-1",
+      email: "faculty@amrita.edu",
+      name: "Dr. Faculty",
     })
-    prismaMock.user.findUnique.mockResolvedValue({ password: "stored-hash" })
-    compareMock.mockResolvedValue(true)
-    hashMock.mockResolvedValue("next-hash")
+    supabaseSignInMock.mockResolvedValue({ error: null })
+    supabaseAdminUpdateUserMock.mockResolvedValue({ error: null })
   })
 
   it("signs users out to the login page", async () => {
+    supabaseSignOutMock.mockResolvedValue({ error: null })
+
     const { signOutToLogin } = await import("@/app/dashboard/account-actions")
 
     await signOutToLogin()
-    expect(signOutMock).toHaveBeenCalledWith({ redirectTo: "/login" })
+    expect(supabaseSignOutMock).toHaveBeenCalledTimes(1)
+    expect(redirectMock).toHaveBeenCalledWith("/login")
   })
 
   it("requires authentication before changing the current user's password", async () => {
-    authMock.mockResolvedValue(null)
+    getSessionUserMock.mockResolvedValue(null)
 
     const { changeOwnPassword } = await import("@/app/dashboard/account-actions")
 
@@ -70,7 +83,7 @@ describe("account actions", () => {
         confirmPassword: "Newpass123#",
       }))
     ).rejects.toThrow("Unauthorized")
-    expect(prismaMock.user.update).not.toHaveBeenCalled()
+    expect(supabaseAdminUpdateUserMock).not.toHaveBeenCalled()
   })
 
   it("enforces password completeness, length, confirmation, and difference", async () => {
@@ -100,11 +113,11 @@ describe("account actions", () => {
         confirmPassword: "Samepass123#",
       }))
     ).rejects.toThrow("New password must be different from the current password")
-    expect(prismaMock.user.update).not.toHaveBeenCalled()
+    expect(supabaseAdminUpdateUserMock).not.toHaveBeenCalled()
   })
 
   it("rejects an incorrect current password", async () => {
-    compareMock.mockResolvedValue(false)
+    supabaseSignInMock.mockResolvedValue({ error: { message: "Invalid login credentials" } })
 
     const { changeOwnPassword } = await import("@/app/dashboard/account-actions")
 
@@ -115,10 +128,10 @@ describe("account actions", () => {
         confirmPassword: "Newpass123#",
       }))
     ).rejects.toThrow("Current password is incorrect")
-    expect(prismaMock.user.update).not.toHaveBeenCalled()
+    expect(supabaseAdminUpdateUserMock).not.toHaveBeenCalled()
   })
 
-  it("updates the current user's password with a hash", async () => {
+  it("verifies the current password and updates via Supabase admin", async () => {
     const { changeOwnPassword } = await import("@/app/dashboard/account-actions")
 
     await expect(
@@ -128,11 +141,12 @@ describe("account actions", () => {
         confirmPassword: "Newpass123#",
       }))
     ).resolves.toEqual({ success: true })
-    expect(compareMock).toHaveBeenCalledWith("Oldpass123#", "stored-hash")
-    expect(hashMock).toHaveBeenCalledWith("Newpass123#", 10)
-    expect(prismaMock.user.update).toHaveBeenCalledWith({
-      where: { id: "user-1" },
-      data: { password: "next-hash" },
+    expect(supabaseSignInMock).toHaveBeenCalledWith({
+      email: "faculty@amrita.edu",
+      password: "Oldpass123#",
+    })
+    expect(supabaseAdminUpdateUserMock).toHaveBeenCalledWith("supa-uuid-1", {
+      password: "Newpass123#",
     })
   })
 })

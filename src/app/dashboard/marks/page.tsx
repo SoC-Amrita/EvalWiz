@@ -1,12 +1,11 @@
-import { auth } from "@/auth"
+import { getSessionUser } from "@/lib/session"
 import prisma from "@/lib/db"
 import { buildScopedSectionWhere, getActiveWorkspaceState } from "@/lib/course-workspace"
 import { redirect } from "next/navigation"
 import { MarksClient } from "./client"
 
 export default async function MarksPage() {
-  const session = await auth()
-  const user = session?.user
+  const user = await getSessionUser()
   if (!user) redirect("/login")
 
   const { activeWorkspace, activeRoleView } = await getActiveWorkspaceState(user)

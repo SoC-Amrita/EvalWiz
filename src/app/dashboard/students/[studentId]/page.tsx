@@ -1,4 +1,4 @@
-import { auth } from "@/auth"
+import { getSessionUser } from "@/lib/session"
 import prisma from "@/lib/db"
 import { getActiveWorkspaceState } from "@/lib/course-workspace"
 import { requireAllowedSectionAccess, requireRealWorkspace } from "@/lib/workspace-guards"
@@ -13,8 +13,7 @@ export default async function StudentRecordPage({
 }: {
   params: Promise<{ studentId: string }>
 }) {
-  const session = await auth()
-  const user = session?.user
+  const user = await getSessionUser()
   if (!user) {
     redirect("/login")
   }

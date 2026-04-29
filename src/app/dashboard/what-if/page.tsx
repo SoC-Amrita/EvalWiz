@@ -1,4 +1,4 @@
-import { auth } from "@/auth"
+import { getSessionUser } from "@/lib/session"
 import prisma from "@/lib/db"
 import { hasAnalysisPreviewAccess } from "@/lib/analysis-preview-access"
 import { buildScopedSectionWhere, getActiveWorkspaceState } from "@/lib/course-workspace"
@@ -7,8 +7,7 @@ import { redirect } from "next/navigation"
 import { WhatIfClient } from "./client"
 
 export default async function WhatIfPage() {
-  const session = await auth()
-  const user = session?.user
+  const user = await getSessionUser()
   if (!user) redirect("/login")
   if (!(await hasAnalysisPreviewAccess())) redirect("/dashboard")
 

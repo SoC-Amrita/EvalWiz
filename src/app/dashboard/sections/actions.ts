@@ -1,9 +1,9 @@
 "use server"
 
 import prisma from "@/lib/db"
-import bcrypt from "bcryptjs"
 import { revalidatePath } from "next/cache"
 import { buildNameFields } from "@/lib/user-names"
+import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import {
   requireAdminUser,
   requireAuthenticatedWorkspaceState,
@@ -39,24 +39,35 @@ export async function createFaculty(data: { name: string; email: string; passwor
   if (pass.length < 8) {
     throw new Error("Password must be at least 8 characters long")
   }
-  const hashedPassword = await bcrypt.hash(pass, 10)
+
+  // Create the Supabase Auth account first to get the UUID.
+  const admin = createSupabaseAdminClient()
+  const { data: authData, error: authError } = await admin.auth.admin.createUser({
+    email: data.email,
+    password: pass,
+    email_confirm: true,
+  })
+
+  if (authError || !authData.user) {
+    throw new Error(authError?.message ?? "Failed to create auth account")
+  }
 
   await prisma.$transaction(async (tx) => {
     const nameFields = buildNameFields(splitLegacyName(data.name))
     const user = await tx.user.create({
       data: {
+        supabaseId: authData.user.id,
         ...nameFields,
         email: data.email,
-        password: hashedPassword,
-        role: "FACULTY"
-      }
+        role: "FACULTY",
+      },
     })
 
     await tx.faculty.create({
       data: {
         userId: user.id,
-        name: nameFields.name
-      }
+        name: nameFields.name,
+      },
     })
   })
 

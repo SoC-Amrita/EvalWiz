@@ -14,18 +14,18 @@ enum AssessmentComponentType {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  title     String   @default("Dr.")
-  firstName String   @default("")
-  lastName  String   @default("")
-  name      String
-  password  String   // Hashed
-  role      String   @default("FACULTY") // Base account access only; mentoring is assigned per course offering.
-  isAdmin   Boolean  @default(false)
-  faculty   Faculty?
+  id          String   @id @default(cuid())
+  supabaseId  String?  @unique  // Supabase Auth UUID; null until user is migrated / created via new flow
+  email       String   @unique
+  title       String   @default("Dr.")
+  firstName   String   @default("")
+  lastName    String   @default("")
+  name        String
+  role        String   @default("FACULTY") // Base account access only; mentoring is assigned per course offering.
+  isAdmin     Boolean  @default(false)
+  faculty     Faculty?
   mentorAssignments CourseOfferingMentor[]
-  createdAt DateTime @default(now())
+  createdAt   DateTime @default(now())
 }
 
 model Faculty {

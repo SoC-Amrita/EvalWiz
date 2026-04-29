@@ -1,4 +1,4 @@
-import { auth } from "@/auth"
+import { getSessionUser } from "@/lib/session"
 import prisma from "@/lib/db"
 import { getActiveWorkspaceState } from "@/lib/course-workspace"
 import { formatWorkspaceCode } from "@/lib/workspace-labels"
@@ -6,8 +6,7 @@ import { redirect } from "next/navigation"
 import { AssessmentClient } from "./client"
 
 export default async function AssessmentsPage() {
-  const session = await auth()
-  const user = session?.user
+  const user = await getSessionUser()
 
   if (!user) {
     redirect("/dashboard")

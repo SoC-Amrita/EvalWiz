@@ -1,4 +1,4 @@
-import { auth } from "@/auth"
+import { getSessionUser } from "@/lib/session"
 import { redirect } from "next/navigation"
 
 import { saveAdvancedAnalyticsGradeRules } from "@/app/dashboard/advanced-analytics/actions"
@@ -8,8 +8,7 @@ import { getReportsDetailData } from "@/app/dashboard/reports/data"
 import { GradingClient } from "./client"
 
 export default async function GradingPage() {
-  const session = await auth()
-  const user = session?.user
+  const user = await getSessionUser()
   if (!user) redirect("/login")
 
   const [analyticsDetail, reportDetail] = await Promise.all([

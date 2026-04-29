@@ -1,13 +1,12 @@
 "use server"
 
-import { auth } from "@/auth"
+import { getSessionUser } from "@/lib/session"
 import { getActiveWorkspaceState, setActiveWorkspaceCookies, setAdminConsoleModeCookie, type WorkspaceRoleView } from "@/lib/course-workspace"
 import { enableAnalysisPreviewCookie } from "@/lib/analysis-preview-access"
 import { canManageUsers } from "@/lib/user-roles"
 
 export async function activateWorkspace(courseKey: string, roleView: WorkspaceRoleView) {
-  const session = await auth()
-  const user = session?.user
+  const user = await getSessionUser()
   if (!user) {
     throw new Error("Unauthorized")
   }
@@ -27,8 +26,7 @@ export async function activateWorkspace(courseKey: string, roleView: WorkspaceRo
 }
 
 export async function setAdminConsoleMode(mode: "admin" | "workspace") {
-  const session = await auth()
-  const user = session?.user
+  const user = await getSessionUser()
   if (!user || !canManageUsers(user)) {
     throw new Error("Unauthorized")
   }
@@ -38,8 +36,7 @@ export async function setAdminConsoleMode(mode: "admin" | "workspace") {
 }
 
 export async function enableAnalysisPreview() {
-  const session = await auth()
-  const user = session?.user
+  const user = await getSessionUser()
   if (!user) {
     throw new Error("Unauthorized")
   }

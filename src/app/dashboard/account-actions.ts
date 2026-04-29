@@ -1,18 +1,21 @@
 "use server"
 
-import bcrypt from "bcryptjs"
-
-import { auth, signOut } from "@/auth"
+import { redirect } from "next/navigation"
 import prisma from "@/lib/db"
+import { createSupabaseServerClient } from "@/lib/supabase/server"
+import { createSupabaseAdminClient } from "@/lib/supabase/admin"
+import { getSessionUser } from "@/lib/session"
 
 export async function signOutToLogin() {
-  await signOut({ redirectTo: "/login" })
+  const supabase = await createSupabaseServerClient()
+  await supabase.auth.signOut()
+  redirect("/login")
 }
 
 export async function changeOwnPassword(formData: FormData) {
-  const session = await auth()
+  const user = await getSessionUser()
 
-  if (!session?.user?.id) {
+  if (!user?.supabaseId) {
     throw new Error("Unauthorized")
   }
 
@@ -36,25 +39,27 @@ export async function changeOwnPassword(formData: FormData) {
     throw new Error("New password must be different from the current password")
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { password: true },
+  // Verify the current password by attempting a fresh sign-in.
+  const supabase = await createSupabaseServerClient()
+  const { error: verifyError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword,
   })
 
-  if (!user) {
-    throw new Error("User account not found")
-  }
-
-  const isValid = await bcrypt.compare(currentPassword, user.password)
-
-  if (!isValid) {
+  if (verifyError) {
     throw new Error("Current password is incorrect")
   }
 
-  await prisma.user.update({
-    where: { id: session.user.id },
-    data: { password: await bcrypt.hash(newPassword, 10) },
-  })
+  // Update via the admin client so we don't rely on session state.
+  const admin = createSupabaseAdminClient()
+  const { error: updateError } = await admin.auth.admin.updateUserById(
+    user.supabaseId,
+    { password: newPassword }
+  )
+
+  if (updateError) {
+    throw new Error("Failed to update password. Please try again.")
+  }
 
   return { success: true }
 }

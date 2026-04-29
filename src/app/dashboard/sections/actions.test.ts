@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-const hashMock = vi.fn()
 const revalidatePathMock = vi.fn()
+const supabaseAdminCreateUserMock = vi.fn()
 const buildNameFieldsMock = vi.fn()
 const requireAdminUserMock = vi.fn()
 const requireAuthenticatedWorkspaceStateMock = vi.fn()
@@ -31,10 +31,14 @@ const prismaMock = {
   $transaction: vi.fn(),
 }
 
-vi.mock("bcryptjs", () => ({
-  default: {
-    hash: hashMock,
-  },
+vi.mock("@/lib/supabase/admin", () => ({
+  createSupabaseAdminClient: vi.fn().mockReturnValue({
+    auth: {
+      admin: {
+        createUser: supabaseAdminCreateUserMock,
+      },
+    },
+  }),
 }))
 
 vi.mock("next/cache", () => ({
@@ -66,7 +70,7 @@ describe("sections actions", () => {
       lastName: "Radhakrishnan",
       name: "Dr. Anisha Radhakrishnan",
     })
-    hashMock.mockResolvedValue("hashed-password")
+    supabaseAdminCreateUserMock.mockResolvedValue({ data: { user: { id: "supa-new-1" } }, error: null })
     prismaMock.$transaction.mockImplementation(async (callback) =>
       callback({
         user: { create: prismaMock.user.create, update: prismaMock.user.update },
@@ -96,15 +100,19 @@ describe("sections actions", () => {
       })
     ).resolves.toEqual({ success: true })
 
-    expect(hashMock).toHaveBeenCalledWith("strongpass1", 10)
+    expect(supabaseAdminCreateUserMock).toHaveBeenCalledWith({
+      email: "fac1@amrita.edu",
+      password: "strongpass1",
+      email_confirm: true,
+    })
     expect(prismaMock.user.create).toHaveBeenCalledWith({
       data: {
+        supabaseId: "supa-new-1",
         title: "Dr.",
         firstName: "Anisha",
         lastName: "Radhakrishnan",
         name: "Dr. Anisha Radhakrishnan",
         email: "fac1@amrita.edu",
-        password: "hashed-password",
         role: "FACULTY",
       },
     })

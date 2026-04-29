@@ -113,7 +113,6 @@ Tracked inventory count: 217 files
 
 ### src
 
-- src/app/api/auth/[...nextauth]/route.ts
 - src/app/dashboard/academic-setup/actions.test.ts
 - src/app/dashboard/academic-setup/actions.ts
 - src/app/dashboard/academic-setup/client.tsx
@@ -193,9 +192,6 @@ Tracked inventory count: 217 files
 - src/app/login/actions.ts
 - src/app/login/page.tsx
 - src/app/page.tsx
-- src/auth.config.ts
-- src/auth.test.ts
-- src/auth.ts
 - src/components/font-provider.tsx
 - src/components/font-toggle.tsx
 - src/components/palette-picker.tsx
@@ -249,6 +245,10 @@ Tracked inventory count: 217 files
 - src/lib/palette-theme.ts
 - src/lib/pdf-export.ts
 - src/lib/roll-number.ts
+- src/lib/session.ts
+- src/lib/supabase/admin.ts
+- src/lib/supabase/client.ts
+- src/lib/supabase/server.ts
 - src/lib/user-names.ts
 - src/lib/user-roles.ts
 - src/lib/utils.ts

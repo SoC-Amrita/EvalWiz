@@ -1,5 +1,6 @@
 "use server"
 
+import { Prisma } from "@prisma/client"
 import prisma from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import {
@@ -322,13 +323,8 @@ function readSnapshotNumber(record: Record<string, unknown>, key: string) {
   return value
 }
 
-function parseArchivedStudentSnapshot(snapshotText: string): ArchivedStudentSnapshot {
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(snapshotText)
-  } catch {
-    throw new Error("Archived record is corrupted and cannot be restored")
-  }
+function parseArchivedStudentSnapshot(snapshotData: unknown): ArchivedStudentSnapshot {
+  const parsed = snapshotData
 
   if (!isRecord(parsed) || !isRecord(parsed.student)) {
     throw new Error("Archived record is corrupted and cannot be restored")
@@ -466,7 +462,7 @@ async function archiveStudentIntoHistory(
       excludeFromAnalytics: student.excludeFromAnalytics,
       archivedByUserId: options.actingUserId,
       archiveReason: options.archiveReason,
-      snapshot: JSON.stringify(snapshot),
+      snapshot: snapshot,
     },
   })
 
@@ -474,7 +470,7 @@ async function archiveStudentIntoHistory(
     data: {
       action: "STUDENT_ARCHIVE_DELETE",
       userId: options.actingUserId,
-      details: JSON.stringify({
+      details: {
         studentId: student.id,
         rollNo: student.rollNo,
         name: student.name,
@@ -483,7 +479,7 @@ async function archiveStudentIntoHistory(
         archiveReason: options.archiveReason,
         archivedStudentId: archivedStudent.id,
         deletionRequestId: options.deletionRequestId ?? null,
-      }),
+      },
     },
   })
 
@@ -735,7 +731,7 @@ export async function setStudentAnalyticsExclusion(
   const { user } = await requireAuthenticatedWorkspaceState()
 
   let actorUserId: string
-  let auditDetails: Record<string, unknown>
+  let auditDetails: Prisma.InputJsonValue
 
   if (user.isAdmin) {
     actorUserId = user.id
@@ -760,7 +756,7 @@ export async function setStudentAnalyticsExclusion(
     data: {
       action: excludeFromAnalytics ? "STUDENT_EXCLUDED_FROM_ANALYTICS" : "STUDENT_INCLUDED_IN_ANALYTICS",
       userId: actorUserId,
-      details: JSON.stringify(auditDetails),
+      details: auditDetails,
     },
   })
 
@@ -809,12 +805,12 @@ export async function requestStudentDeletion(studentId: string, reason?: string)
     data: {
       action: "STUDENT_DELETION_REQUESTED",
       userId: workspaceState.user.id,
-      details: JSON.stringify({
+      details: {
         studentId,
         rollNo: student.rollNo,
         offeringId: workspaceState.activeWorkspace.offeringId,
         reason: reason?.trim() || null,
-      }),
+      },
     },
   })
 
@@ -838,10 +834,10 @@ export async function rejectStudentDeletionRequest(requestId: string, reviewNote
     data: {
       action: "STUDENT_DELETION_REQUEST_REJECTED",
       userId: adminUser.id,
-      details: JSON.stringify({
+      details: {
         requestId,
         reviewNote: reviewNote?.trim() || null,
-      }),
+      },
     },
   })
 
@@ -1005,11 +1001,11 @@ export async function restoreArchivedStudent(archivedStudentId: string) {
       data: {
         action: "STUDENT_RESTORED",
         userId: adminUser.id,
-        details: JSON.stringify({
+        details: {
           archivedStudentId,
           restoredStudentId: restoredStudent.id,
           rollNo: snapshot.student.rollNo,
-        }),
+        },
       },
     })
   })

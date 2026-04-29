@@ -157,18 +157,18 @@ export function collapseGradeRuleConfigToActiveRule(input: unknown): GradeRuleCo
   }
 }
 
-export function parseGradeRuleConfig(serialized?: string | null) {
-  if (!serialized) return createEmptyGradeRuleConfig()
+export function parseGradeRuleConfig(value?: unknown) {
+  if (!value) return createEmptyGradeRuleConfig()
 
   try {
-    return collapseGradeRuleConfigToActiveRule(JSON.parse(serialized))
+    return collapseGradeRuleConfigToActiveRule(value)
   } catch {
     return createEmptyGradeRuleConfig()
   }
 }
 
-export function serializeGradeRuleConfig(config: GradeRuleConfig) {
-  return JSON.stringify(collapseGradeRuleConfigToActiveRule(config))
+export function serializeGradeRuleConfig(config: GradeRuleConfig): GradeRuleConfig {
+  return collapseGradeRuleConfigToActiveRule(config)
 }
 
 export function getGradeRuleIssues(rule: GradeRule): string[] {

@@ -52,7 +52,7 @@ export async function saveStudentMark(studentId: string, assessmentId: string, m
     data: {
       action: "MARK_EDIT",
       userId: user.id,
-      details: JSON.stringify({
+      details: {
         type: "single",
         assessmentId,
         studentId,
@@ -61,7 +61,7 @@ export async function saveStudentMark(studentId: string, assessmentId: string, m
         assessmentCode: assessment.code,
         assessmentName: assessment.name,
         offeringId: activeWorkspace.offeringId,
-      })
+      }
     }
   })
 
@@ -162,7 +162,7 @@ export async function bulkUploadMarks(
       data: {
         action: "BULK_MARK_UPLOAD",
         userId: user.id,
-        details: JSON.stringify({
+        details: {
           type: "bulk",
           sectionId,
           assessmentId,
@@ -172,7 +172,7 @@ export async function bulkUploadMarks(
           successCount,
           errorCount,
           userName: user.name,
-        })
+        }
       }
     })
   }

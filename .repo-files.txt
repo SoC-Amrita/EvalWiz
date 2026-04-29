@@ -6,7 +6,7 @@ Purpose: compact AI navigation. This file lists repository paths only; it does n
 
 Ignored directories: .claude, .git, .next, .venv, __pycache__, build, coverage, dist, node_modules, out, output, test-results, tmp, venv
 
-Tracked inventory count: 217 files
+Tracked inventory count: 218 files
 
 ## Context Files
 
@@ -107,6 +107,7 @@ Tracked inventory count: 217 files
 ### scripts
 
 - scripts/install-ai-context-hooks.sh
+- scripts/migrate-users-to-supabase.ts
 - scripts/purge-students.ts
 - scripts/seed-assessments.ts
 - scripts/update-ai-context.py

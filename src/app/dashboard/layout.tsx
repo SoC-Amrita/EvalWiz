@@ -1,4 +1,4 @@
-import { auth } from "@/auth"
+import { getSessionUser } from "@/lib/session"
 import { redirect } from "next/navigation"
 import { getActiveWorkspaceState, getRoleViewLabel, hasRealWorkspace } from "@/lib/course-workspace"
 import { formatWorkspaceFullLabel } from "@/lib/workspace-labels"
@@ -11,9 +11,8 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const session = await auth()
-  const user = session?.user
-  
+  const user = await getSessionUser()
+
   if (!user) {
     redirect("/login")
   }

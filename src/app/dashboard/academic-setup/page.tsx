@@ -1,12 +1,12 @@
-import { auth } from "@/auth"
+import { getSessionUser } from "@/lib/session"
 import { redirect } from "next/navigation"
 
 import { AcademicSetupClient } from "./client"
 import { getAcademicSetupData } from "./data"
 
 export default async function AcademicSetupPage() {
-  const session = await auth()
-  if (!session?.user?.isAdmin) {
+  const user = await getSessionUser()
+  if (!user?.isAdmin) {
     redirect("/dashboard")
   }
 

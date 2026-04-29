@@ -1,4 +1,4 @@
-import { auth } from "@/auth"
+import { getSessionUser } from "@/lib/session"
 import { classifyAssessment } from "@/lib/assessment-structure"
 import prisma from "@/lib/db"
 import { buildScopedSectionWhere, getActiveWorkspaceState, getRoleViewLabel } from "@/lib/course-workspace"
@@ -26,8 +26,7 @@ function readPageParam(value: string | undefined) {
 }
 
 export default async function StudentsPage({ searchParams }: StudentsPageProps) {
-  const session = await auth()
-  const user = session?.user
+  const user = await getSessionUser()
 
   if (!user) {
     redirect("/login")

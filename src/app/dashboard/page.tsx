@@ -1,4 +1,4 @@
-import { auth } from "@/auth"
+import { getSessionUser } from "@/lib/session"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import prisma from "@/lib/db"
 import { buildScopedSectionWhere, buildScopedStudentWhere, getActiveWorkspaceState, getRoleViewLabel, hasRealWorkspace } from "@/lib/course-workspace"
@@ -16,8 +16,7 @@ type AuditLogDetails = {
 }
 
 export default async function DashboardOverview() {
-  const session = await auth()
-  const user = session?.user
+  const user = await getSessionUser()
 
   if (!user) return null
 

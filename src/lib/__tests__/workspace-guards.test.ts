@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-const authMock = vi.fn()
+const getSessionUserMock = vi.fn()
 const getActiveWorkspaceStateMock = vi.fn()
 const getAllowedSectionIdsForWorkspaceMock = vi.fn()
 const canManageUsersMock = vi.fn()
 
-vi.mock("@/auth", () => ({
-  auth: authMock,
+vi.mock("@/lib/session", () => ({
+  getSessionUser: getSessionUserMock,
 }))
 
 vi.mock("@/lib/course-workspace", () => ({
@@ -24,7 +24,7 @@ describe("workspace-guards", () => {
   })
 
   it("requires an authenticated user for workspace state", async () => {
-    authMock.mockResolvedValue(null)
+    getSessionUserMock.mockResolvedValue(null)
 
     const { requireAuthenticatedWorkspaceState } = await import("@/lib/workspace-guards")
 
@@ -33,7 +33,7 @@ describe("workspace-guards", () => {
 
   it("returns the authenticated workspace state", async () => {
     const user = { id: "u1", isAdmin: false, role: "FACULTY" }
-    authMock.mockResolvedValue({ user })
+    getSessionUserMock.mockResolvedValue(user)
     getActiveWorkspaceStateMock.mockResolvedValue({
       activeWorkspace: { offeringId: "off-1" },
       activeRoleView: "mentor",
@@ -51,7 +51,7 @@ describe("workspace-guards", () => {
   })
 
   it("blocks faculty from manager-only workspace access", async () => {
-    authMock.mockResolvedValue({ user: { id: "u1", isAdmin: false, role: "FACULTY" } })
+    getSessionUserMock.mockResolvedValue({ id: "u1", isAdmin: false, role: "FACULTY" })
     getActiveWorkspaceStateMock.mockResolvedValue({
       activeWorkspace: { offeringId: "off-1" },
       activeRoleView: "faculty",
@@ -66,7 +66,7 @@ describe("workspace-guards", () => {
   it("returns allowed section ids as a set", async () => {
     const user = { id: "u1", isAdmin: false, role: "FACULTY" }
     const activeWorkspace = { offeringId: "off-1" }
-    authMock.mockResolvedValue({ user })
+    getSessionUserMock.mockResolvedValue(user)
     getActiveWorkspaceStateMock.mockResolvedValue({
       activeWorkspace,
       activeRoleView: "mentor",
@@ -82,7 +82,7 @@ describe("workspace-guards", () => {
   })
 
   it("requires a manageable admin user", async () => {
-    authMock.mockResolvedValue({ user: { id: "u1", isAdmin: true, role: "ADMIN" } })
+    getSessionUserMock.mockResolvedValue({ id: "u1", isAdmin: true, role: "ADMIN" })
     canManageUsersMock.mockReturnValue(false)
 
     const { requireAdminUser } = await import("@/lib/workspace-guards")
@@ -92,7 +92,7 @@ describe("workspace-guards", () => {
 
   it("returns the admin user when authorized", async () => {
     const user = { id: "u1", isAdmin: true, role: "ADMIN" }
-    authMock.mockResolvedValue({ user })
+    getSessionUserMock.mockResolvedValue(user)
     canManageUsersMock.mockReturnValue(true)
 
     const { requireAdminUser } = await import("@/lib/workspace-guards")

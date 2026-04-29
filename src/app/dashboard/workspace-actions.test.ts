@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-const authMock = vi.fn()
+const getSessionUserMock = vi.fn()
 const getActiveWorkspaceStateMock = vi.fn()
 const setActiveWorkspaceCookiesMock = vi.fn()
 const setAdminConsoleModeCookieMock = vi.fn()
 const enableAnalysisPreviewCookieMock = vi.fn()
 const canManageUsersMock = vi.fn()
 
-vi.mock("@/auth", () => ({
-  auth: authMock,
+vi.mock("@/lib/session", () => ({
+  getSessionUser: getSessionUserMock,
 }))
 
 vi.mock("@/lib/course-workspace", () => ({
@@ -28,8 +28,10 @@ vi.mock("@/lib/user-roles", () => ({
 describe("workspace actions", () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    authMock.mockResolvedValue({
-      user: { id: "user-1", name: "Dr. Faculty", isAdmin: false },
+    getSessionUserMock.mockResolvedValue({
+      id: "user-1",
+      name: "Dr. Faculty",
+      isAdmin: false,
     })
     getActiveWorkspaceStateMock.mockResolvedValue({
       workspaces: [
@@ -43,7 +45,7 @@ describe("workspace actions", () => {
   })
 
   it("requires authentication before activating a workspace", async () => {
-    authMock.mockResolvedValue(null)
+    getSessionUserMock.mockResolvedValue(null)
 
     const { activateWorkspace } = await import("@/app/dashboard/workspace-actions")
 
@@ -80,7 +82,7 @@ describe("workspace actions", () => {
   })
 
   it("requires authentication before enabling analysis preview access", async () => {
-    authMock.mockResolvedValue(null)
+    getSessionUserMock.mockResolvedValue(null)
 
     const { enableAnalysisPreview } = await import("@/app/dashboard/workspace-actions")
 

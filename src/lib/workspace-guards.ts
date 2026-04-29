@@ -1,10 +1,9 @@
-import { auth } from "@/auth"
 import { getActiveWorkspaceState, getAllowedSectionIdsForWorkspace } from "@/lib/course-workspace"
 import { canManageUsers } from "@/lib/user-roles"
+import { getSessionUser } from "@/lib/session"
 
 export async function requireAuthenticatedWorkspaceState() {
-  const session = await auth()
-  const user = session?.user
+  const user = await getSessionUser()
   if (!user) {
     throw new Error("Unauthorized")
   }
@@ -38,8 +37,7 @@ export async function requireAllowedSectionAccess() {
 }
 
 export async function requireAdminUser() {
-  const session = await auth()
-  const user = session?.user
+  const user = await getSessionUser()
   if (!user || !canManageUsers(user)) {
     throw new Error("Unauthorized")
   }

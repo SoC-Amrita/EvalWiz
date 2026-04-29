@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-const authMock = vi.fn()
+const getSessionUserMock = vi.fn()
 const revalidatePathMock = vi.fn()
 const canManageUsersMock = vi.fn()
 
@@ -39,8 +39,8 @@ const inferProgramCodeFromLabelMock = vi.fn()
 const inferSectionCodeFromLabelMock = vi.fn()
 const parseStudentRollNumberMock = vi.fn()
 
-vi.mock("@/auth", () => ({
-  auth: authMock,
+vi.mock("@/lib/session", () => ({
+  getSessionUser: getSessionUserMock,
 }))
 
 vi.mock("next/cache", () => ({
@@ -68,8 +68,8 @@ vi.mock("@/lib/roll-number", () => ({
 describe("academic-setup actions", () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    authMock.mockResolvedValue({
-      user: { id: "admin-1", role: "FACULTY", isAdmin: true, name: "Admin User" },
+    getSessionUserMock.mockResolvedValue({
+      id: "admin-1", role: "FACULTY", isAdmin: true, name: "Admin User",
     })
     canManageUsersMock.mockReturnValue(true)
     buildAcademicPlacementMock.mockReturnValue({

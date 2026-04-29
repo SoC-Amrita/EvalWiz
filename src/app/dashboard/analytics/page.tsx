@@ -1,4 +1,4 @@
-import { auth } from "@/auth"
+import { getSessionUser } from "@/lib/session"
 import { createEmptyMetricStats } from "@/lib/assessment-structure"
 import prisma from "@/lib/db"
 import { buildScopedStudentWhere, getActiveWorkspaceState } from "@/lib/course-workspace"
@@ -32,8 +32,7 @@ function readAnalyticsTab(value: string | undefined): AnalyticsWorkspaceTab {
 }
 
 export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps) {
-  const session = await auth()
-  const user = session?.user
+  const user = await getSessionUser()
   if (!user) redirect("/login")
 
   const { activeWorkspace, activeRoleView } = await getActiveWorkspaceState(user)

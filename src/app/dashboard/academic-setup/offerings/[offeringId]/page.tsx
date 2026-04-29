@@ -1,4 +1,4 @@
-import { auth } from "@/auth"
+import { getSessionUser } from "@/lib/session"
 import prisma from "@/lib/db"
 import { notFound, redirect } from "next/navigation"
 
@@ -10,8 +10,8 @@ export default async function EditOfferingPage({
 }: {
   params: Promise<{ offeringId: string }>
 }) {
-  const session = await auth()
-  if (!session?.user?.isAdmin) {
+  const user = await getSessionUser()
+  if (!user?.isAdmin) {
     redirect("/dashboard")
   }
 

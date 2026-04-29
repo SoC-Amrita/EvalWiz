@@ -1,4 +1,4 @@
-import { auth } from "@/auth"
+import { getSessionUser } from "@/lib/session"
 import { buildScopedSectionWhere, getActiveWorkspaceState } from "@/lib/course-workspace"
 import prisma from "@/lib/db"
 import { formatCompactSectionName, formatWorkspaceCode } from "@/lib/workspace-labels"
@@ -7,8 +7,7 @@ import { SectionsClient } from "./client"
 import { canManageUsers } from "@/lib/user-roles"
 
 export default async function SectionsPage() {
-  const session = await auth()
-  const user = session?.user
+  const user = await getSessionUser()
   if (!user) {
     redirect("/dashboard")
   }

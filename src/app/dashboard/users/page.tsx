@@ -1,22 +1,21 @@
 import { redirect } from "next/navigation"
 
-import { auth } from "@/auth"
+import { getSessionUser } from "@/lib/session"
 import prisma from "@/lib/db"
 import { canManageUsers } from "@/lib/user-roles"
 
 import { UserAdminClient } from "./client"
 
 export default async function UserAdminPage() {
-  const session = await auth()
-  if (!session?.user) {
+  const user = await getSessionUser()
+  if (!user) {
     redirect("/login")
   }
-  if (!canManageUsers(session?.user)) {
+  if (!canManageUsers(user)) {
     redirect("/dashboard")
   }
 
   const users = await prisma.user.findMany({
-    omit: { password: true },
     include: {
       faculty: {
         include: {
@@ -43,7 +42,7 @@ export default async function UserAdminPage() {
         </p>
       </div>
 
-      <UserAdminClient users={users} currentUserId={session.user.id} />
+      <UserAdminClient users={users} currentUserId={user.id} />
     </div>
   )
 }

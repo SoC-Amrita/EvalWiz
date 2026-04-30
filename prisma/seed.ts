@@ -198,8 +198,7 @@ async function main() {
   }
 
   console.log('Seed completed successfully.')
-  console.log(`Admin password set (starts with: ${adminPlaintextPassword.slice(0, 3)}***)`)
-  console.log(`Faculty/mentor password set (starts with: ${facultyPlaintextPassword.slice(0, 3)}***)`)
+  console.log('Seed auth users were created. Set SEED_ADMIN_PASSWORD and SEED_FACULTY_PASSWORD before running the seed if you need known local credentials.')
 }
 
 main()

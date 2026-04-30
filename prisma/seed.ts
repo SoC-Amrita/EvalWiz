@@ -198,8 +198,8 @@ async function main() {
   }
 
   console.log('Seed completed successfully.')
-  console.log(`Admin password: ${adminPlaintextPassword}`)
-  console.log(`Faculty/mentor password: ${facultyPlaintextPassword}`)
+  console.log(`Admin password set (starts with: ${adminPlaintextPassword.slice(0, 3)}***)`)
+  console.log(`Faculty/mentor password set (starts with: ${facultyPlaintextPassword.slice(0, 3)}***)`)
 }
 
 main()

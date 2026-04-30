@@ -74,7 +74,6 @@ model Section {
   offeringEnrollments CourseOfferingEnrollment[]
 
   @@index([facultyId])
-  @@index([name])
   @@index([programCode, admissionYear, sectionCode])
 }
 
@@ -209,8 +208,6 @@ model CourseOfferingClass {
 
   @@unique([offeringId, sectionId])
   @@index([offeringId, facultyId])
-  @@index([facultyId])
-  @@index([sectionId])
 }
 
 model CourseOfferingMentor {
@@ -221,7 +218,6 @@ model CourseOfferingMentor {
   user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([offeringId, userId])
-  @@index([userId])
 }
 
 model CourseOfferingEnrollment {
@@ -236,5 +232,4 @@ model CourseOfferingEnrollment {
   @@unique([offeringId, studentId])
   @@index([offeringId, sectionId])
   @@index([studentId])
-  @@index([sectionId])
 }

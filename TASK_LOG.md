@@ -4,6 +4,7 @@ Compact running notes for important project work. Keep this newest-first, focuse
 
 ## Recent Changes
 
+- 2026-04-30: Fixed remaining CodeQL clear-text logging alerts by removing seed-script password prefix logging and updating README guidance for seed credentials.
 - 2026-04-30: Added `.github/pull_request_template.md` with EvalWiz-specific checklist sections for change type, verification, data/security notes, screenshots/reports, and follow-ups.
 - 2026-04-30: Added `SECURITY.md` and GitHub issue templates for bug reports, feature requests, and sanitized security reports, including guidance to use private vulnerability reporting for sensitive security details. Updated AI context generation to ignore local `.agents/` skill caches and `skills-lock.json`.
 - 2026-04-30: Added `CONTRIBUTING.md` with Apache-2.0 contribution terms, setup guidance, branch/PR conventions, verification expectations, secret-safety rules, architecture expectations, and AI context update workflow.

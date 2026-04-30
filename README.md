@@ -129,7 +129,7 @@ Important:
 
 The seed script creates demo accounts such as `admin@amrita.edu`, `mentor1@amrita.edu`, and `fac1@amrita.edu`.
 
-If you want predictable local credentials, set `SEED_ADMIN_PASSWORD` and `SEED_FACULTY_PASSWORD` before running `npm run db:seed`. If you leave them unset, the seed script generates strong random passwords and prints them to the terminal once at seed time.
+If you want predictable local credentials, set `SEED_ADMIN_PASSWORD` and `SEED_FACULTY_PASSWORD` before running `npm run db:seed`. If you leave them unset, the seed script generates strong random passwords and does not print them to the terminal.
 
 ## Testing
 

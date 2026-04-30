@@ -6,7 +6,7 @@ Purpose: compact AI navigation. This file lists repository paths only; it does n
 
 Ignored directories: .agents, .claude, .git, .next, .venv, __pycache__, build, coverage, dist, node_modules, out, output, test-results, tmp, venv
 
-Tracked inventory count: 188 files
+Tracked inventory count: 189 files
 
 ## Context Files
 
@@ -49,6 +49,7 @@ Tracked inventory count: 188 files
 - .github/ISSUE_TEMPLATE/config.yml
 - .github/ISSUE_TEMPLATE/feature_request.yml
 - .github/ISSUE_TEMPLATE/security_report.yml
+- .github/pull_request_template.md
 - .github/workflows/ci.yml
 
 ### .vercel

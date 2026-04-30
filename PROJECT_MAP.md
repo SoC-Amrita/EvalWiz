@@ -33,6 +33,7 @@ The active workspace is the central boundary for marks, reports, analytics, adva
 | `playwright.config.ts` | Playwright smoke test configuration. |
 | `.github/workflows/ci.yml` | Continuous integration checks. |
 | `.github/ISSUE_TEMPLATE/*` | GitHub issue templates for bug reports, feature requests, and sanitized security reports. |
+| `.github/pull_request_template.md` | Pull request checklist for summary, change type, verification, security, deployment, and follow-up notes. |
 
 ## App Entry Points
 

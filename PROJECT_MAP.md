@@ -4,7 +4,7 @@ This map is a practical orientation guide for EvalWiz. Use it when you need to f
 
 ## High-Level Shape
 
-EvalWiz is a Next.js App Router application for academic course operations and evaluation. It uses React, TypeScript, Tailwind CSS, Prisma, Supabase Postgres, NextAuth, Recharts, jsPDF, and spreadsheet export libraries.
+EvalWiz is a Next.js App Router application for academic course operations and evaluation. It uses React, TypeScript, Tailwind CSS, Prisma, Supabase Postgres, Supabase Auth, Recharts, jsPDF, and spreadsheet export libraries.
 
 The app is organized around two broad modes:
 
@@ -272,7 +272,9 @@ The app expects Supabase Postgres through Prisma:
 
 - `DATABASE_URL` is used by the running app.
 - `DIRECT_URL` is used by Prisma CLI operations.
-- `AUTH_SECRET` and `AUTH_URL` configure NextAuth.
+- `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` configure Supabase session clients.
+- `SUPABASE_SERVICE_ROLE_KEY` is server-only and powers admin auth operations such as seed, user creation, password reset, and migration.
+- `APP_URL` is used by migration/reset-link scripts.
 
 Do not commit `.env`, `.env.local`, generated PDF output, `.next`, local database files, or temporary exports.
 

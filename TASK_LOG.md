@@ -4,6 +4,8 @@ Compact running notes for important project work. Keep this newest-first, focuse
 
 ## Recent Changes
 
+- 2026-04-30: Cleaned up manual index SQL files so they are safe to rerun. The Mark covering-index file no longer recreates the removed standalone `Mark_studentId_idx`, and the unused-index cleanup file now only drops legacy indexes not represented by the current Prisma schema.
+- 2026-04-30: Updated stale auth documentation after the Supabase Auth migration. README, architecture notes, and project map now reference Supabase Auth environment variables and the `User.supabaseId` session linkage instead of NextAuth `AUTH_SECRET` / `AUTH_URL`.
 - 2026-04-29: Migrated three JSON-as-string columns to native `jsonb`: `CourseOffering.gradeRulesConfig`, `AuditLog.details`, and `ArchivedStudent.snapshot`. Updated Prisma schema (`String` → `Json`), removed all `JSON.stringify`/`JSON.parse` calls at every write and read site across `marks/actions.ts`, `students/actions.ts`, `advanced-analytics/actions.ts`, and `dashboard/page.tsx`. Updated `grade-rules.ts` helpers (`serializeGradeRuleConfig` now returns an object; `parseGradeRuleConfig` accepts `unknown`). Fixed seed script to supply the required `offeringId` on `Assessment` after making the column NOT NULL. Dropped dead legacy columns `Section.subjectCode` and `Section.subjectTitle`. All 305 Vitest tests updated and passing.
 - 2026-04-29: Applied all missing Prisma-defined indexes to the live Supabase database (13 indexes across AuditLog, Assessment, CourseOffering, CourseOfferingClass, CourseOfferingEnrollment, CourseOfferingMentor, and Section). Dropped the redundant `Mark_studentId_idx` (superseded by the unique composite and covering indexes) and removed it from the Prisma schema. Supabase performance advisors now show zero unindexed foreign key errors.
 - 2026-04-28: Added Mark performance indexes for reports/analytics lookups, including a Prisma-tracked `studentId` index and a manual Postgres covering index SQL file.
@@ -39,7 +41,7 @@ Compact running notes for important project work. Keep this newest-first, focuse
 ## Known Unfixed / Follow-Ups
 
 - Apply the Prisma schema change to the target database with the normal deployment step (`npm run db:push` or the deployment equivalent) so the old global unique index on `Section.name` is removed outside local generated types.
-- Apply `prisma/manual-indexes/2026-04-28-mark-query-covering-indexes.sql` directly in Supabase/Postgres outside a transaction. The `CREATE INDEX CONCURRENTLY ... INCLUDE ("marks")` statement cannot be represented by Prisma schema alone.
+- Keep manual SQL in `prisma/manual-indexes` limited to objects Prisma cannot represent or legacy cleanup that does not conflict with Prisma-managed indexes.
 - Audit logs still store scope metadata inside the JSON `details` string. Non-admin dashboard reads are safe by `userId`, but future cross-workspace audit views should add first-class indexed columns such as `offeringId` and `sectionId`.
 - `uploadStudents` still reports per-row validation errors while committing valid rows atomically in one transaction. If the desired policy becomes all-or-nothing for validation errors too, convert validation errors into a transaction-aborting failure before writes.
 - `academic-setup/actions.ts` and `students/actions.ts` still have comparatively low coverage because they are large, branch-heavy action files. Add focused tests when changing import/archive/offering behavior.

@@ -18,7 +18,7 @@ The current dashboard covers academic setup, users, students, sections, assessme
 
 ### Technology Stack
 
-The app is built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, Prisma, Supabase Postgres, and NextAuth version 5 beta for authentication. Charts are rendered with Recharts. PDF generation uses html to image and jsPDF. Spreadsheet export uses xlsx and exceljs. State for small client side flows uses Zustand where that helps keep components tidy.
+The app is built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, Prisma, Supabase Postgres, and Supabase Auth. Charts are rendered with Recharts. PDF generation uses html to image and jsPDF. Spreadsheet export uses xlsx and exceljs.
 
 The app uses the App Router. Most domain logic lives in server rendered pages, server actions, and shared helpers inside `src/lib`. The current setup is intentionally compact because this is still a single app, but the data model and workflow separation already lean toward a more modular future architecture. In other words, it is still one machine, but I have been trying to teach it some manners.
 
@@ -38,7 +38,7 @@ The app includes roll number parsing logic so regular class mapping can be deriv
 
 ### Authentication And Roles
 
-Authentication uses credentials based sign in through NextAuth. Session strategy is JWT based. The login page is custom and intentionally always uses the default visual theme to avoid flashing during theme restoration. Roles are handled as a mix of base account capability and offering scoped context. Admin is global. Mentor is offering specific. Faculty scope depends on assignment inside the active workspace.
+Authentication uses Supabase Auth email/password sign in. The app verifies the Supabase session server-side, then loads the matching Prisma `User` row through `User.supabaseId` for role and workspace authorization. The login page is custom and intentionally always uses the default visual theme to avoid flashing during theme restoration. Roles are handled as a mix of base account capability and offering scoped context. Admin is global. Mentor is offering specific. Faculty scope depends on assignment inside the active workspace.
 
 ### Theming And Visual System
 
@@ -102,22 +102,27 @@ Use `.env.example` as the starting point. The important values are:
 
 - `DATABASE_URL`: the Supabase pooled Postgres connection string used by the running app
 - `DIRECT_URL`: the direct Postgres connection string used by Prisma CLI operations
-- `AUTH_SECRET`: the NextAuth secret for your local or deployed environment
-- `AUTH_URL`: the base URL of the running app
+- `NEXT_PUBLIC_SUPABASE_URL`: the Supabase project URL used by browser and server auth clients
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: the Supabase anon key used by browser/server session clients
+- `SUPABASE_SERVICE_ROLE_KEY`: the server-only key used for admin auth operations such as seed, user creation, and password reset
+- `APP_URL`: the base URL used by user migration/reset-link scripts
 
 For Supabase, a typical setup looks like this:
 
 ```env
 DATABASE_URL="postgresql://postgres.<project-ref>:<password>@<region>.pooler.supabase.com:6543/postgres?pgbouncer=true"
 DIRECT_URL="postgresql://postgres:<password>@db.<project-ref>.supabase.co:5432/postgres"
-AUTH_SECRET="replace-with-a-long-random-secret"
-AUTH_URL="http://localhost:3000"
+NEXT_PUBLIC_SUPABASE_URL="https://<project-ref>.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="<anon-key>"
+SUPABASE_SERVICE_ROLE_KEY="<service-role-key>"
+APP_URL="http://localhost:3000"
 ```
 
 Important:
 
 - Do not commit `.env`
 - Do not commit real database passwords, API keys, or auth secrets
+- Keep the service-role key server-side only; never expose it through a `NEXT_PUBLIC_` variable
 - Rotate any shared credentials before making the repo public
 
 ### Seeded Accounts

@@ -1,17 +1,17 @@
--- Drop unused indexes confirmed by pg_stat_user_indexes (0 scans since last stats reset).
--- Applied directly via Supabase MCP on 2026-04-28.
+-- Safe cleanup for legacy indexes that are no longer represented by the
+-- current Prisma schema.
 --
--- Also drops Section_name_key: the @unique constraint on Section.name was removed from
--- the Prisma schema but the live DB index was never cleaned up.
+-- Earlier versions of this file also dropped several lookup indexes that are
+-- now Prisma-managed and present in the live Supabase database. Do not drop
+-- those here; rerunning this file should not fight `prisma db push`.
+--
+-- "Section_name_key" came from the removed global @unique constraint on
+-- Section.name. The replacement non-unique "Section_name_idx" remains managed
+-- by Prisma.
+--
+-- "Mark_studentId_idx" was a short-lived standalone index. It is redundant
+-- after "Mark_studentId_assessmentId_key" and the manual covering
+-- "Mark_studentId_assessmentId_marks_idx" index.
 
-DROP INDEX IF EXISTS "Assessment_offeringId_isActive_displayOrder_idx";
-DROP INDEX IF EXISTS "Assessment_offeringId_category_idx";
-DROP INDEX IF EXISTS "CourseOffering_isActive_academicYear_term_idx";
-DROP INDEX IF EXISTS "CourseOffering_subjectId_isActive_idx";
-DROP INDEX IF EXISTS "CourseOfferingClass_sectionId_idx";
-DROP INDEX IF EXISTS "CourseOfferingClass_offeringId_facultyId_idx";
-DROP INDEX IF EXISTS "CourseOfferingClass_facultyId_idx";
-DROP INDEX IF EXISTS "CourseOfferingEnrollment_sectionId_idx";
-DROP INDEX IF EXISTS "CourseOfferingMentor_userId_idx";
-DROP INDEX IF EXISTS "Section_facultyId_idx";
 DROP INDEX IF EXISTS "Section_name_key";
+DROP INDEX IF EXISTS "Mark_studentId_idx";

@@ -22,7 +22,7 @@ Most user-facing workflows depend on the active course offering and the user's c
 | --- | --- | --- |
 | Application | Next.js 16 App Router | Routing, server rendering, server actions, layouts. |
 | UI | React 19, Tailwind CSS 4, local UI primitives | Dashboard and workflow surfaces. |
-| Auth | NextAuth v5 beta credentials provider | JWT sessions and protected dashboard access. |
+| Auth | Supabase Auth with `@supabase/ssr` | Email/password sign-in, session cookies, and protected dashboard access. |
 | Database | Supabase Postgres | Hosted relational persistence. |
 | ORM | Prisma | Type-safe database access and schema management. |
 | Charts | Recharts | Dashboard analytics and report visualizations. |
@@ -53,7 +53,8 @@ Most dashboard workflows follow this shape:
 
 ```text
 Route request
-  -> authenticate with NextAuth
+  -> validate Supabase Auth session
+  -> load Prisma User by supabaseId
   -> resolve active workspace from cookies and accessible offerings
   -> derive role view
   -> build scoped Prisma filters
@@ -258,7 +259,7 @@ The login page is intentionally treated differently from the dashboard theme exp
 
 ## Authentication And Authorization
 
-Authentication is credentials-based through NextAuth. The app uses JWT sessions.
+Authentication is email/password based through Supabase Auth. The app validates the Supabase session in middleware/server code, then loads the matching Prisma `User` row by `User.supabaseId`.
 
 Authorization is mostly enforced at three levels:
 
@@ -301,8 +302,10 @@ Required runtime environment:
 
 - `DATABASE_URL`
 - `DIRECT_URL`
-- `AUTH_SECRET`
-- `AUTH_URL`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `APP_URL`
 
 Important deployment notes:
 
@@ -310,7 +313,7 @@ Important deployment notes:
 - `postinstall` runs `prisma generate`.
 - `npm run db:push` applies Prisma schema changes when needed.
 - Manual Postgres indexes that Prisma cannot model live in `prisma/manual-indexes`; run them directly against Supabase/Postgres outside a transaction when noted.
-- Supabase is used as Postgres hosting, not through `@supabase/supabase-js`.
+- Supabase is used for both hosted Postgres and Auth. Prisma remains the ORM for application data; `@supabase/supabase-js` / `@supabase/ssr` handle sessions and Auth admin operations.
 
 ## Architectural Rules Of Thumb
 

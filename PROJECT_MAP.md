@@ -18,6 +18,8 @@ The active workspace is the central boundary for marks, reports, analytics, adva
 | Path | Purpose |
 | --- | --- |
 | `README.md` | Project overview, setup, environment variables, testing, and product notes. |
+| `CONTRIBUTING.md` | Contributor setup, branch/PR workflow, verification, safety, and project expectations. |
+| `SECURITY.md` | Security support policy, private reporting guidance, scope, and dependency advisory handling. |
 | `AGENTS.md` | Coding agent workflow, Git strategy, branch naming, verification, and safety rules. |
 | `CLAUDE.md` | Claude-specific pointer to `AGENTS.md`. |
 | `package.json` | Scripts and dependencies. Production build intentionally uses `next build --webpack`. |
@@ -29,6 +31,8 @@ The active workspace is the central boundary for marks, reports, analytics, adva
 | `eslint.config.mjs` | ESLint configuration. |
 | `vitest.config.ts` | Vitest configuration. |
 | `playwright.config.ts` | Playwright smoke test configuration. |
+| `.github/workflows/ci.yml` | Continuous integration checks. |
+| `.github/ISSUE_TEMPLATE/*` | GitHub issue templates for bug reports, feature requests, and sanitized security reports. |
 
 ## App Entry Points
 

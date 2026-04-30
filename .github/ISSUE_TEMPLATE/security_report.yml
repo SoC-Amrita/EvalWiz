@@ -1,0 +1,56 @@
+name: Security Report
+description: Start a sanitized security report. Use private vulnerability reporting for sensitive details.
+title: "security: "
+labels:
+  - security
+body:
+  - type: markdown
+    attributes:
+      value: |
+        If this report includes exploit details, secrets, private data, or a working attack path, do not submit it publicly. Use GitHub private vulnerability reporting if available, or contact the maintainer privately.
+  - type: dropdown
+    id: sensitive
+    attributes:
+      label: Does this require private handling?
+      description: Choose yes if the issue includes exploit details, private data, tokens, or a live attack path.
+      options:
+        - "Yes - I will report privately instead"
+        - "No - this public issue is sanitized"
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Sanitized Summary
+      description: Describe the concern without secrets, private data, or exploit payloads.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Security Area
+      options:
+        - Authentication / Session
+        - Authorization / Workspace Scope
+        - Supabase / Database
+        - Server Actions
+        - Reports / Exports
+        - Dependency Advisory
+        - XSS / Injection
+        - Secrets Handling
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Potential Impact
+      description: Who could be affected and what data or capability is at risk?
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: Advisory links, CVEs, package names, or safe documentation references.
+

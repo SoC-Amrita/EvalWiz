@@ -4,6 +4,8 @@ Compact running notes for important project work. Keep this newest-first, focuse
 
 ## Recent Changes
 
+- 2026-04-30: Added `SECURITY.md` and GitHub issue templates for bug reports, feature requests, and sanitized security reports, including guidance to use private vulnerability reporting for sensitive security details. Updated AI context generation to ignore local `.agents/` skill caches and `skills-lock.json`.
+- 2026-04-30: Added `CONTRIBUTING.md` with Apache-2.0 contribution terms, setup guidance, branch/PR conventions, verification expectations, secret-safety rules, architecture expectations, and AI context update workflow.
 - 2026-04-30: Patched the Dependabot Effect `AsyncLocalStorage` advisory by bumping Prisma packages from `6.19.2` to `6.19.3`, which updates transitive `@prisma/config` to `effect@3.21.0` above the fixed `3.20.0` floor.
 - 2026-04-30: Cleaned up manual index SQL files so they are safe to rerun. The Mark covering-index file no longer recreates the removed standalone `Mark_studentId_idx`, and the unused-index cleanup file now only drops legacy indexes not represented by the current Prisma schema.
 - 2026-04-30: Updated stale auth documentation after the Supabase Auth migration. README, architecture notes, and project map now reference Supabase Auth environment variables and the `User.supabaseId` session linkage instead of NextAuth `AUTH_SECRET` / `AUTH_URL`.

@@ -1,0 +1,69 @@
+name: Feature Request
+description: Suggest a new capability or workflow improvement.
+title: "feature: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping shape EvalWiz. Strong feature requests explain the academic workflow, role, and data scope involved.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Or Workflow Gap
+      description: What user problem does this solve?
+      placeholder: Describe the pain point or workflow gap.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution
+      description: What should EvalWiz do?
+    validations:
+      required: true
+  - type: dropdown
+    id: role
+    attributes:
+      label: Primary Role
+      options:
+        - Administrator
+        - Mentor
+        - Faculty
+        - Student
+        - Multiple roles
+        - Not sure
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Academic Setup
+        - Students
+        - Sections / Enrollment
+        - Assessments
+        - Marks
+        - Course Analytics
+        - Advanced Analytics
+        - Section Reports
+        - Grading
+        - Exports / PDF
+        - Theme / UI
+        - Deployment / Operations
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any simpler workaround or alternate design?
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Mockups, examples, constraints, or related issues.
+

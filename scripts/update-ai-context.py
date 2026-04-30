@@ -22,6 +22,7 @@ CONTEXT_FILES = [
 ]
 
 IGNORED_DIRS = {
+    ".agents",
     ".git",
     ".next",
     ".claude",
@@ -52,6 +53,7 @@ IGNORED_FILENAMES = {
     ".env.local",
     ".repo-files.txt",
     "package-lock.json",
+    "skills-lock.json",
 }
 
 

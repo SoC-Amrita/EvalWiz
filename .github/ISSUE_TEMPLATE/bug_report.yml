@@ -1,0 +1,77 @@
+name: Bug Report
+description: Report something that is broken or behaving unexpectedly.
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting this. Please do not include secrets, real student data, database URLs, auth tokens, or private reports.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What went wrong?
+      placeholder: Describe the bug in one or two sentences.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps To Reproduce
+      description: List the smallest steps that trigger the problem.
+      placeholder: |
+        1. Go to ...
+        2. Click ...
+        3. See ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What should have happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What happened?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Login / Auth
+        - Dashboard / Workspace
+        - Academic Setup
+        - Students
+        - Sections / Enrollment
+        - Assessments
+        - Marks
+        - Course Analytics
+        - Advanced Analytics
+        - Section Reports
+        - Grading
+        - Exports / PDF
+        - Deployment / Build
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser, OS, deployment target, or local command where you saw the issue.
+      placeholder: "Example: macOS, Chrome, local npm run dev, Vercel preview"
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs Or Screenshots
+      description: Paste sanitized logs or screenshots. Remove secrets and private academic data.
+      render: shell
+

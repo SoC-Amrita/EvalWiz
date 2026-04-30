@@ -1,0 +1,6 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security policy
+    url: https://github.com/SoC-Amrita/EvalWiz/security/policy
+    about: Read how to report vulnerabilities safely.
+

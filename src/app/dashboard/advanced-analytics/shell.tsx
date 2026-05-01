@@ -30,8 +30,7 @@ export function AdvancedAnalyticsShell({
       try {
         const nextData = await loadDetailsAction()
         setDetailData(nextData)
-      } catch (error) {
-        console.error(error)
+      } catch {
         toast.error("Failed to load the charts workspace")
       }
     })

@@ -222,8 +222,8 @@ function ReportConfigDialog({
       })
       try {
         await registerReportFonts(pdf)
-      } catch (error) {
-        console.error("Georgia font registration failed, falling back to Times:", error)
+      } catch {
+        // Font registration failed; jsPDF falls back to Times automatically
       }
       const pageWidth = pdf.internal.pageSize.getWidth()
       const pageHeight = pdf.internal.pageSize.getHeight()
@@ -1220,8 +1220,7 @@ function FinalMarksStemChart({
       link.click()
       link.remove()
       toast.success("Stem chart exported as PNG")
-    } catch (error) {
-      console.error("Stem chart export failed:", error)
+    } catch {
       toast.error("Unable to export stem chart")
     } finally {
       setIsExporting(false)
@@ -1418,8 +1417,7 @@ export function ReportsClient({ data, courseAggregate, reportMeta, loadDetailsAc
           componentReports: Array.isArray(nextDetailData?.componentReports) ? nextDetailData.componentReports : [],
           finalMarkStemData: Array.isArray(nextDetailData?.finalMarkStemData) ? nextDetailData.finalMarkStemData : [],
         })
-      } catch (error) {
-        console.error(error)
+      } catch {
         toast.error("Failed to load detailed report tables")
       }
     })

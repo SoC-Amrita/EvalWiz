@@ -555,8 +555,7 @@ function ClassReportExportCard({
         facultyName,
       })
       toast.success("Class report PDF downloaded")
-    } catch (error) {
-      console.error(error)
+    } catch {
       toast.error("Unable to generate the class report PDF")
     } finally {
       setIsDownloading(false)

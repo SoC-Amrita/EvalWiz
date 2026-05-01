@@ -23,10 +23,7 @@ export default async function DashboardOverview() {
   const { workspaces, activeWorkspace, activeRoleView } = await getActiveWorkspaceState(user)
   const isAdministratorView = activeRoleView === "administrator"
   const hasWorkspace = hasRealWorkspace(activeWorkspace)
-  const greetingName =
-    user.firstName?.trim() ||
-    user.name?.trim().split(/\s+/)[0] ||
-    "there"
+  const greetingName = user.firstName.trim() || "there"
 
   if (isAdministratorView) {
     const [subjectCount, classCount, activeOfferingCount, userCount, activeMentorAssignments] = await Promise.all([

@@ -707,7 +707,7 @@ export async function updateStudentRecord(data: {
     select: { id: true },
   })
   if (!section) {
-    return { success: false, error: "Section not found" }
+    throw new Error("Section not found")
   }
 
   await prisma.student.update({
@@ -796,7 +796,7 @@ export async function requestStudentDeletion(studentId: string, reason?: string)
       studentName: student.name,
       sectionName: student.section.name,
       requestedByUserId: workspaceState.user.id,
-      requestedByName: workspaceState.user.name ?? workspaceState.user.email ?? "Mentor",
+      requestedByName: workspaceState.user.name,
       reason: reason?.trim() || null,
     },
   })

@@ -2,78 +2,11 @@
 
 import prisma from "@/lib/db"
 import { revalidatePath } from "next/cache"
-import { buildNameFields } from "@/lib/user-names"
-import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import {
-  requireAdminUser,
   requireAuthenticatedWorkspaceState,
   requireRealWorkspace,
   requireWorkspaceManagerState,
 } from "@/lib/workspace-guards"
-
-function splitLegacyName(name: string) {
-  const trimmed = name.trim()
-  const title = trimmed.startsWith("Prof.") ? "Prof." : "Dr."
-  const withoutTitle = trimmed.replace(/^(Dr\.|Prof\.)\s+/, "").trim()
-  const parts = withoutTitle.split(/\s+/)
-  return {
-    title,
-    firstName: parts[0] || "Faculty",
-    lastName: parts.slice(1).join(" ") || "User",
-  }
-}
-
-export async function createFaculty(data: { name: string; email: string; password?: string }) {
-  await requireAdminUser()
-
-  const existingUser = await prisma.user.findUnique({
-    where: { email: data.email }
-  })
-  
-  if (existingUser) throw new Error("A user with this email already exists")
-
-  const pass = data.password?.trim()
-  if (!pass) {
-    throw new Error("Password is required")
-  }
-  if (pass.length < 8) {
-    throw new Error("Password must be at least 8 characters long")
-  }
-
-  // Create the Supabase Auth account first to get the UUID.
-  const admin = createSupabaseAdminClient()
-  const { data: authData, error: authError } = await admin.auth.admin.createUser({
-    email: data.email,
-    password: pass,
-    email_confirm: true,
-  })
-
-  if (authError || !authData.user) {
-    throw new Error(authError?.message ?? "Failed to create auth account")
-  }
-
-  await prisma.$transaction(async (tx) => {
-    const nameFields = buildNameFields(splitLegacyName(data.name))
-    const user = await tx.user.create({
-      data: {
-        supabaseId: authData.user.id,
-        ...nameFields,
-        email: data.email,
-        role: "FACULTY",
-      },
-    })
-
-    await tx.faculty.create({
-      data: {
-        userId: user.id,
-        name: nameFields.name,
-      },
-    })
-  })
-
-  revalidatePath("/dashboard/sections")
-  return { success: true }
-}
 
 export async function assignFacultyToSection(sectionId: string, facultyId: string | null) {
   const { activeWorkspace } = await requireWorkspaceManagerState()
@@ -94,28 +27,6 @@ export async function assignFacultyToSection(sectionId: string, facultyId: strin
 
   revalidatePath("/dashboard/sections")
   revalidatePath("/dashboard")
-  return { success: true }
-}
-
-export async function editFaculty(facultyId: string, userId: string, data: { name: string; email: string }) {
-  await requireAdminUser()
-
-  const nameFields = buildNameFields(splitLegacyName(data.name))
-
-  await prisma.$transaction(async (tx) => {
-    await tx.user.update({
-      where: { id: userId },
-      data: { ...nameFields, email: data.email }
-    })
-    
-    await tx.faculty.update({
-      where: { id: facultyId },
-      data: { name: nameFields.name }
-    })
-  })
-
-  revalidatePath("/dashboard/sections")
-  revalidatePath("/dashboard/academic-setup")
   return { success: true }
 }
 

@@ -44,8 +44,8 @@ export default async function DashboardLayout({
       isAdminConsole={isAdminConsole}
       canManageAssessments={canManageAssessments}
       canAccessSections={canAccessSections}
-      userName={user.name ?? "Account"}
-      userInitials={user.firstName?.[0] || user.name?.[0] || "U"}
+      userName={user.name}
+      userInitials={user.firstName[0] || "U"}
       showAnalysisPreview={hasWorkspace && !isAdmin}
       switchAdminModeAction={setAdminConsoleMode}
       signOutAction={signOutToLogin}

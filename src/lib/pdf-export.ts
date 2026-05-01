@@ -128,7 +128,6 @@ export const downloadElementAsPDF = async (
     pdf.save(filename)
     return true
   } catch (error) {
-    console.error("PDF generation failed:", error)
     throw error
   }
 }

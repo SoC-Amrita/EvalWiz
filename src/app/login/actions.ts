@@ -10,22 +10,35 @@ export async function loginAction(formData: FormData) {
     return { error: "Email and password are required." }
   }
 
-  const supabase = await createSupabaseServerClient()
+  let errorMessage: string | null = null
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password })
+  try {
+    const supabase = await createSupabaseServerClient()
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
 
-  if (error) {
-    // Supabase returns "Invalid login credentials" for wrong email/password.
-    // Map to a consistent user-facing message.
-    if (
-      error.message.toLowerCase().includes("invalid login") ||
-      error.message.toLowerCase().includes("invalid credentials") ||
-      error.message.toLowerCase().includes("email not confirmed")
-    ) {
-      return { error: "Invalid email or password." }
+    if (!error) {
+      return { success: true }
     }
-    return { error: "Something went wrong. Please try again." }
+
+    errorMessage = error.message
+  } catch (error) {
+    console.error("[login] Supabase client initialization failed:", error)
+    return {
+      error:
+        "Login is temporarily unavailable because Supabase environment variables are missing. Check your Vercel project env vars and redeploy.",
+    }
   }
 
-  return { success: true }
+  // Supabase returns "Invalid login credentials" for wrong email/password.
+  // Map to a consistent user-facing message.
+  const normalizedMessage = errorMessage.toLowerCase()
+  if (
+    normalizedMessage.includes("invalid login") ||
+    normalizedMessage.includes("invalid credentials") ||
+    normalizedMessage.includes("email not confirmed")
+  ) {
+    return { error: "Invalid email or password." }
+  }
+
+  return { error: "Something went wrong. Please try again." }
 }

@@ -24,11 +24,25 @@ export type SessionUser = NonNullable<Awaited<ReturnType<typeof getSessionUser>>
  * one DB round-trip, exactly like the previous auth() pattern.
  */
 export const getSessionUser = cache(async () => {
-  const supabase = await createSupabaseServerClient()
+  let supabaseUser: { id: string } | null = null
 
-  const {
-    data: { user: supabaseUser },
-  } = await supabase.auth.getUser()
+  try {
+    const supabase = await createSupabaseServerClient()
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser()
+
+    if (error) {
+      console.error("[session] Supabase getUser failed:", error.message)
+      return null
+    }
+
+    supabaseUser = user
+  } catch (error) {
+    console.error("[session] Unable to initialize Supabase server client:", error)
+    return null
+  }
 
   if (!supabaseUser) return null
 

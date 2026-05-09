@@ -31,6 +31,7 @@ jobs:
 
   deploy:
     needs: check
+    if: vars.VERCEL_CONFIGURED == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read

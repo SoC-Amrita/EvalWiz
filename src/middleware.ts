@@ -10,14 +10,28 @@
  */
 
 import { createServerClient } from "@supabase/ssr"
+import type { User } from "@supabase/supabase-js"
 import { type NextRequest, NextResponse } from "next/server"
 
 export async function middleware(request: NextRequest) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
+
+  // These are inlined at build time; if missing on Vercel, middleware threw and surfaced as
+  // MIDDLEWARE_INVOCATION_FAILED. Fail loudly in logs instead of an opaque edge crash.
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error(
+      "[middleware] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. " +
+        "Configure both in Vercel (all target environments used for production builds) and redeploy.",
+    )
+    return new NextResponse(null, { status: 503 })
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {
@@ -40,9 +54,18 @@ export async function middleware(request: NextRequest) {
 
   // IMPORTANT: getUser() must be called here (not getSession()) to validate
   // the token with Supabase's server and prevent spoofed cookie attacks.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  let user: User | null = null
+
+  try {
+    const { data, error } = await supabase.auth.getUser()
+    if (!error) {
+      user = data.user
+    } else {
+      console.error("[middleware] getUser rejected:", error.message)
+    }
+  } catch (err) {
+    console.error("[middleware] getUser failed:", err)
+  }
 
   if (!user && !request.nextUrl.pathname.startsWith("/login")) {
     const loginUrl = request.nextUrl.clone()

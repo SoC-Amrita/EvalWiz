@@ -25,7 +25,8 @@ __pycache__/
 # misc
 .DS_Store
 *.pem
-.claude/
+.claude/*
+!.claude/settings.json
 
 # debug
 npm-debug.log*

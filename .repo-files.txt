@@ -21,7 +21,6 @@ Tracked inventory count: 189 files
 
 ### root
 
-- .git
 - .gitignore
 - AGENTS.md
 - ARCHITECTURE.md
@@ -31,6 +30,7 @@ Tracked inventory count: 189 files
 - CONTRIBUTING.md
 - eslint.config.mjs
 - LICENSE
+- next-env.d.ts
 - next.config.ts
 - package.json
 - playwright.config.ts

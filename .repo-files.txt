@@ -6,7 +6,7 @@ Purpose: compact AI navigation. This file lists repository paths only; it does n
 
 Ignored directories: .agents, .claude, .git, .next, .venv, __pycache__, build, coverage, dist, node_modules, out, output, test-results, tmp, venv
 
-Tracked inventory count: 189 files
+Tracked inventory count: 190 files
 
 ## Context Files
 
@@ -21,7 +21,6 @@ Tracked inventory count: 189 files
 
 ### root
 
-- .git
 - .gitignore
 - AGENTS.md
 - ARCHITECTURE.md
@@ -31,6 +30,7 @@ Tracked inventory count: 189 files
 - CONTRIBUTING.md
 - eslint.config.mjs
 - LICENSE
+- next-env.d.ts
 - next.config.ts
 - package.json
 - playwright.config.ts
@@ -51,6 +51,7 @@ Tracked inventory count: 189 files
 - .github/ISSUE_TEMPLATE/security_report.yml
 - .github/pull_request_template.md
 - .github/workflows/ci.yml
+- .github/workflows/supabase-keepalive.yml
 
 ### .vercel
 

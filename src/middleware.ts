@@ -22,9 +22,9 @@ export async function middleware(request: NextRequest) {
   if (!supabaseUrl || !supabaseAnonKey) {
     console.error(
       "[middleware] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. " +
-        "Configure both in Vercel (all target environments used for production builds) and redeploy.",
+        "Skipping auth refresh so the app can still render login/errors. Configure both in Vercel and redeploy.",
     )
-    return new NextResponse(null, { status: 503 })
+    return NextResponse.next({ request })
   }
 
   let supabaseResponse = NextResponse.next({ request })

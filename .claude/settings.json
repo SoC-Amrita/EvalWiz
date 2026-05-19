@@ -1,0 +1,52 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=qfmaopcggyoulitosjrc"
+    }
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // \"\"' | grep -q 'schema\\.prisma$' && npx prisma generate 2>&1 || true",
+            "statusMessage": "Regenerating Prisma client…"
+          },
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // \"\"' | { read -r f; if echo \"$f\" | grep -qE '/actions\\.ts$'; then t=\"${f%/actions.ts}/actions.test.ts\"; [ -f \"$t\" ] && npx vitest run \"$t\" 2>&1 | tail -30; fi; } 2>/dev/null || true",
+            "statusMessage": "Running action tests…",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx tsc --noEmit 2>&1 | head -50",
+            "statusMessage": "Type-checking…",
+            "timeout": 60
+          },
+          {
+            "type": "command",
+            "command": "npm run test 2>&1 | tail -30",
+            "statusMessage": "Running test suite…",
+            "timeout": 120
+          },
+          {
+            "type": "command",
+            "command": "python3 scripts/update-ai-context.py 2>&1",
+            "statusMessage": "Updating AI context files…",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

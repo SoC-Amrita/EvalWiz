@@ -1,4 +1,8 @@
 {
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
   "mcpServers": {
     "supabase": {
       "type": "http",

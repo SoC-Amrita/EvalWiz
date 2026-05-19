@@ -44,6 +44,11 @@
             "command": "python3 scripts/update-ai-context.py 2>&1",
             "statusMessage": "Updating AI context files…",
             "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "b=$(git branch --show-current 2>/dev/null); [ -z \"$b\" ] || [ \"$b\" = \"main\" ] && exit 0; git rev-parse --verify \"origin/$b\" >/dev/null 2>&1 || { printf '{\"systemMessage\":\"Branch \\\"%s\\\" has not been pushed yet. Complete the AGENTS.md git workflow: push → open PR → merge into main → return to main.\"}\\n' \"$b\"; exit 0; }; n=$(git rev-list --count \"origin/$b..HEAD\" 2>/dev/null || echo 0); [ \"$n\" -gt 0 ] && printf '{\"systemMessage\":\"Branch \\\"%s\\\" has %s unpushed commit(s). Complete the AGENTS.md git workflow: push → open PR → merge into main → return to main.\"}\\n' \"$b\" \"$n\"; exit 0",
+            "statusMessage": "Checking branch state…"
           }
         ]
       }

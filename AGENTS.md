@@ -35,8 +35,8 @@ Prefer targeted context over broad codebase scans.
   - run `git status --short`
   - inspect relevant diffs before staging
   - do not stage unrelated changes
-- Use a branch-first workflow:
-  - create a descriptive branch
+- Use a branch-first workflow. This is mandatory for every task — complete the full sequence without waiting to be asked:
+  - create a descriptive branch (or rename the current one if auto-generated)
   - commit the scoped change
   - push the branch
   - open a pull request
@@ -70,6 +70,8 @@ feature/grading-class-report-pdf
 
 Do not use `codex/...` or agent-name prefixes unless the user specifically requests them.
 
+If working inside a Claude Code worktree, the branch will have an auto-generated name (e.g. `musing-euler-b1ce6d`). Rename it with `git branch -m <auto-name> <correct-name>` before the first push.
+
 ## Commit Style
 
 Use short type-prefixed commit messages that match the branch category:
@@ -92,7 +94,7 @@ PRs should include:
 - verification commands that were run
 - any relevant notes about intentionally excluded local changes
 
-Merge the PR after creation when the user has asked for the full branch, push, PR, and merge flow.
+Always complete the full branch → push → PR → merge flow as part of task completion. Do not wait to be asked.
 
 Do not add a "Generated with Claude Code" footer or any agent attribution line to PR descriptions.
 

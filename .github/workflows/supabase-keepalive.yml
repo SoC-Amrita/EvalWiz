@@ -1,0 +1,31 @@
+name: Supabase keepalive
+
+# Pings the Supabase REST API every 3 days to prevent the free-tier
+# project from being paused due to inactivity (pause threshold: 7 days).
+
+on:
+  schedule:
+    - cron: "0 0 */3 * *" # every 3 days at midnight UTC
+  workflow_dispatch: # allow manual trigger
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: none
+
+    steps:
+      - name: Ping Supabase REST API
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${SUPABASE_URL}/rest/v1/Section?select=id&limit=1" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}")
+          echo "Supabase ping status: $status"
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "Unexpected status code $status — check Supabase project health"
+            exit 1
+          fi

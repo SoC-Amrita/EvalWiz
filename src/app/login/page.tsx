@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { loginAction } from "./actions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,7 +12,6 @@ import { APP_INFO } from "@/lib/app-info"
 export default function LoginPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -22,16 +20,16 @@ export default function LoginPage() {
 
     const formData = new FormData(e.currentTarget)
     try {
+      // On success, loginAction redirects server-side to /dashboard and never
+      // returns here — the component unmounts, so we intentionally keep the
+      // button in its "Signing in..." state rather than resetting it.
       const result = await loginAction(formData)
       if (result?.error) {
         setError(result.error)
-      } else {
-        router.push("/dashboard")
-        router.refresh()
+        setLoading(false)
       }
     } catch {
       setError("An unexpected error occurred.")
-    } finally {
       setLoading(false)
     }
   }

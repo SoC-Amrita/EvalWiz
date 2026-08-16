@@ -1,5 +1,6 @@
 "use server"
 
+import { redirect } from "next/navigation"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 
 export async function loginAction(formData: FormData) {
@@ -16,17 +17,25 @@ export async function loginAction(formData: FormData) {
     const supabase = await createSupabaseServerClient()
     const { error } = await supabase.auth.signInWithPassword({ email, password })
 
-    if (!error) {
-      return { success: true }
+    if (error) {
+      errorMessage = error.message
     }
-
-    errorMessage = error.message
   } catch (error) {
     console.error("[login] Supabase client initialization failed:", error)
     return {
       error:
         "Login is temporarily unavailable because Supabase environment variables are missing. Check your Vercel project env vars and redeploy.",
     }
+  }
+
+  // Success: signInWithPassword has written the session cookie on this action's
+  // response, so redirect server-side straight to the dashboard. This replaces a
+  // client-side router.push() + router.refresh(), which forced a second full
+  // render pass of /dashboard (re-running middleware getUser + layout queries)
+  // and produced a visible flash. redirect() must run outside the try/catch —
+  // it signals via a thrown control-flow error that catch would otherwise swallow.
+  if (errorMessage === null) {
+    redirect("/dashboard")
   }
 
   // Supabase returns "Invalid login credentials" for wrong email/password.

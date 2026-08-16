@@ -6,7 +6,7 @@ Purpose: compact AI navigation. This file lists repository paths only; it does n
 
 Ignored directories: .agents, .claude, .git, .next, .venv, __pycache__, build, coverage, dist, node_modules, out, output, test-results, tmp, venv
 
-Tracked inventory count: 190 files
+Tracked inventory count: 192 files
 
 ## Context Files
 
@@ -120,6 +120,7 @@ Tracked inventory count: 190 files
 - src/app/dashboard/grading/stem-leaf/page.tsx
 - src/app/dashboard/grading/stem-leaf-views.tsx
 - src/app/dashboard/layout.tsx
+- src/app/dashboard/loading.tsx
 - src/app/dashboard/marks/actions.test.ts
 - src/app/dashboard/marks/actions.ts
 - src/app/dashboard/marks/client.tsx
@@ -185,6 +186,7 @@ Tracked inventory count: 190 files
 - src/components/ui/select.tsx
 - src/components/ui/separator.tsx
 - src/components/ui/sheet.tsx
+- src/components/ui/skeleton.tsx
 - src/components/ui/sonner.tsx
 - src/components/ui/switch.tsx
 - src/components/ui/table.tsx

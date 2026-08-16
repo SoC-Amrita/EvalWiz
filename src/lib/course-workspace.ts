@@ -391,8 +391,10 @@ const getWorkspaceCookiePreferences = cache(async () => {
 })
 
 export async function getActiveWorkspaceState(user: WorkspaceUser) {
-  const workspaces = await listAccessibleCourseWorkspaces(user)
-  const { requestedCourseKey, requestedRoleView, requestedAdminConsoleMode } = await getWorkspaceCookiePreferences()
+  const [workspaces, { requestedCourseKey, requestedRoleView, requestedAdminConsoleMode }] = await Promise.all([
+    listAccessibleCourseWorkspaces(user),
+    getWorkspaceCookiePreferences(),
+  ])
 
   const activeWorkspace = workspaces.find((workspace) => workspace.key === requestedCourseKey) ?? workspaces[0]
   const isAdminConsole = user.isAdmin && requestedAdminConsoleMode !== "workspace"

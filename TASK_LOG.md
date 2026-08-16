@@ -4,6 +4,7 @@ Compact running notes for important project work. Keep this newest-first, focuse
 
 ## Recent Changes
 
+- 2026-08-16: Fixed `NEXT_REDIRECT` error swallowing in `src/app/login/page.tsx`. Re-thrown Next.js redirect control-flow errors in the form submit `catch` block so client-side login submissions seamlessly transition to `/dashboard` upon authentication.
 - 2026-05-09: Hardened Supabase auth bootstrapping for Vercel runtime issues. Middleware no longer returns a global 503 when Supabase public env vars are missing; it now allows request pass-through so the app can still render login/error surfaces. Added explicit env validation in the server Supabase client, guarded `getSessionUser()` to fail closed (`null`) instead of crashing route renders, and made login action return a clear configuration error when Supabase env vars are absent.
 - 2026-05-09: Middleware now validates `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` before creating the Supabase client (avoids Vercel `MIDDLEWARE_INVOCATION_FAILED` when those values are missing at build time) and wraps `getUser()` in try/catch with logging so Supabase errors surface in function logs instead of opaque edge crashes.
 - 2026-04-30: Fixed remaining CodeQL clear-text logging alerts by removing seed-script password prefix logging and updating README guidance for seed credentials.

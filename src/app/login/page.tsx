@@ -28,7 +28,10 @@ export default function LoginPage() {
         setError(result.error)
         setLoading(false)
       }
-    } catch {
+    } catch (err) {
+      if ((err as { digest?: string })?.digest?.startsWith?.("NEXT_REDIRECT")) {
+        throw err
+      }
       setError("An unexpected error occurred.")
       setLoading(false)
     }
